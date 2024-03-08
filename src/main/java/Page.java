@@ -15,7 +15,7 @@ public class Page implements Serializable {
     public Page() {
         this.configFileReader = new FileReader(configFilePath);
         this.maximumRowsCountinPage = Integer.parseInt(configFileReader.getProperty("MaximumRowsCountinPage"));
-        System.out.println("Maximum number of rows per page: "+maximumRowsCountinPage);
+        System.out.println("Maximum number of rows per page: " + maximumRowsCountinPage);
         this.numberOfPages++;
     }
 

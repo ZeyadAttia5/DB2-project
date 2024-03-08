@@ -26,15 +26,21 @@ public class DBApp {
 	// strClusteringKeyColumn is the name of the column that will be the primary
 	// key and the clustering column as well. The data type of that column will
 	// be passed in htblColNameType
-	// htblColNameValue will have the column name as key and the data 
+	// htblColNameValue will have the column name as key and the data
 	// type as value
-	public void createTable(String strTableName, 
-							String strClusteringKeyColumn,  
-							Hashtable<String,String> htblColNameType) throws DBAppException{
-								
-		throw new DBAppException("not implemented yet");
-	}
+	public void createTable(String strTableName,
+							String strClusteringKeyColumn,
+							Hashtable<String,String> htblColNameType) throws DBAppException {
 
+		try {
+			//create the metaData.csv file using the hashtable input and store it in the metaData package
+			csvConverter.convert(htblColNameType, strTableName);
+			//initialize a new table object
+			Table newTable = new Table(strTableName);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	// following method creates a B+tree index 
 	public void createIndex(String   strTableName,
@@ -87,7 +93,7 @@ public class DBApp {
 	public static void main( String[] args ){
 	
 	try{
-		Page page = new Page();
+		//Page page = new Page();
 //			String strTableName = "Student";
 //			DBApp	dbApp = new DBApp( );
 //
