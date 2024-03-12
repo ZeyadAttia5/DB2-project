@@ -1,20 +1,19 @@
-import java.io.FilenameFilter;
-import java.util.ArrayList;
-import java.io.File;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 
-public class Table {
+public class Table implements Serializable {
     // Map to store the number of pages for each table
-    public static HashMap<String, ArrayList<String>> tablePages = new HashMap<>();
+    public Vector<String> tablePages;
     public String name;
+
+
 
     public Table(String name){
         createDirectory(name);
         this.name = name;
-        tablePages.put(name,new ArrayList<>());
+        tablePages = new Vector<>();
+
     }
 
     public static void createDirectory(String folderPath) {
@@ -37,28 +36,26 @@ public class Table {
 
 
     // Method to get page count for a table
-    public static int getPageCount(String tableName) {
-        if(tablePages.get(tableName)==null)
-            return -1;
-        else
-            return tablePages.get(tableName).size();
+    public int getPageCount() {
+       return tablePages.size();
     }
     public void insert(Tuple tuple) throws DBAppException {
-         if (getPageCount(name) == 0) {
-            Page page = new Page(name);
+         if (getPageCount() == 0) {
+            Page page = new Page(name,this.tablePages.size());
             page.insert(tuple);
+            tablePages.add(page.name);
         } else {
-            ArrayList<String> pageFileNames = tablePages.get(name);
+            Vector<String> pageFileNames = this.tablePages;
             int lastIndex = pageFileNames.size() - 1;
             int currentIndex = 0;
             for (String fileName : pageFileNames) {//still not handled when full
-                Page page = Page.deserialize(name + "/" + fileName + ".ser");
+                Page page = Page.deserialize(name + "/" + fileName + ".class");
                 if(!page.isFull()) {
                     page.insert(tuple);
                     break;
                 }
                 else if (currentIndex == lastIndex){
-                    Page nPage = new Page(name);
+                    Page nPage = new Page(name, this.tablePages.size());
                     nPage.insert(tuple);
                 }
                 currentIndex++;
@@ -68,10 +65,33 @@ public class Table {
         }
     }
 
+    public void serialize() {
+        String tableName = name;
+        try (FileOutputStream fos = new FileOutputStream(tableName + "/" + name + ".class" );
+             ObjectOutputStream out = new ObjectOutputStream(fos)) {
+                out.writeObject(this);
+                System.out.println("saved table successfully at " + tableName + "/" + name + ".class" );
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static Table deserialize(String filename) {
+        Table table = null;
+        try (FileInputStream fis = new FileInputStream(filename);
+             ObjectInputStream in = new ObjectInputStream(fis)) {
+            table = (Table) in.readObject();
+            System.out.println("Table deserialized from " + filename);
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return table;
+    }
+
     // Method to print all serialized pages for the specified table name
     public static void printTable(String tableName) {
         File directory = new File(tableName); // Use provided table name as directory name
-        FilenameFilter filter = (dir, name) -> name.endsWith(".ser");
+        FilenameFilter filter = (dir, name) -> name.endsWith(".class");
         File[] serializedPages = directory.listFiles(filter);
         System.out.println(Arrays.toString(serializedPages));
 
@@ -86,4 +106,15 @@ public class Table {
             System.out.println("No serialized pages found for table " + tableName);
         }
     }
+
+    public static void main(String[] args){
+        Table t1 = new Table("Student");
+        t1.serialize();
+        Table temp = deserialize("Student/Student.class");
+        System.out.println(temp.tablePages);
+        System.out.println(temp.name);
+
+    }
+
+
 }
