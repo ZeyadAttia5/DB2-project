@@ -34,7 +34,6 @@ public class Table implements Serializable {
     }
 
 
-
     // Method to get page count for a table
     public int getPageCount() {
        return tablePages.size();
