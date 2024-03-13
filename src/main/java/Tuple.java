@@ -1,39 +1,37 @@
 import java.io.Serializable;
+import java.util.Hashtable;
 import java.util.Vector;
 
-public class Tuple implements Serializable {
-    public Vector<String> values;
+public class Tuple implements Serializable
+{
+    public Hashtable values;
 
+    public Tuple(Hashtable values)
+    {
+        this.values = values;
+    }
 
-    public Tuple(Object... args) {
-        this.values = new Vector<String>();
-        for (Object arg : args) {
-            this.values.add(String.valueOf(arg));
+    @Override
+    public String toString()
+    {
+        StringBuilder result = new StringBuilder();
+        for(Object key : this.values.keySet())
+        {
+            result.append(this.values.get(key) + ",");
         }
+        result.setLength(result.length()-1);
+        return result.toString();
     }
 
-    public Vector<String> getValues() {
-        return values;
-    }
-
-    public String toString() {
-        String result = "";
-        for (int i = 0; i < values.size(); i++) {
-            result += values.get(i);
-            if (i < values.size() - 1) {
-                result += ", ";
-            }
-        }
-        return result;
-    }
-
-
-
-/*  "testing"
     public static void main(String[] args) {
-        Tuple tuple = new Tuple(1, "Hello", 3.14);
-        Vector<String > tupleValues = tuple.getValues();
-        System.out.println(tuple);
+//        Hashtable htblColNameValue = new Hashtable();
+//        htblColNameValue.put("id", new Integer(2343432));
+//        htblColNameValue.put("name", new String("Ahmed Noor"));
+//        htblColNameValue.put("gpa", new Double(0.95));
+//        Tuple t = new Tuple(htblColNameValue);
+//        System.out.println(t.values.get("id").getClass().toString().equals(" java.lang.Integer"));
+//        Object x = (Object) t.values.get("id");
+//        System.out.println((int)x==2343432);
+
     }
-*/
 }
