@@ -6,6 +6,7 @@ import java.util.Properties;
 
 public class FileReader {
 
+
     private final String filePath;
     private Properties properties;
 
