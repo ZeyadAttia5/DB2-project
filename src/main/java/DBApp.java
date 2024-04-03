@@ -12,7 +12,9 @@ public class DBApp {
 
 
 	public DBApp( ){
-		
+//		String currentDirectory = System.getProperty("user.dir");
+//		System.out.println("Current Directory: " + currentDirectory);
+
 	}
 
 	//
@@ -74,12 +76,7 @@ public class DBApp {
 							Hashtable<String,Object> htblColNameValue   )  throws DBAppException{
 
 		List <String[]> metadata = Metadata.getTableMetadata(strTableName);
-		if (Metadata.getClusteringKey(strTableName) == strClusteringKeyValue){
 
-		}
-		else {
-
-		}
 	}
 
 
@@ -104,14 +101,14 @@ public class DBApp {
 	public static void main( String[] args ){
 	
 	try{
-//			String strTableName = "Student";
-//			DBApp	dbApp = new DBApp( );
+			String strTableName = "Student";
+			DBApp	dbApp = new DBApp( );
 //
-//			Hashtable htblColNameType = new Hashtable( );
-//			htblColNameType.put("id", "java.lang.Integer");
-//			htblColNameType.put("name", "java.lang.String");
-//			htblColNameType.put("gpa", "java.lang.double");
-//			dbApp.createTable( strTableName, "id", htblColNameType );
+			Hashtable htblColNameType = new Hashtable( );
+			htblColNameType.put("id", "java.lang.Integer");
+			htblColNameType.put("name", "java.lang.String");
+			htblColNameType.put("gpa", "java.lang.double");
+			dbApp.createTable( strTableName, "ID", htblColNameType );
 //			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 //
 //			Hashtable htblColNameValue = new Hashtable( );

@@ -104,15 +104,15 @@ public class Page implements Serializable {
         return sb.toString();
     }
 
-    public static void main(String[] args) throws DBAppException {
-        Table Student = new Table ("student");
-        Tuple t1 = new Tuple(1,21,"ahmed");
-        Student.insert(t1);
-        System.out.println("--------------------------------------------------------------");
-
-        Tuple t2 = new Tuple(1,21,"omar");
-        Student.insert(t2);
-        Table.printTable("Student");
+//    public static void main(String[] args) throws DBAppException {
+//        Table Student = new Table ("student");
+//        Tuple t1 = new Tuple(1,21,"ahmed");
+//        Student.insert(t1);
+//        System.out.println("--------------------------------------------------------------");
+//
+//        Tuple t2 = new Tuple(1,21,"omar");
+//        Student.insert(t2);
+//        Table.printTable("Student");
 //        System.out.println(Table.tablePages);
 //        System.out.println(Table.tablePageCount);
 
@@ -133,17 +133,7 @@ public class Page implements Serializable {
 //
 //      System.out.println(student0);
 //      Table.printTable("student");
-
-
-
-
-
-
-
-
-
-
-    }
+//    }
 
 
 }
