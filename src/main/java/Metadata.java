@@ -7,10 +7,16 @@ import java.util.*;
 
 public class Metadata {
     private static final String METADATA_FILE = "metadata.csv";
+    private static boolean addedHeader = false;
     public static void writeToCSV(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
-        try (FileWriter writer = new FileWriter("metaData/" + tableName + ".csv")) {
-            // Write header to CSV file
-            writer.append("Table Name, Column Name, Column Type, ClusteringKey, IndexName, IndexType\n");
+        try (FileWriter writer = new FileWriter("src/main/resources/" + METADATA_FILE)) {
+
+            if (!addedHeader){
+                // Write header to CSV file
+                writer.append("Table Name, Column Name, Column Type, ClusteringKey, IndexName, IndexType\n");
+                addedHeader = true;
+            }
+
 
             // Iterate over the hashtable entries
             Enumeration<String> keys = hashtable.keys();
