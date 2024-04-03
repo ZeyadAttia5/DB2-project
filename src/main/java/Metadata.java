@@ -6,6 +6,7 @@ import java.io.*;
 import java.util.*;
 
 public class Metadata {
+    private static final String METADATA_FILE = "metadata.csv";
     public static void writeToCSV(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
         try (FileWriter writer = new FileWriter("metaData/" + tableName + ".csv")) {
             // Write header to CSV file
