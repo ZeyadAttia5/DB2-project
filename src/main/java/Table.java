@@ -106,14 +106,14 @@ public class Table implements Serializable {
         }
     }
 
-    public static void main(String[] args){
-        Table t1 = new Table("Student");
-        t1.serialize();
-        Table temp = deserialize("Student/Student.class");
-        System.out.println(temp.tablePages);
-        System.out.println(temp.name);
-
-    }
+//    public static void main(String[] args){
+//        Table t1 = new Table("Student");
+//        t1.serialize();
+//        Table temp = deserialize("Student/Student.class");
+//        System.out.println(temp.tablePages);
+//        System.out.println(temp.name);
+//
+//    }
 
 
 }
