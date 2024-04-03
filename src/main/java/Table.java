@@ -6,12 +6,14 @@ public class Table implements Serializable {
     // Map to store the number of pages for each table
     public Vector<String> tablePages;
     public String name;
+    private String clusteringKeyCol;
 
 
 
-    public Table(String name){
+    public Table(String name, String clusteringKeyCol){
         createDirectory(name);
         this.name = name;
+        this.clusteringKeyCol = clusteringKeyCol;
         tablePages = new Vector<>();
 
     }
@@ -105,6 +107,10 @@ public class Table implements Serializable {
         } else {
             System.out.println("No serialized pages found for table " + tableName);
         }
+    }
+
+    public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType){
+
     }
 
 //    public static void main(String[] args){
