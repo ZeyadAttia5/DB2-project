@@ -1,64 +1,135 @@
 import java.io.*;
-import java.util.ArrayList;
+import java.io.FileReader;
+import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
 
-public class Page implements Serializable {
-    public String  name;
-    public int maxSize;
+public class Page
+{
+    public String name;
     public Vector<Tuple> tuples;
+    public int maxSize;
     public int max;
     public int min;
+    public String clusteringKey;
 
-
-    public Page(String name, int count){ //initializes an empty page   //name refers to the table name, and this.name updates it to the naming convention
-        this.name = name + "_" + count;
-        this.tuples = new Vector<Tuple>();
+    public Page(String tableName, int count, String clusteringKey)
+    {
+        this.name = tableName + "_" + count;
+        this.tuples = new Vector<>();
         this.maxSize = readConfigFile();
-
-
+        this.clusteringKey = clusteringKey;
     }
 
+    public static Vector<String[]> readCSV(String tableName)
+    {
+        String csvFilePath = "src/metadata/metadata.csv";
+        Vector<String[]> result = new Vector<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] columns = line.split(","); // Assuming comma (,) as delimiter
+                if(columns[0].equals(tableName))
+                    result.add(columns);
 
-    public void insert(Tuple tuple) throws DBAppException {
-
-        if(!isFull()) {
-            tuples.add(tuple);
-            serialize();
-        }
-        else {
-            throw new DBAppException("page full");
-        }
-    }
-
-    // Method to serialize the Page object
-    public void serialize() {
-        String tableName = getTname(name);
-        try (FileOutputStream fos = new FileOutputStream(tableName + "/" + name + ".class" );
-             ObjectOutputStream out = new ObjectOutputStream(fos)) {
-            out.writeObject(this);
-            System.out.println("saved page successfully at " + tableName + "/" + name + ".class" );
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return result;
     }
 
-    public static Page deserialize(String filename) {
-        Page page = null;
-        try (FileInputStream fis = new FileInputStream(filename);
-             ObjectInputStream in = new ObjectInputStream(fis)) {
-            page = (Page) in.readObject();
-            System.out.println("Page deserialized from " + filename);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+    public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+        String name = (this.name.split("_"))[0];
+        Vector<String[]> metadata = readCSV(name);
+        String datatype = "";
+        for(String[] arr : metadata)
+        {
+            if(arr[3].equals("True"))
+                datatype = arr[2].split(".")[2];
         }
-        return page;
+
+        int low = 0;
+        int high = this.tuples.size()-1;
+        Object value = tuple.values.get(this.clusteringKey);
+        System.out.println(value);
+        while(low <= high)
+        {
+            int mid = low + (high - low)/2;
+            Tuple midTuple = this.tuples.get(mid);
+            if(datatype.equals("String"))
+            {
+                String midValue = (String) midTuple.values.get(this.clusteringKey);
+                if (midValue.equals(value)) {
+                    low = mid; // Value already exists
+                    break;
+                } else if (midValue.compareTo((String) value) < 0) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+            else if (datatype.equals("Double"))
+            {
+                double midValue = (Double) midTuple.values.get(this.clusteringKey);
+                if (midValue == (Double) value) {
+                    low = mid; // Value already exists
+                    break;
+                } else if (midValue < (Double) value) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+
+            }
+            else
+            {
+                int midValue = (Integer) midTuple.values.get(this.clusteringKey);
+                if (midValue == (Integer) value) {
+                    low = mid; // Value already exists
+                    break;
+                } else if (midValue < (Integer) value) {
+                    low = mid + 1;
+                } else {
+                    high = mid - 1;
+                }
+            }
+        }
+        System.out.println(low);
+        if(low>this.tuples.size()-1)
+            this.tuples.add(tuple);
+
+        else if(this.tuples.get(low)!=null)
+            this.tuples.add(low,tuple);
+
+        Page currPage = this;
+        while(currPage.tuples.size()>maxSize)
+        {
+            Tuple temp = currPage.tuples.lastElement();
+            currPage.tuples.removeLast();
+            currPage.serialize();
+            String currName = currPage.name;
+            int currInt = (int) currName.charAt(currName.length()-1);
+            currName = currName.replace((char) currInt,(char) (currInt+1));
+            currPage = deserialize(currName);
+            currPage.tuples.addFirst(temp);
+            currPage.serialize();
+        }
     }
 
-    //get maxSize from config file
+    public void delete(int index)
+    {
+        this.tuples.remove(index);
+        if(this.tuples.isEmpty())
+        {
+            File file = new File(this.name + ".class");
+            file.delete();
+        }
+    }
+
     public int readConfigFile(){
         Properties properties = new Properties();
-        String fileName = "resources/DBApp.config";
+        String fileName = "src/resources/DBApp.config";
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(fileName);
@@ -71,69 +142,66 @@ public class Page implements Serializable {
             throw new RuntimeException(e);
         }
         String maxSizeStr = properties.getProperty("MaximumRowsCountinPage");
-            if (maxSizeStr != null) {
-               return maxSize = Integer.parseInt(maxSizeStr);
-            } else {
+        if (maxSizeStr != null) {
+            return maxSize = Integer.parseInt(maxSizeStr);
+        } else {
 
-               return maxSize = 200; // Default value
-            }
-    }
-
-
-    public Boolean isFull(){
-        return tuples.size() == maxSize;
-    }
-
-    public String getTname(String s){
-        int indexOfUnderscore = s.indexOf('_');
-        return s.substring(0, indexOfUnderscore);
-    }
-
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-
-
-        // Iterate over tuples and append their string representations with commas
-        for (int i = 0; i < tuples.size(); i++) {
-            sb.append(tuples.get(i));
-            if (i < tuples.size() - 1) {
-                sb.append("\n");
-            }
+            return maxSize = 200; // Default value
         }
-
-        return sb.toString();
     }
 
-//    public static void main(String[] args) throws DBAppException {
-//        Table Student = new Table ("student");
-//        Tuple t1 = new Tuple(1,21,"ahmed");
-//        Student.insert(t1);
-//        System.out.println("--------------------------------------------------------------");
-//
-//        Tuple t2 = new Tuple(1,21,"omar");
-//        Student.insert(t2);
-//        Table.printTable("Student");
-//        System.out.println(Table.tablePages);
-//        System.out.println(Table.tablePageCount);
+    public void serialize() throws IOException {
+        FileOutputStream fileOut = new FileOutputStream(this.name + ".class");
+        ObjectOutputStream out = new ObjectOutputStream(fileOut);
+        out.writeObject(this);
+        out.close();
+        fileOut.close();
+    }
 
+    public static Page deserialize(String fileName) throws IOException, ClassNotFoundException {
+        Page page;
+        FileInputStream fileIn = new FileInputStream(fileName + ".class");
+        ObjectInputStream in = new ObjectInputStream(fileIn);
+        page = (Page) in.readObject();
+        in.close();
+        fileIn.close();
+        return page;
+    }
 
-//      Tuple t3 = new Tuple(1,21,"nora");
-//      Tuple t4= new Tuple(1,21,"mona");
-//      Tuple t5= new Tuple(1,21,"mohamed");
-//      Tuple t6= new Tuple(1,21,"emad");
-//      Tuple t7= new Tuple(1,21,"JD");
-//
-//
-//
-//      Page student0 = deserialize("student/student_0");
-//      student0.insert(t1);
-//      student0.insert(t2);
-//
-//      student0.insert(t2);
-//
-//      System.out.println(student0);
-//      Table.printTable("student");
-//    }
+    @Override
+    public String toString()
+    {
+        String result = "";
+        for(Tuple tuple : this.tuples)
+            result += tuple.toString() + "///";
+        return result;
+    }
 
-
+    public static void main(String[] args) throws DBAppException {
+//        Page page = new Page("Bike",2, "id");
+//        Hashtable htblColNameValue = new Hashtable( );
+//        htblColNameValue.put("id", new Integer( 1 ));
+//        htblColNameValue.put("name", new String("Ahmed Noor" ) );
+//        htblColNameValue.put("gpa", new Double( 0.95 ) );
+//        Tuple t = new Tuple(htblColNameValue);
+//
+//        Hashtable h = new Hashtable( );
+//        h.put("id", new Integer( 3 ));
+//        h.put("name", new String("Ahmed Noor" ) );
+//        h.put("gpa", new Double( 0.95 ) );
+//        Tuple t2 = new Tuple(h);
+//
+//        Hashtable h2 = new Hashtable( );
+//        h2.put("id", new Integer( 2 ));
+//        h2.put("name", new String("Ahmed Noor" ) );
+//        h2.put("gpa", new Double( 0.95 ) );
+//        Tuple t3 = new Tuple(h2);
+//
+//        page.insert(t);
+//        page.insert(t2);
+//        System.out.println(page);
+//
+//        page.insert(t3);
+//        System.out.println(page);
+    }
 }
