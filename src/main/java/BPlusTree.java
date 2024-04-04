@@ -7,6 +7,43 @@ public class BPlusTree {
     InternalNode root;
     LeafNode firstLeaf;
 
+    public void printBPlusTree() {
+        printBPlusTree(root, "", true);
+    }
+    private void printBPlusTree(Node node, String prefix, boolean isTail) {
+        if (node instanceof LeafNode) {
+            printLeafNode((LeafNode) node, prefix, isTail);
+        } else {
+            printInternalNode((InternalNode) node, prefix, isTail);
+        }
+    }
+
+    private void printLeafNode(LeafNode leafNode, String prefix, boolean isTail) {
+        for (int i = 0; i < leafNode.numPairs; i++) {
+            System.out.println(prefix + (isTail ? "└── " : "├── ") +
+                    "(" + leafNode.dictionary[i].key + ", " + leafNode.dictionary[i].value + ")");
+        }
+    }
+
+    private void printInternalNode(InternalNode internalNode, String prefix, boolean isTail) {
+        System.out.println(prefix + (isTail ? "└── " : "├── ") + formatKeys(internalNode.keys));
+        for (int i = 0; i < internalNode.degree; i++) {
+            boolean childIsTail = (i == internalNode.degree - 1);
+            printBPlusTree(internalNode.childPointers[i], prefix + (isTail ? "    " : "│   "), childIsTail);
+        }
+    }
+
+    private String formatKeys(Object[] keys) {
+        StringBuilder sb = new StringBuilder();
+        for (Object key : keys) {
+            if (key != null) {
+                sb.append(key).append(" ");
+            }
+        }
+        return sb.toString();
+    }
+
+
     /*~~~~~~~~~~~~~~~~ HELPER FUNCTIONS ~~~~~~~~~~~~~~~~*/
 
     /**
@@ -989,7 +1026,7 @@ public class BPlusTree {
 
             // Decrement numPairs
             numPairs--;
-            System.out.println("deleted " );
+//            System.out.println("deleted " );
         }
 
         /**
@@ -1011,13 +1048,13 @@ public class BPlusTree {
                 // Insert dictionary pair, increment numPairs, sort dictionary
                 this.dictionary[numPairs] = dp;
                 numPairs++;
-                DictionaryPair[] nonNullPairs = Arrays.stream(this.dictionary)
-                        .filter(pair -> pair != null)
-                        .toArray(DictionaryPair[]::new);
-                Arrays.sort(nonNullPairs);
-                System.arraycopy(nonNullPairs, 0, this.dictionary, 0, nonNullPairs.length);
+//                DictionaryPair[] nonNullPairs = Arrays.stream(this.dictionary)
+//                        .filter(pair -> pair != null)
+//                        .toArray(DictionaryPair[]::new);
+//                Arrays.sort(nonNullPairs);
+//                System.arraycopy(nonNullPairs, 0, this.dictionary, 0, nonNullPairs.length);
 
-//                Arrays.sort(this.dictionary, 0, numPairs);
+                Arrays.sort(this.dictionary, 0, numPairs);
 
                 return true;
             }
@@ -1135,79 +1172,63 @@ public class BPlusTree {
     }
 
     public static void main(String[] args) {
-        BPlusTree b = new BPlusTree(200);
+        BPlusTree b = new BPlusTree(3);
         Page p  = new Page("s", 1, "age");
-//        System.out.println(p.name);
-//        b.insert("salma", p);
-//        b.insert("alile", p);
-//        b.insert("allo", p);
-//        System.out.println(b.firstLeaf.dictionary[0].key);
-//        System.out.println(b.firstLeaf.dictionary[1].key);
-//        System.out.println(b.firstLeaf.dictionary[2].key);
-//        Page x = b.search("salma");
-//        Page y = b.search("allo");
-//        Page z = b.search("alile");
-//        System.out.println(x.name);
-//        System.out.println(y.name);
-//        System.out.println(z.name);
-//        b.delete("salma");
-//        b.delete("allo");
-//        b.delete("alile");
 
-        // think ab duplicates in deletion
-        // hmmm something wrong with delete implementation has to do with nulls that appear after deletion and comp. think thoughts
-//        // think about how to save b plus tree
-//        b.insert(1, p);
-//        b.insert(2, p);
-//        b.insert(2,p);
-//        b.insert(3, p);
-//        b.insert(4,p);
-//        System.out.println(b.firstLeaf.dictionary[0].key);
-//        System.out.println(b.firstLeaf.dictionary[1].key);
-//        System.out.println(b.firstLeaf.dictionary[2].key);
-//        b.search(1);
-//        b.search(2);
-//        b.search(3);
-//        b.search(4);
-
-//        b.delete(1);
-//        b.search(1);
-//        b.delete(2);
-//        b.search(2);
-//        b.delete(2);
-//        b.search(2);
-//        b.delete(2);
-//        b.delete(2);
-//        b.insert(3,p);
-//        b.insert(4,p);
-//        b.delete(3);
-//        b.delete(1);
-//        b.delete(3);
-//        b.delete(4);
-//        b.delete(4);
+        // think ab duplicates in deletion (linkedlist?)
+        // hmmm something wrong with delete implementation has to do with nulls that appear after deletion and comp maybe? think thoughts
+        // serialise etc
 
 
         b.insert("alile", p);
         b.insert("allo", p);
-        b.insert("nabila",p);
-        b.insert("nabila", p);
         b.insert("nabila", p);
         b.insert("jana", p);
         b.insert("salma", p);
-        b.insert("alia", p);
         b.insert("farida", p);
-        b.insert("farida", p);
+        b.insert("yara",p);
+        b.insert("ahmed",p);
+        b.insert("alia",p);
 
-        b.search("salma");
-        b.search("nabila");
+        System.out.println(b.search("alile"));
+        System.out.println(b.search("salma"));
+        System.out.println(b.search("nabila"));
+        System.out.println(b.search("allo"));
+        System.out.println(b.search("jana"));
+        System.out.println(b.search("yara"));
+        System.out.println(b.search("farida"));
+        System.out.println(b.search("ahmed"));
+        System.out.println(b.search("alia"));
 
-        for(int i =0; i< b.firstLeaf.dictionary.length; i++){
-            if(b.firstLeaf.dictionary[i]!=null)
-                System.out.println(b.firstLeaf.dictionary[i].key);
-        }
+        b.delete("alile");
+        b.delete("jana");
+        b.delete("allo");
+        b.delete("farida");
+        b.delete("salma");
+        b.delete("nabila");
+        b.delete("ahmed");
+        b.delete("alia");
+        b.delete("yara");
+
+        System.out.println(b.search("alile"));
+        System.out.println(b.search("salma"));
+        System.out.println(b.search("nabila"));
+        System.out.println(b.search("allo"));
+        System.out.println(b.search("jana"));
+        System.out.println(b.search("yara"));
+        System.out.println(b.search("farida"));
+        System.out.println(b.search("ahmed"));
+        System.out.println(b.search("alia"));
 
 
-        //System.out.println(x.name);
+        //issue with implementation doesnt handle internal nodes the way i would expect them to? different or wrong (?)
+
+        b.insert("yara", p);
+        b.insert("adam", p);
+        b.insert("mai", p);
+
+
+        b.printBPlusTree();
 
 
     }
