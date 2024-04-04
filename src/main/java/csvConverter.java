@@ -7,9 +7,23 @@ import java.util.*;
 public class csvConverter {
 
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
-        try (FileWriter writer = new FileWriter("metadata.csv", true)) {
-            // Write header to CSV file
-            if  (Files.size(Path.of("metadata.csv")) == 0) {
+        try (FileReader fileReader = new FileReader("metadata.csv");
+             BufferedReader bufferedReader = new BufferedReader(fileReader);
+             FileWriter writer = new FileWriter("metadata.csv", true)) {
+
+            // Check if the table name already exists in metadata
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                String[] parts = line.split(",");
+                String existingTableName = parts[0].trim();
+                if (existingTableName.equals(tableName)) {
+                    System.out.println("Table name '" + tableName + "' already exists in the CSV file. Cannot convert.");
+                    return;
+                }
+            }
+
+            // Write header to CSV file if it's empty
+            if (Files.size(Path.of("metadata.csv")) == 0) {
                 writer.write("Table Name, Column Name, Column Type, ClusteringKey, IndexName, IndexType\n");
             }
 
@@ -26,10 +40,9 @@ public class csvConverter {
 
                 // Setting cluster key
                 String isCluster = "False";
-                if(columnName.equals(strClusteringKeyColumn)){
-                    isCluster= "True";
+                if (columnName.equals(strClusteringKeyColumn)) {
+                    isCluster = "True";
                 }
-
 
                 // Write hashtable entry to CSV file
                 writer.append(tableName).append(",") // Table Name
@@ -46,7 +59,6 @@ public class csvConverter {
             e.printStackTrace();
         }
     }
-
 
 
 
