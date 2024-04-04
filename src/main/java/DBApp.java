@@ -37,7 +37,7 @@ public class DBApp {
 
 	try {
 		//create the metaData.csv file using the hashtable input and store it in the metaData package
-		csvConverter.convert(htblColNameType, strTableName);
+		csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
 		//initialize a new table object
 		Table newTable = new Table(strTableName);
 	}
@@ -50,7 +50,11 @@ public class DBApp {
 	public void createIndex(String   strTableName,
 							String   strColName,
 							String   strIndexName) throws DBAppException{
-		
+
+		// Adjusting metadata file with new index
+		boolean found = csvConverter.adjustIndexCSV(strTableName, strColName, strIndexName);
+		if(!found) return;
+
 		throw new DBAppException("not implemented yet");
 	}
 
