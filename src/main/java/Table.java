@@ -8,17 +8,17 @@ public class Table implements Serializable {
     public String name;
 
 
-
     public Table(String name){
         createDirectory(name);
         this.name = name;
         tablePages = new Vector<>();
+        serialize();
 
     }
 
     public static void createDirectory(String folderPath) {
         // Create a File object representing the directory
-        File directory = new File(folderPath);
+        File directory = new File("src/main/resources/tables/" + folderPath);
 
         // Create the directory if it doesn't exist
         if (!directory.exists()) {
@@ -68,10 +68,10 @@ public class Table implements Serializable {
 
     public void serialize() {
         String tableName = name;
-        try (FileOutputStream fos = new FileOutputStream(tableName + "/" + name + ".class" );
+        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class" );
              ObjectOutputStream out = new ObjectOutputStream(fos)) {
                 out.writeObject(this);
-                System.out.println("saved table successfully at " + tableName + "/" + name + ".class" );
+                System.out.println("saved table successfully at  " + "src/main/resources/tables/" + tableName + "/" + name + ".class" );
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -79,10 +79,10 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream(filename);
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename);
              ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
-            System.out.println("Table deserialized from " + filename);
+            System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -108,14 +108,14 @@ public class Table implements Serializable {
 //        }
 //    }
 
-    public static void main(String[] args){
-        Table t1 = new Table("Student");
-        t1.serialize();
-        Table temp = deserialize("Student/Student.class");
-        System.out.println(temp.tablePages);
-        System.out.println(temp.name);
-
-    }
+//    public static void main(String[] args){
+//        Table t1 = new Table("Student");
+//        t1.serialize();
+//        Table temp = deserialize("Student/Student.class");
+//        System.out.println(temp.tablePages);
+//        System.out.println(temp.name);
+//
+//    }
 
 
 }
