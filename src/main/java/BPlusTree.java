@@ -1,8 +1,9 @@
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class BPlusTree {
+public class BPlusTree implements Serializable {
     int m;
     InternalNode root;
     LeafNode firstLeaf;
@@ -42,6 +43,28 @@ public class BPlusTree {
         }
         return sb.toString();
     }
+
+    public void serialize(String tableName, String indexName) {
+        try (FileOutputStream fileOut = new FileOutputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
+             ObjectOutputStream objectOut = new ObjectOutputStream(fileOut)) {
+            objectOut.writeObject(this);
+            System.out.println("B+ tree serialized successfully.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+//    public static BPlusTree deserialize(String filePath) {
+//        BPlusTree bTree = null;
+//        try (FileInputStream fileIn = new FileInputStream(filePath);
+//             ObjectInputStream objectIn = new ObjectInputStream(fileIn)) {
+//            bTree = (BPlusTree) objectIn.readObject();
+//            System.out.println("B+ tree deserialized successfully.");
+//        } catch (IOException | ClassNotFoundException e) {
+//            e.printStackTrace();
+//        }
+//        return bTree;
+//    }
 
 
     /*~~~~~~~~~~~~~~~~ HELPER FUNCTIONS ~~~~~~~~~~~~~~~~*/
@@ -1229,6 +1252,7 @@ public class BPlusTree {
 
 
         b.printBPlusTree();
+
 
 
     }

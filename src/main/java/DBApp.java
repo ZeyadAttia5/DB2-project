@@ -47,15 +47,14 @@ public class DBApp {
 }
 
 	// following method creates a B+tree index 
-	public void createIndex(String   strTableName,
-							String   strColName,
-							String   strIndexName) throws DBAppException{
+	public void createIndex(String   strTableName, String   strColName, String   strIndexName) throws DBAppException{
 
 		// Adjusting metadata file with new index
 		boolean found = csvConverter.adjustIndexCSV(strTableName, strColName, strIndexName);
 		if(!found) return;
+		BPlusTree bTree = new BPlusTree(10);
+		bTree.serialize(strTableName, strIndexName );
 
-		throw new DBAppException("not implemented yet");
 	}
 
 
@@ -110,6 +109,7 @@ public class DBApp {
 			htblColNameType.put("gpa", "java.lang.double");
 			dbApp.createTable( strTableName, "id", htblColNameType );
 
+			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 
 
 			String strTableName2 = "Girl";
@@ -119,7 +119,7 @@ public class DBApp {
 			htblColNameType2.put("name", "java.lang.String");
 			htblColNameType2.put("gpa", "java.lang.Integer");
 			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
-//			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
+
 
 //			Hashtable htblColNameValue = new Hashtable( );
 //			htblColNameValue.put("id", new Integer( 2343432 ));

@@ -87,7 +87,7 @@ public class csvConverter {
         try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {
             String line;
 
-            while ((line = reader.readLine()) != null ) {
+            while ((line = reader.readLine()) != null  ) {
                 String[] fields = line.split(",");
                 if (fields[0].equals(strTableName) && fields[1].equals(strColName) && !existingIndex.contains(strIndexName)) {
                     found = true;
