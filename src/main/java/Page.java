@@ -129,7 +129,7 @@ public class Page
 
     public int readConfigFile(){
         Properties properties = new Properties();
-        String fileName = "src/resources/DBApp.config";
+        String fileName = "src/main/resources/DBApp.config";
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(fileName);
