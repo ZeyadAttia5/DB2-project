@@ -445,19 +445,19 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
     }
 
     public static void main(String[] args) {
-        BPTree<String> treename= new BPTree<>(2);
+
         Page p1 = new Page("1", 2,"name");
         Page p2 = new Page("2", 2,"name");
         Page p3 = new Page("3", 2,"name");
         Page p4 = new Page("4", 2,"name");
         Page p5 = new Page("5", 2,"name");
+
+        BPTree<String> treename= new BPTree<>(2);
         treename.insert("salma", new Ref(p1, 1));
         treename.insert("salma", new Ref(p2, 1));
         treename.insert("salma", new Ref(p3, 1));
         treename.insert("salma", new Ref(p1, 3));
         treename.insert("salma", new Ref(p1, 3));
-
-        // deletion would involve searching and then anding and then deleting
 
         BPTree<Integer> treeage =new BPTree<>(2);
         treeage.insert(20, new Ref(p1, 1));
@@ -465,7 +465,6 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         treeage.insert(20, new Ref(p2, 3));
         treeage.insert(20, new Ref(p2, 3));
         treeage.insert(20, new Ref(p2, 3));
-
 
 //
 //        for(int i=0; i < a.size();i++){
@@ -485,8 +484,6 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         for(int i=0; i < x.size();i++){
             System.out.println(x.get(i).getPage().name);
         }
-
-
 
 
 //        System.out.println(treeage);
