@@ -37,6 +37,8 @@ public class DBApp {
 
 		//initialize a new table object
 		Table newTable = new Table(strTableName);
+		// should do something here to prevent calling createTable twice onthe same parameters from overwriting a serialized object
+		newTable.serialize();
 		//create the metaData.csv file using the hashtable input and store it in the metaData package
 		csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
 
@@ -49,11 +51,32 @@ public class DBApp {
 	// following method creates a B+tree index 
 	public void createIndex(String   strTableName, String   strColName, String   strIndexName) throws DBAppException{
 
-		// Adjusting metadata file with new index
-		boolean found = csvConverter.adjustIndexCSV(strTableName, strColName, strIndexName);
-		if(!found) return;
-		BPlusTree bTree = new BPlusTree(10);
-		bTree.serialize(strTableName, strIndexName );
+		// adjusting metadata file with new index
+		boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
+		if(!found) {
+			DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName );
+			throw e;
+		}
+
+		// retrieving data type for desired column
+		String tmp = csvConverter.getDataType(strTableName, strColName);
+
+		// initialising b+tree
+		BPTree tree = null;
+		if (tmp.equalsIgnoreCase("java.lang.Integer")) {
+			tree = new BPTree<Integer>(10);
+
+		} else if (tmp.equalsIgnoreCase("java.lang.String")) {
+			tree = new BPTree<String>(10);
+
+		} else if (tmp.equalsIgnoreCase("java.lang.Double")) {
+			tree = new BPTree<Double>(10);
+		} else {
+			DBAppException e = new DBAppException("Not found");
+			throw e;
+		}
+
+		tree.serialize(strTableName, strIndexName );
 
 	}
 
@@ -109,8 +132,6 @@ public class DBApp {
 			htblColNameType.put("gpa", "java.lang.double");
 			dbApp.createTable( strTableName, "id", htblColNameType );
 
-			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
-
 
 			String strTableName2 = "Girl";
 
@@ -119,6 +140,11 @@ public class DBApp {
 			htblColNameType2.put("name", "java.lang.String");
 			htblColNameType2.put("gpa", "java.lang.Integer");
 			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
+
+			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
+
+
+			BPTree b = BPTree.deserialize("Student", "gpa");
 
 
 //			Hashtable htblColNameValue = new Hashtable( );

@@ -60,10 +60,40 @@ public class csvConverter {
         }
     }
 
+    public static String getDataType(String strTableName, String strColName){
+
+        try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {
+            String line;
+            while ((line = reader.readLine()) != null ) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(strTableName) && fields[1].equals(strColName))
+                    return fields[2];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+
+    }
+
+    public static String getIndexName(String tableName, String colName){
+        try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {
+            String line;
+            while ((line = reader.readLine()) != null ) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(tableName) && fields[1].equals(colName))
+                    return fields[4];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
 
     // Adjusting the metadata file
-    public static boolean adjustIndexCSV(String strTableName, String strColName, String strIndexName) {
+    public static boolean addIndexToCSV(String strTableName, String strColName, String strIndexName) {
 
         // Getting names of all indices for table of interest
         HashSet<String> existingIndex = new HashSet<>();
@@ -108,7 +138,7 @@ public class csvConverter {
                 writer.newLine();
             }
 
-            System.out.println(found ? "Index added." : "Index cannot be added.");
+            System.out.println(found ? "Index added." : "This index name already exists in this table.");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -124,8 +154,8 @@ public class csvConverter {
 //        convert(htblColNameType,"test", "id");
 
         // testing with same table name and same index name
-        adjustIndexCSV("Girl","gpa","GpaIndex");// should work
-        adjustIndexCSV("Girl","id","IdIndex");// should not work bec same name
+        addIndexToCSV("Girl","gpa","GpaIndex");// should work
+        addIndexToCSV("Girl","id","IdIndex");// should not work bec same name
 
 
     }

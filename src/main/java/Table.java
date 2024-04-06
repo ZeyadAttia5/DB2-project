@@ -12,8 +12,6 @@ public class Table implements Serializable {
         createDirectory(name);
         this.name = name;
         tablePages = new Vector<>();
-        serialize();
-
     }
 
     public static void createDirectory(String folderPath) {
