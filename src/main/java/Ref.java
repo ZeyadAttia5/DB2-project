@@ -8,18 +8,18 @@ public class Ref implements Serializable {
      */
     private static final long serialVersionUID = 1L;
     private int indexInPage;
-    private Page page;
+    private String pageName;
 
-    public Ref(Page page, int indexInPage) {
-        this.page = page;
+    public Ref(String pageName, int indexInPage) {
+        this.pageName = pageName;
         this.indexInPage = indexInPage;
     }
 
     /**
      * @return the page at which the record is saved on the hard disk
      */
-    public Page getPage() {
-        return page;
+    public String getPage() {
+        return pageName;
     }
 
     /**
@@ -29,17 +29,19 @@ public class Ref implements Serializable {
         return indexInPage;
     }
 
+    public String getFileName() {
+        return this.pageName;
 
-    public Boolean isEqual(Ref ref) {
-        if (this.page == (ref.page) && this.indexInPage == ref.indexInPage)
-            return true;
-
-        return false;
     }
 
-//    public String toString() {
-//        String s = "";
-//        s += "PageName:" + this.getFileName() + "  RowIndex:" + this.getIndexInPage();
-//        return s;
-//    }
+    public boolean isEqual(Ref ref) {
+        return this.pageName.equals(ref.pageName) && this.indexInPage == ref.indexInPage;
+    }
+
+
+    public String toString() {
+        String s = "";
+        s += "PageName:" + this.getFileName() + "  RowIndex:" + this.getIndexInPage();
+        return s;
+    }
 }

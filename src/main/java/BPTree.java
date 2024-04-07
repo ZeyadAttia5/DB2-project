@@ -186,7 +186,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 //        return root.search(key);
 //    }
 
-        public ArrayList<Ref>  search(T key) {
+    public ArrayList<Ref>  search(T key) {
         return searchDuplicates(key);
     }
 
@@ -321,9 +321,9 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 //			done = this.deleteL(key, ref);
 //			done = done2 || done;
             done = this.deleteHelper(key, ref);
-            System.out.println("I will delete here now and it should succeed");
         }
-
+        if(done )
+            System.out.println("I will delete here now and it should succeed");
         return done;
 
     }
@@ -389,8 +389,16 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         return s;
     }
     public static ArrayList<Ref> intersection(ArrayList<Ref> list1, ArrayList<Ref> list2) {
+
+        if(list1 == null)
+            return list2;
+        if(list2== null)
+            return list1;
+        if(list1 == null && list2 == null)
+            return new ArrayList<>();
+
         // Create a HashSet to store unique elements of list1
-        Set<Ref> set = new HashSet<>(list1);
+        HashSet<Ref> set = new HashSet<Ref>(list1);
 
         // Create a result ArrayList to store the intersection
         ArrayList<Ref> result = new ArrayList<>();
@@ -446,51 +454,64 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 
     public static void main(String[] args) {
 
-        Page p1 = new Page("1", 2,"name");
-        Page p2 = new Page("2", 2,"name");
-        Page p3 = new Page("3", 2,"name");
-        Page p4 = new Page("4", 2,"name");
-        Page p5 = new Page("5", 2,"name");
+
 
         BPTree<String> treename= new BPTree<>(2);
-        treename.insert("salma", new Ref(p1, 1));
-        treename.insert("salma", new Ref(p2, 1));
-        treename.insert("salma", new Ref(p3, 1));
-        treename.insert("salma", new Ref(p1, 3));
-        treename.insert("salma", new Ref(p1, 3));
+        treename.insert("salma", new Ref("p1", 1));// here
+        treename.insert("salma", new Ref("p2", 1)); // here
+        treename.insert("salma", new Ref("p3", 1));
+        treename.insert("salma", new Ref("p1", 3));
+        treename.insert("salma", new Ref("p1", 3));
 
         BPTree<Integer> treeage =new BPTree<>(2);
-        treeage.insert(20, new Ref(p1, 1));
-        treeage.insert(20, new Ref(p2, 1));
-        treeage.insert(20, new Ref(p2, 3));
-        treeage.insert(20, new Ref(p2, 3));
-        treeage.insert(20, new Ref(p2, 3));
+        treeage.insert(20, new Ref("p1", 1)); // here
+        treeage.insert(20, new Ref("p2", 1)); //here
+        treeage.insert(20, new Ref("p2", 3));
+        treeage.insert(20, new Ref("p2", 3));
+        treeage.insert(20, new Ref("p2", 3));
 
-//
-//        for(int i=0; i < a.size();i++){
-//                System.out.println(a.get(i).getPage().name);
-//        }
-//
-//        for(int i=0; i < b.size();i++){
-//            System.out.println(b.get(i).getPage().name);
-//        }
 
-        treename.delete("salma",new Ref(p1, 1) );
+//        ArrayList<>treename.search("farida");
+
+        treename.delete("salma",new Ref("p1", 1) );
         ArrayList<Ref> a = treename.search("salma");
+        System.out.println(a.size());
         ArrayList<Ref> b= treeage.search(20);
+        System.out.println(b.size());
+        for(int i=0; i< b.size();i++){
+            System.out.println(b.get(i));
+        }
+
         ArrayList<Ref> x = intersection(a,b);
         System.out.println(x.size());
-
-        for(int i=0; i < x.size();i++){
-            System.out.println(x.get(i).getPage().name);
-        }
 
 
 //        System.out.println(treeage);
 //        System.out.println(treename);
 //        treename.visualizeTree();
 
+//        BPTree<String> newTree = new BPTree<>(2);
+//        newTree.insert("salma", new Ref("p1", 1));
+//        newTree.insert("ahmed", new Ref("p1", 2));
+//        newTree.insert("alia", new Ref("p1", 3));
+//        newTree.insert("farida", new Ref("p1", 4));
+//        newTree.insert("nabila",new Ref("p1", 5));
+//        newTree.insert("jana", new Ref("p1", 11));
+//        newTree.insert("zeyad", new Ref("p1", 6));
+//        newTree.insert("yara",new Ref("p1", 7));
+//        newTree.insert("youssef", new Ref("p1", 8));
+//        newTree.insert("yasmine", new Ref("p1", 9));
+//        newTree.insert("zeina", new Ref("p1", 10));
+//        System.out.println(newTree);
+//        System.out.println(newTree.delete("yasmine", new Ref("p1", 9) ));
+//        System.out.println(newTree.delete("yara", new Ref("p1", 7) ));
+//        System.out.println(newTree.delete("salma", new Ref("p1", 1)));
+//        newTree.insert("farida", new Ref("p1", 12));
+//        newTree.insert("farida", new Ref("p1", 13));
+//        newTree.delete("farida",  new Ref("p1", 13));
+//        newTree.delete("farida",  new Ref("p1", 4));
 
+//        System.out.println(newTree);
 
 
 
