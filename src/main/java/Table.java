@@ -19,18 +19,18 @@ public class Table implements Serializable {
 
     public static void createDirectory(String folderPath) {
         // Create a File object representing the directory
-        File directory = new File("src/main/resources/tables/" + folderPath);
+        File directory = new File(folderPath);
 
         // Create the directory if it doesn't exist
         if (!directory.exists()) {
             boolean created = directory.mkdirs();
             if (created) {
-                System.out.println("Directory created successfully: " + "src/main/resources/tables/" + folderPath);
+                System.out.println("Directory created successfully: " + folderPath);
             } else {
-                System.out.println("Failed to create directory: " + "src/main/resources/tables/" + folderPath);
+                System.out.println("Failed to create directory: " + folderPath);
             }
         } else {
-            System.out.println("Directory already exists: " + "src/main/resources/tables/" + folderPath);
+            System.out.println("Directory already exists: " + folderPath);
         }
     }
 
@@ -71,10 +71,10 @@ public class Table implements Serializable {
 
     public void serialize() {
         String tableName = name;
-        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class" );
+        try (FileOutputStream fos = new FileOutputStream(tableName + "/" + name + ".class" );
              ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
-            System.out.println("saved table successfully at " +"src/main/resources/tables/" +  tableName + "/" + name + ".class" );
+            System.out.println("saved table successfully at " + tableName + "/" + name + ".class" );
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -82,10 +82,10 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename);
+        try (FileInputStream fis = new FileInputStream(filename);
              ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
-            System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename);
+            System.out.println("Table deserialized from " + filename);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

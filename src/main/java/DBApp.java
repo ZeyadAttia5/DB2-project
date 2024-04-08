@@ -122,30 +122,30 @@ public class DBApp {
 
 	public static void main( String[] args ){
 	
-	try{
-			String strTableName = "Student";
-			DBApp	dbApp = new DBApp( );
-			
-			Hashtable htblColNameType = new Hashtable( );
-			htblColNameType.put("id", "java.lang.Integer");
-			htblColNameType.put("name", "java.lang.String");
-			htblColNameType.put("gpa", "java.lang.double");
-			dbApp.createTable( strTableName, "id", htblColNameType );
-
-
-			String strTableName2 = "Girl";
-
-			Hashtable htblColNameType2 = new Hashtable<>();
-			htblColNameType2.put("id", "java.lang.Integer");
-			htblColNameType2.put("name", "java.lang.String");
-			htblColNameType2.put("gpa", "java.lang.Integer");
-			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
-
-			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
-
-
-			BPTree b = BPTree.deserialize("Student", "gpa");
-
+//	try{
+//			String strTableName = "Student";
+//			DBApp	dbApp = new DBApp( );
+//
+//			Hashtable htblColNameType = new Hashtable( );
+//			htblColNameType.put("id", "java.lang.Integer");
+//			htblColNameType.put("name", "java.lang.String");
+//			htblColNameType.put("gpa", "java.lang.double");
+//			dbApp.createTable( strTableName, "id", htblColNameType );
+//
+//
+//			String strTableName2 = "Girl";
+//
+//			Hashtable htblColNameType2 = new Hashtable<>();
+//			htblColNameType2.put("id", "java.lang.Integer");
+//			htblColNameType2.put("name", "java.lang.String");
+//			htblColNameType2.put("gpa", "java.lang.Integer");
+//			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
+//
+//			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
+//
+//
+//			BPTree b = BPTree.deserialize("Student", "gpa");
+//
 
 //			Hashtable htblColNameValue = new Hashtable( );
 //			htblColNameValue.put("id", new Integer( 2343432 ));
@@ -194,10 +194,13 @@ public class DBApp {
 //			strarrOperators[0] = "OR";
 //			// select * from Student where name = "John Noor" or gpa = 1.5;
 //			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
-		}
-		catch(Exception exp){
-			exp.printStackTrace( );
-		}
+//		}
+//		catch(Exception exp){
+//			exp.printStackTrace( );
+//		}
+		Object x = "aa";
+		Object y = "bb";
+		System.out.println(((Comparable) x).compareTo((Comparable) y));
 	}
 
 }
