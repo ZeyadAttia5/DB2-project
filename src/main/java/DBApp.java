@@ -136,23 +136,14 @@ public class DBApp {
         if (currTable == null) {
             throw new DBAppException("Table not found: " + strTableName);
         }
-
-        // Iterate through each column in the metadata
-        for (String[] col : metadata) {
-            String columnName = col[1]; // Column Name
-            String columnType = col[2]; // Column Type
-
-            // Check if the column needs to be updated exists
-            if (htblColNameValue.containsKey(columnName)) {
-                try {
-                    currTable.updateTable(strClusteringKeyValue, htblColNameValue);
-                } catch (IOException e) {
-                    System.out.println("Table not found\n" + e.getMessage());
-                } catch (ClassNotFoundException e) {
-                    System.out.println("Table not found\n" + e.getMessage());
-                }
-            }
+        try {
+            currTable.updateTable(strClusteringKeyValue, htblColNameValue);
+        } catch (IOException e) {
+            System.out.println("Table not found\n" + e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.out.println("Table not found\n" + e.getMessage());
         }
+
         //save changes
         currTable.serialize();
     }
