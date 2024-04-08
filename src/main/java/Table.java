@@ -167,28 +167,6 @@ public class Table implements Serializable {
                 for (int i = tablePages.size() - 1; i >= 0; i--) {
                     try {
                         Page page = Page.deserialize(this.tablePages.get(i)+".class");
-                        Object maximum =page.max;
-                        if (((Comparable) maximum).compareTo((Comparable) value) > 0) {
-                            ArrayList<Tuple> tempp = new ArrayList<>();
-                            pageResults=new ArrayList<>();
-                            tempp = page.binarysearchPage(columnName, value, operator);
-                            page.serialize();
-                            for(int i= tempp.size()-1;i>=0;--){
-                                pageResults.add(tempp.remove(i));
-                            }
-                            results.addAll(pageResults);
-                        }else{
-                            return results;
-                        }
-                    } catch (IOException | ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            if(operator==">"||operator==">=") {
-                for (int i = tablePages.size() - 1; i >= 0; i--) {
-                    try {
-                        Page page = Page.deserialize(this.tablePages.get(i)+".class");
                         int maximum =page.max;
                         if (((Comparable) maximum).compareTo((Comparable) value) > 0) {
                             ArrayList<Tuple> tempp = new ArrayList<>();
@@ -196,7 +174,7 @@ public class Table implements Serializable {
                             page.serialize();
                             pageResults.addAll(temp);
                         }else{
-                            for(int i= pageResults.size()-1;i>=0;--){
+                            for(int j= pageResults.size()-1;j>=0;j--){
                                 results.add(pageResults.get(i));
                             }
                             return results;

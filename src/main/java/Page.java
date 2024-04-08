@@ -3,6 +3,7 @@ import java.io.FileReader;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.ArrayList;
 
 public class Page
 {
