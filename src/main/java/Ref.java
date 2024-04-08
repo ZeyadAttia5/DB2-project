@@ -29,10 +29,6 @@ public class Ref implements Serializable {
         return indexInPage;
     }
 
-    public String getFileName() {
-        return this.pageName;
-
-    }
 
     public boolean isEqual(Ref ref) {
         return this.pageName.equals(ref.pageName) && this.indexInPage == ref.indexInPage;
@@ -41,7 +37,7 @@ public class Ref implements Serializable {
 
     public String toString() {
         String s = "";
-        s += "PageName:" + this.getFileName() + "  RowIndex:" + this.getIndexInPage();
+        s += "PageName:" + this.getPage() + "  RowIndex:" + this.getIndexInPage();
         return s;
     }
 }

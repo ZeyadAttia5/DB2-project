@@ -6,6 +6,8 @@ import java.util.*;
 
 public class csvConverter {
 
+    private static final String METADATA_FILE = "metadata.csv";
+
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
         try (FileReader fileReader = new FileReader("metadata.csv");
              BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -88,6 +90,21 @@ public class csvConverter {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String getClusteringKey(String tableName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 4 && parts[0].equalsIgnoreCase(tableName) && parts[3].equalsIgnoreCase("True")) {
+                    return parts[1]; // Return the clustering key column name
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null; // No clustering key found for the table
     }
 
 
