@@ -177,7 +177,7 @@ public class Page
         return result;
     }
 
-    public static void main(String[] args) throws DBAppException {
+//    public static void main(String[] args) throws DBAppException {
 //        Page page = new Page("Bike",2, "id");
 //        Hashtable htblColNameValue = new Hashtable( );
 //        htblColNameValue.put("id", new Integer( 1 ));
@@ -203,5 +203,5 @@ public class Page
 //
 //        page.insert(t3);
 //        System.out.println(page);
-    }
+//    }
 }

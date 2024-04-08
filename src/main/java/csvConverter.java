@@ -92,6 +92,7 @@ public class csvConverter {
         return null;
     }
 
+    //returns a string with the ClusteringKey Column Name
     public static String getClusteringKey(String tableName) {
         try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
@@ -163,6 +164,23 @@ public class csvConverter {
         return found;
     }
 
+    //  returns a List<String[]> of the table's metadata
+    public static List<String[]> getTableMetadata(String tableName) {
+        List<String[]> tableMetadata = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 6 && parts[0].equalsIgnoreCase(tableName)) {
+                    tableMetadata.add(parts);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return tableMetadata;
+    }
+
     public static void main(String[] args){
 //        Hashtable htblColNameType = new Hashtable( );
 //        htblColNameType.put("id", "java.lang.Integer");
@@ -171,8 +189,8 @@ public class csvConverter {
 //        convert(htblColNameType,"test", "id");
 
         // testing with same table name and same index name
-        addIndexToCSV("Girl","gpa","GpaIndex");// should work
-        addIndexToCSV("Girl","id","IdIndex");// should not work bec same name
+//        addIndexToCSV("Girl","gpa","GpaIndex");// should work
+//        addIndexToCSV("Girl","id","IdIndex");// should not work bec same name
 
 
     }
