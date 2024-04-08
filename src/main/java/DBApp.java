@@ -179,7 +179,7 @@ public class DBApp {
 
             dbApp.updateTable("Student","0",ht);
 
-            System.out.println(Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+            System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 //
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));

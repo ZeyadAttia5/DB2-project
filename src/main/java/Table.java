@@ -1,6 +1,7 @@
 import java.io.*;
-import java.util.*;
-
+import java.util.Arrays;
+import java.util.Hashtable;
+import java.util.Vector;
 
 
 public class Table implements Serializable {
@@ -9,8 +10,7 @@ public class Table implements Serializable {
     public String name;
 
 
-
-    public Table(String name){
+    public Table(String name) {
         createDirectory(name);
         this.name = name;
         tablePages = new Vector<>();
@@ -34,6 +34,36 @@ public class Table implements Serializable {
         }
     }
 
+    public static Table deserialize(String filename) {
+        Table table = null;
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class");
+             ObjectInputStream in = new ObjectInputStream(fis)) {
+            table = (Table) in.readObject();
+            System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename + "/" + filename + ".class");
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return table;
+    }
+
+    // Method to print all serialized pages for the specified table name
+    public static void printTable(String tableName) throws IOException, ClassNotFoundException {
+        File directory = new File(tableName); // Use provided table name as directory name
+        FilenameFilter filter = (dir, name) -> name.endsWith(".class");
+        File[] serializedPages = directory.listFiles(filter);
+        System.out.println(Arrays.toString(serializedPages));
+
+        if (serializedPages != null && serializedPages.length > 0) {
+            System.out.println("pages for table " + tableName + ":");
+            for (File pageFile : serializedPages) {
+                System.out.println("File name: " + pageFile.getName());
+                Page page = Page.deserialize(tableName + "/" + pageFile.getName());
+                System.out.println(page);
+            }
+        } else {
+            System.out.println("No serialized pages found for table " + tableName);
+        }
+    }
 
     // Method to get page count for a table
     public int getPageCount() {
@@ -41,9 +71,8 @@ public class Table implements Serializable {
     }
 
     public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
-        if (this.tablePages.size()==0)
-        {
-            Page newPage = new Page(this.name,this.tablePages.size(),csvConverter.getClusteringKey(this.name));
+        if (this.tablePages.size() == 0) {
+            Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
             newPage.insert(tuple);
             tablePages.add(newPage.name);
             this.serialize();
@@ -52,17 +81,14 @@ public class Table implements Serializable {
         String clusteringKey = csvConverter.getClusteringKey(this.name);
         Object targetKey = tuple.values.get(clusteringKey);
         Page currPage = null;
-        int result=1;
-        for(int i = 0; result > 0; i++)
-        {
-            currPage = Page.deserialize(this.name+"_"+i);
+        int result = 1;
+        for (int i = 0; result > 0; i++) {
+            currPage = Page.deserialize(this.name + "_" + i);
 
-            result =  ((Comparable) targetKey).compareTo((Comparable) currPage.max);
+            result = ((Comparable) targetKey).compareTo(currPage.max);
         }
         currPage.insert(tuple);
         this.serialize();
-
-
 
 
     }
@@ -86,36 +112,38 @@ public class Table implements Serializable {
         }
     }
 
-    private Page findPage(Object clusteringKeyValue ) throws IOException, ClassNotFoundException {
-        int result =1 ;
+    private Page findPage(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
+        int result = 1;
         Page currPage = null;
 
-        String clusteringKeyType = csvConverter.getClusteringKey(this.name);
-        if(clusteringKeyType.equalsIgnoreCase("java.lang.double")){
-            for (int i = 0; i< tablePages.size() && result!=-1 && result!=0; i++) {
-                currPage = Page.deserialize(this.name + "_" + i );
-                result = Double.compare(Double.parseDouble((String)clusteringKeyValue), (Double)currPage.max);
+
+        String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
+//        System.out.println("clusteringKeyColName: "+ clusteringKeyColName);
+        String clusteringKeyType = csvConverter.getDataType(this.name, clusteringKeyColName);
+//        System.out.println("clusteringKeyType: "+ clusteringKeyType);
+        if (clusteringKeyType.equalsIgnoreCase("java.lang.double")) {
+
+            for (int i = 0; i < tablePages.size() && result != -1 && result != 0; i++) {
+
+                currPage = Page.deserialize(this.name + "_" + i);
+                result = Double.compare(Double.parseDouble((String) clusteringKeyValue), (Double) currPage.max);
+            }
+        } else if (clusteringKeyType.equalsIgnoreCase("java.lang.string")) {
+            //this means that we have a string at hand
+            for (int i = 0; i < tablePages.size() - 1 && result != -1 && result != 0; i++) {
+                currPage = Page.deserialize(this.name + "_" + i);
+                result = ((String) clusteringKeyValue).compareTo((String) currPage.max);
+            }
+        } else {
+//            System.out.println("Entered Integer :D");
+            for (int i = 0; i < tablePages.size() && result != -1 && result != 0; i++) {
+                currPage = Page.deserialize(this.name + "_" + i);
+                result = Integer.compare(Integer.parseInt((String) clusteringKeyValue), (Integer) currPage.max);
             }
         }
-        else
-            if(clusteringKeyType.equalsIgnoreCase("java.lang.string")){
-                //this means that we have a string at hand
-                for (int i = 0; i< tablePages.size()-1 && result!=-1 && result!=0; i++) {
-                    currPage = Page.deserialize(this.name + "_" + i );
-                    result = ((String) clusteringKeyValue).compareTo((String)currPage.max);
-                }
-            }
-            else {
-                for (int i = 0; i< tablePages.size() && result!=-1 && result!=0; i++) {
-                    currPage = Page.deserialize(this.name + "_" + i );
-                    result = Integer.compare(Integer.parseInt((String)clusteringKeyValue), (Integer)currPage.max);
-                }
-            }
         return currPage;
 
     }
-
-
 
     private boolean updateRowInPage(Page currPage, Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
         String clusteringKeyCol = csvConverter.getClusteringKey(this.name);
@@ -124,7 +152,7 @@ public class Table implements Serializable {
         for (Tuple tuple : currPage.tuples) {
             // Check if the tuple's clustering key value matches the specified value
             Object tupleClusteringKeyValue = tuple.getValues().get(clusteringKeyCol);
-            if (tupleClusteringKeyValue.equals(clusteringKeyValue)) {
+            if ((tupleClusteringKeyValue.toString()).equals(clusteringKeyValue.toString())) {
                 // Update the columns in the tuple with their new values
                 for (String colName : ColNameType.keySet()) {
                     if (tuple.getValues().containsKey(colName)) {
@@ -152,57 +180,25 @@ public class Table implements Serializable {
         return false;  // Row didn't update successfully
     }
 
-
     public void serialize() {
         String tableName = name;
-        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class" );
+        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class");
              ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
-            System.out.println("saved table successfully at " + "src/main/resources/tables/" + tableName + "/" + name + ".class" );
+            System.out.println("saved table successfully at " + "src/main/resources/tables/" + tableName + "/" + name + ".class");
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public static Table deserialize(String filename) {
-        Table table = null;
-        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/"+filename+"/"+filename+".class");
-             ObjectInputStream in = new ObjectInputStream(fis)) {
-            table = (Table) in.readObject();
-            System.out.println("Table deserialized from " + "src/main/resources/tables/"+filename+"/"+filename+".class");
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        return table;
-    }
-
-    // Method to print all serialized pages for the specified table name
-    public static void printTable(String tableName) throws IOException, ClassNotFoundException {
-        File directory = new File(tableName); // Use provided table name as directory name
-        FilenameFilter filter = (dir, name) -> name.endsWith(".class");
-        File[] serializedPages = directory.listFiles(filter);
-        System.out.println(Arrays.toString(serializedPages));
-
-        if (serializedPages != null && serializedPages.length > 0) {
-            System.out.println("pages for table " + tableName + ":");
-            for (File pageFile : serializedPages) {
-                System.out.println("File name: " + pageFile.getName());
-                Page page = Page.deserialize(tableName + "/" + pageFile.getName());
-                System.out.println(page);
-            }
-        } else {
-            System.out.println("No serialized pages found for table " + tableName);
-        }
-    }
-
-    public static void main(String[] args){
-        Table t1 = new Table("Student");
-        t1.serialize();
-        Table temp = deserialize("Student/Student.class");
-        System.out.println(temp.tablePages);
-        System.out.println(temp.name);
-
-    }
+//    public static void main(String[] args){
+//        Table t1 = new Table("Student");
+//        t1.serialize();
+//        Table temp = deserialize("Student/Student");
+//        System.out.println(temp.tablePages);
+//        System.out.println(temp.name);
+//
+//    }
 
 
 }
