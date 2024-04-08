@@ -39,7 +39,7 @@ public class Page implements Serializable
         return result;
     }
 
-    public int insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+    public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
         String[] arr = this.name.split("_");
         String clust = csvConverter.getClusteringKey(arr[0]);
@@ -50,7 +50,7 @@ public class Page implements Serializable
             this.max = tuple.values.get(clust);
             this.min = this.max;
             this.serialize();
-            return this.tuples.size()-1;
+            return new Ref(this.name, this.tuples.size()-1);
         }
         String name = (this.name.split("_"))[0];
         Vector<String[]> metadata = readCSV(name);
@@ -76,7 +76,7 @@ public class Page implements Serializable
                 if (midValue.equals(value)) {
                     low = mid; // Value already exists
                     System.out.println("Can not insert duplicate tuple");
-                    return -1;
+                    return null;
                 } else if (midValue.compareTo((String) value) < 0) {
                     low = mid + 1;
                 } else {
@@ -89,7 +89,7 @@ public class Page implements Serializable
                 if (midValue == (Double) value) {
                     low = mid; // Value already exists
                     System.out.println("Can not insert duplicate tuple");
-                    return -1;
+                    return null;
                 } else if (midValue < (Double) value) {
                     low = mid + 1;
                 } else {
@@ -103,7 +103,7 @@ public class Page implements Serializable
                 if (midValue == (Integer) value) {
                     low = mid; // Value already exists
                     System.out.println("Can not insert duplicate tuple");
-                    return -1;
+                    return null;
                 } else if (midValue < (Integer) value) {
                     low = mid + 1;
                 } else {
@@ -119,7 +119,7 @@ public class Page implements Serializable
                 this.max = tuple.values.get(clust);
             }
             this.serialize();
-            return this.tuples.size()-1;
+            return new Ref(this.name, this.tuples.size()-1);
         }
 
         else if(this.tuples.get(low)!=null) {
@@ -129,8 +129,7 @@ public class Page implements Serializable
                 this.max = tuple.values.get(clust);
             }
             this.serialize();
-            return low;
-
+            return new Ref(this.name, low);
         }
 
         Page currPage = this;
@@ -151,7 +150,7 @@ public class Page implements Serializable
             this.max = tuple.values.get(clust);
         }
         this.serialize();
-        return low;
+        return new Ref(this.name, low);
     }
 
     public void delete(int index)
