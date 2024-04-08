@@ -92,7 +92,7 @@ public class Table implements Serializable {
 
         String clusteringKeyType = csvConverter.getClusteringKey(this.name);
         if(clusteringKeyType.equalsIgnoreCase("java.lang.double")){
-            for (int i = 0; i< tablePages.size() && result!=-1 || result!=0; i++) {
+            for (int i = 0; i< tablePages.size() && result!=-1 && result!=0; i++) {
                 currPage = Page.deserialize(this.name + "_" + i );
                 result = Double.compare(Double.parseDouble((String)clusteringKeyValue), (Double)currPage.max);
             }
@@ -102,11 +102,11 @@ public class Table implements Serializable {
                 //this means that we have a string at hand
                 for (int i = 0; i< tablePages.size()-1 && result!=-1 && result!=0; i++) {
                     currPage = Page.deserialize(this.name + "_" + i );
-                    result = ((Comparable) clusteringKeyValue).compareTo((Comparable)currPage.max);
+                    result = ((String) clusteringKeyValue).compareTo((String)currPage.max);
                 }
             }
             else {
-                for (int i = 0; i< tablePages.size() && result!=-1 || result!=0; i++) {
+                for (int i = 0; i< tablePages.size() && result!=-1 && result!=0; i++) {
                     currPage = Page.deserialize(this.name + "_" + i );
                     result = Integer.compare(Integer.parseInt((String)clusteringKeyValue), (Integer)currPage.max);
                 }
