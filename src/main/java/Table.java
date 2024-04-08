@@ -80,7 +80,7 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream(filename);
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" +filename);
              ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
             System.out.println("Table deserialized from " + filename);
@@ -108,6 +108,18 @@ public class Table implements Serializable {
             System.out.println("No serialized pages found for table " + tableName);
         }
     }
+    public boolean compatibleTypes(Object value, String columnType) {
+        switch (columnType.toLowerCase()) {
+            case "java.lang.integer":
+                return value instanceof Integer;
+            case "java.lang.double":
+                return value instanceof Double;
+            case "java.lang.string":
+                return value instanceof String;
+        }
+        return false;
+    }
+
     public ArrayList<Tuple> searchTable(String columnName, String operator, Object value) throws DBAppException {
         ArrayList<Tuple> results = new ArrayList<>();
         Vector<String[]> columnstuff = Page.readCSV(this.name);
@@ -172,7 +184,7 @@ public class Table implements Serializable {
                             ArrayList<Tuple> tempp = new ArrayList<>();
                             tempp = page.binarysearchPage(columnName, value, operator);
                             page.serialize();
-                            pageResults.addAll(temp);
+                            pageResults.addAll(tempp);
                         }else{
                             for(int j= pageResults.size()-1;j>=0;j--){
                                 results.add(pageResults.get(i));
@@ -211,9 +223,9 @@ public class Table implements Serializable {
         Table t1 = new Table("Student");
         t1.serialize();
         Table temp = deserialize("Student/Student.class");
+        System.out.println(temp);
         System.out.println(temp.tablePages);
         System.out.println(temp.name);
-
     }
 
 
