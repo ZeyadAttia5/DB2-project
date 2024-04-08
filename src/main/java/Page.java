@@ -4,7 +4,7 @@ import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
 
-public class Page
+public class Page implements Serializable
 {
     public String name;
     public Vector<Tuple> tuples;
@@ -23,7 +23,7 @@ public class Page
 
     public static Vector<String[]> readCSV(String tableName)
     {
-        String csvFilePath = "src/metadata/metadata.csv";
+        String csvFilePath = "src/metadata.csv";
         Vector<String[]> result = new Vector<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath))) {
             String line;
@@ -39,14 +39,27 @@ public class Page
         return result;
     }
 
-    public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+    public int insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+
+        String[] arr = this.name.split("_");
+        String clust = csvConverter.getClusteringKey(arr[0]);
+
+        if(this.tuples.size()==0)
+        {
+            this.tuples.add(tuple);
+            this.max = tuple.values.get(clust);
+            this.min = this.max;
+            this.serialize();
+            return this.tuples.size()-1;
+        }
         String name = (this.name.split("_"))[0];
         Vector<String[]> metadata = readCSV(name);
         String datatype = "";
-        for(String[] arr : metadata)
+        for(String[] array : metadata)
         {
-            if(arr[3].equals("True"))
-                datatype = arr[2].split(".")[2];
+            if(array[3].equals("True")) {
+                datatype = array[2].split("\\.")[2];
+            }
         }
 
         int low = 0;
@@ -62,7 +75,8 @@ public class Page
                 String midValue = (String) midTuple.values.get(this.clusteringKey);
                 if (midValue.equals(value)) {
                     low = mid; // Value already exists
-                    break;
+                    System.out.println("Can not insert duplicate tuple");
+                    return -1;
                 } else if (midValue.compareTo((String) value) < 0) {
                     low = mid + 1;
                 } else {
@@ -74,7 +88,8 @@ public class Page
                 double midValue = (Double) midTuple.values.get(this.clusteringKey);
                 if (midValue == (Double) value) {
                     low = mid; // Value already exists
-                    break;
+                    System.out.println("Can not insert duplicate tuple");
+                    return -1;
                 } else if (midValue < (Double) value) {
                     low = mid + 1;
                 } else {
@@ -87,7 +102,8 @@ public class Page
                 int midValue = (Integer) midTuple.values.get(this.clusteringKey);
                 if (midValue == (Integer) value) {
                     low = mid; // Value already exists
-                    break;
+                    System.out.println("Can not insert duplicate tuple");
+                    return -1;
                 } else if (midValue < (Integer) value) {
                     low = mid + 1;
                 } else {
@@ -96,11 +112,26 @@ public class Page
             }
         }
         System.out.println(low);
-        if(low>this.tuples.size()-1)
+        if(low>this.tuples.size()-1) {
             this.tuples.add(tuple);
+            if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)
+            {
+                this.max = tuple.values.get(clust);
+            }
+            this.serialize();
+            return this.tuples.size()-1;
+        }
 
-        else if(this.tuples.get(low)!=null)
-            this.tuples.add(low,tuple);
+        else if(this.tuples.get(low)!=null) {
+            this.tuples.add(low, tuple);
+            if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)
+            {
+                this.max = tuple.values.get(clust);
+            }
+            this.serialize();
+            return low;
+
+        }
 
         Page currPage = this;
         while(currPage.tuples.size()>maxSize)
@@ -115,6 +146,12 @@ public class Page
             currPage.tuples.addFirst(temp);
             currPage.serialize();
         }
+        if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)
+        {
+            this.max = tuple.values.get(clust);
+        }
+        this.serialize();
+        return low;
     }
 
     public void delete(int index)
@@ -129,7 +166,7 @@ public class Page
 
     public int readConfigFile(){
         Properties properties = new Properties();
-        String fileName = "src/resources/DBApp.config";
+        String fileName = "src/main/resources/DBApp.config";
         FileInputStream fis = null;
         try {
             fis = new FileInputStream(fileName);
@@ -151,7 +188,8 @@ public class Page
     }
 
     public void serialize() throws IOException {
-        FileOutputStream fileOut = new FileOutputStream(this.name + ".class");
+        String[] arr = this.name.split("_");
+        FileOutputStream fileOut = new FileOutputStream("src/main/resources/tables/" + arr[0] + "/" + this.name + ".class");
         ObjectOutputStream out = new ObjectOutputStream(fileOut);
         out.writeObject(this);
         out.close();
@@ -160,7 +198,8 @@ public class Page
 
     public static Page deserialize(String fileName) throws IOException, ClassNotFoundException {
         Page page;
-        FileInputStream fileIn = new FileInputStream(fileName + ".class");
+        String[] arr = fileName.split("_");
+        FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + arr[0] + "/" + fileName + ".class");
         ObjectInputStream in = new ObjectInputStream(fileIn);
         page = (Page) in.readObject();
         in.close();
