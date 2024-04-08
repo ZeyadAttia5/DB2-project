@@ -80,10 +80,10 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream(filename);
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/"+filename+"/"+filename+".class");
              ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
-            System.out.println("Table deserialized from " + filename);
+            System.out.println("Table deserialized from " + "src/main/resources/tables/"+filename+"/"+filename+".class");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

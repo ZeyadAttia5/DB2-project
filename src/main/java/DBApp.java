@@ -87,7 +87,7 @@ public class DBApp {
 	public void insertIntoTable(String strTableName, 
 								Hashtable<String,Object>  htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
 
-		Table target = Table.deserialize("src/main/resources/tables/"+strTableName+"/"+strTableName+".class");
+		Table target = Table.deserialize(strTableName);
 		Tuple newTuple = new Tuple(htblColNameValue);
 		target.insert(newTuple);
 		System.out.println(Page.deserialize(target.tablePages.get(0)));
@@ -137,25 +137,25 @@ public class DBApp {
 			htblColNameType.put("gpa", "java.lang.double");
 			dbApp.createTable( strTableName, "id", htblColNameType );
 
-			String strTableName2 = "Girl";
-
-			Hashtable htblColNameType2 = new Hashtable<>();
-			htblColNameType2.put("id", "java.lang.Integer");
-			htblColNameType2.put("name", "java.lang.String");
-			htblColNameType2.put("gpa", "java.lang.Integer");
-			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
-
-			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
-
-			BPTree b = BPTree.deserialize("Student", "gpa");
+//			String strTableName2 = "Girl";
+//
+//			Hashtable htblColNameType2 = new Hashtable<>();
+//			htblColNameType2.put("id", "java.lang.Integer");
+//			htblColNameType2.put("name", "java.lang.String");
+//			htblColNameType2.put("gpa", "java.lang.Integer");
+//			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
+//
+//			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
+//
+//			BPTree b = BPTree.deserialize("Student", "gpa");
 
 //			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 //
-//			Hashtable htblColNameValue = new Hashtable( );
-//			htblColNameValue.put("id", new Integer( 0 ));
-//			htblColNameValue.put("name", new String("Ahmed Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 0.95 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
+			Hashtable htblColNameValue = new Hashtable( );
+			htblColNameValue.put("id", new Integer( 0 ));
+			htblColNameValue.put("name", new String("Ahmed Noor" ) );
+			htblColNameValue.put("gpa", new Double( 0.95 ) );
+			dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));

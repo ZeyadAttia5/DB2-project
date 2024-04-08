@@ -44,6 +44,13 @@ public class Page implements Serializable
         String[] arr = this.name.split("_");
         String clust = csvConverter.getClusteringKey(arr[0]);
 
+
+        for(String colName : tuple.values.keySet())
+        {
+
+        }
+
+
         if(this.tuples.size()==0)
         {
             this.tuples.add(tuple);
@@ -52,6 +59,7 @@ public class Page implements Serializable
             this.serialize();
             return new Ref(this.name, this.tuples.size()-1);
         }
+
         String name = (this.name.split("_"))[0];
         Vector<String[]> metadata = readCSV(name);
         String datatype = "";
@@ -70,45 +78,17 @@ public class Page implements Serializable
         {
             int mid = low + (high - low)/2;
             Tuple midTuple = this.tuples.get(mid);
-            if(datatype.equals("String"))
-            {
-                String midValue = (String) midTuple.values.get(this.clusteringKey);
-                if (midValue.equals(value)) {
-                    low = mid; // Value already exists
-                    System.out.println("Can not insert duplicate tuple");
-                    return null;
-                } else if (midValue.compareTo((String) value) < 0) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            else if (datatype.equals("Double"))
-            {
-                double midValue = (Double) midTuple.values.get(this.clusteringKey);
-                if (midValue == (Double) value) {
-                    low = mid; // Value already exists
-                    System.out.println("Can not insert duplicate tuple");
-                    return null;
-                } else if (midValue < (Double) value) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
 
-            }
-            else
+            Object midValue = midTuple.values.get(this.clusteringKey);
+            if(((Comparable) midValue).compareTo((Comparable) value) == 0)
             {
-                int midValue = (Integer) midTuple.values.get(this.clusteringKey);
-                if (midValue == (Integer) value) {
-                    low = mid; // Value already exists
-                    System.out.println("Can not insert duplicate tuple");
-                    return null;
-                } else if (midValue < (Integer) value) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
+                low = mid; // Value already exists
+                System.out.println("Can not insert duplicate tuple");
+                return null;
+            } else if (((Comparable) midValue).compareTo((Comparable) value) < 0) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
             }
         }
         System.out.println(low);

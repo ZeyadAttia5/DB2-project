@@ -4,9 +4,9 @@ import java.util.Vector;
 
 public class Tuple implements Serializable
 {
-    public Hashtable values;
+    public Hashtable<String, Object> values;
 
-    public Tuple(Hashtable values)
+    public Tuple(Hashtable<String, Object> values)
     {
         this.values = values;
     }
