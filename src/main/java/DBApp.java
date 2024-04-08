@@ -91,7 +91,6 @@ public class DBApp {
 		Tuple newTuple = new Tuple(htblColNameValue);
 		target.insert(newTuple);
 		System.out.println(Page.deserialize(target.tablePages.get(0)));
-
 	}
 
 

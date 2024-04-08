@@ -55,10 +55,10 @@ public class Page implements Serializable
         String name = (this.name.split("_"))[0];
         Vector<String[]> metadata = readCSV(name);
         String datatype = "";
-        for(String[] arr : metadata)
+        for(String[] array : metadata)
         {
-            if(arr[3].equals("True")) {
-                datatype = arr[2].split("\\.")[2];
+            if(array[3].equals("True")) {
+                datatype = array[2].split("\\.")[2];
             }
         }
 
@@ -75,7 +75,8 @@ public class Page implements Serializable
                 String midValue = (String) midTuple.values.get(this.clusteringKey);
                 if (midValue.equals(value)) {
                     low = mid; // Value already exists
-                    break;
+                    System.out.println("Can not insert duplicate tuple");
+                    return -1;
                 } else if (midValue.compareTo((String) value) < 0) {
                     low = mid + 1;
                 } else {
@@ -87,7 +88,8 @@ public class Page implements Serializable
                 double midValue = (Double) midTuple.values.get(this.clusteringKey);
                 if (midValue == (Double) value) {
                     low = mid; // Value already exists
-                    break;
+                    System.out.println("Can not insert duplicate tuple");
+                    return -1;
                 } else if (midValue < (Double) value) {
                     low = mid + 1;
                 } else {
@@ -100,7 +102,8 @@ public class Page implements Serializable
                 int midValue = (Integer) midTuple.values.get(this.clusteringKey);
                 if (midValue == (Integer) value) {
                     low = mid; // Value already exists
-                    break;
+                    System.out.println("Can not insert duplicate tuple");
+                    return -1;
                 } else if (midValue < (Integer) value) {
                     low = mid + 1;
                 } else {
