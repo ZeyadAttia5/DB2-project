@@ -9,8 +9,8 @@ public class Page
     public String name;
     public Vector<Tuple> tuples;
     public int maxSize;
-    public int max;
-    public int min;
+    public Object max;
+    public Object min;
     public String clusteringKey;
 
     public Page(String tableName, int count, String clusteringKey)

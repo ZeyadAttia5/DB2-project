@@ -2,6 +2,7 @@ import java.io.*;
 import java.util.*;
 
 
+
 public class Table implements Serializable {
     // Map to store the number of pages for each table
     public Vector<String> tablePages;
@@ -18,58 +19,62 @@ public class Table implements Serializable {
 
     public static void createDirectory(String folderPath) {
         // Create a File object representing the directory
-        File directory = new File(folderPath);
+        File directory = new File("src/main/resources/tables/" + folderPath);
 
         // Create the directory if it doesn't exist
         if (!directory.exists()) {
             boolean created = directory.mkdirs();
             if (created) {
-                System.out.println("Directory created successfully: " + folderPath);
+                System.out.println("Directory created successfully: " + "src/main/resources/tables/" + folderPath);
             } else {
-                System.out.println("Failed to create directory: " + folderPath);
+                System.out.println("Failed to create directory: " + "src/main/resources/tables/" + folderPath);
             }
         } else {
-            System.out.println("Directory already exists: " + folderPath);
+            System.out.println("Directory already exists: " + "src/main/resources/tables/" + folderPath);
         }
     }
 
 
     // Method to get page count for a table
     public int getPageCount() {
-       return tablePages.size();
+        return tablePages.size();
     }
-    public void insert(Tuple tuple) throws DBAppException {
-         if (getPageCount() == 0) {
-            Page page = new Page(name,this.tablePages.size());
-            page.insert(tuple);
-            tablePages.add(page.name);
-        } else {
-            Vector<String> pageFileNames = this.tablePages;
-            int lastIndex = pageFileNames.size() - 1;
-            int currentIndex = 0;
-            for (String fileName : pageFileNames) {//still not handled when full
-                Page page = Page.deserialize(name + "/" + fileName + ".class");
-                if(!page.isFull()) {
-                    page.insert(tuple);
-                    break;
-                }
-                else if (currentIndex == lastIndex){
-                    Page nPage = new Page(name, this.tablePages.size());
-                    nPage.insert(tuple);
-                }
-                currentIndex++;
+
+    public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+        String clusteringKey = csvConverter.getClusteringKey(this.name);
+        Object targetKey = tuple.values.get(clusteringKey);
+        Page currPage = null;
+        int result=-1;
+        for(int i = 0; result > 0; i++)
+        {
+            currPage = Page.deserialize(this.name+"_"+i+".class");
+
+            if(targetKey instanceof Integer)
+            {
+                result =  ((Integer) targetKey).compareTo((Integer) currPage.max);
             }
-
-
+            else if (targetKey instanceof String)
+            {
+                result =  ((String) targetKey).compareTo((String) currPage.max);
+            }
+            else
+            {
+                result =  ((Double) targetKey).compareTo((Double) currPage.max);
+            }
         }
+        currPage.insert(tuple);
+
+
+
+
     }
 
     public void serialize() {
         String tableName = name;
-        try (FileOutputStream fos = new FileOutputStream(tableName + "/" + name + ".class" );
+        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class" );
              ObjectOutputStream out = new ObjectOutputStream(fos)) {
-                out.writeObject(this);
-                System.out.println("saved table successfully at " + tableName + "/" + name + ".class" );
+            out.writeObject(this);
+            System.out.println("saved table successfully at " +"src/main/resources/tables/" +  tableName + "/" + name + ".class" );
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -77,10 +82,10 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream(filename);
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename);
              ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
-            System.out.println("Table deserialized from " + filename);
+            System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -88,7 +93,7 @@ public class Table implements Serializable {
     }
 
     // Method to print all serialized pages for the specified table name
-    public static void printTable(String tableName) {
+    public static void printTable(String tableName) throws IOException, ClassNotFoundException {
         File directory = new File(tableName); // Use provided table name as directory name
         FilenameFilter filter = (dir, name) -> name.endsWith(".class");
         File[] serializedPages = directory.listFiles(filter);
