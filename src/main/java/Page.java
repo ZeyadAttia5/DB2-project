@@ -143,6 +143,7 @@ public class Page implements Serializable
         }
     }
 
+
     public int readConfigFile(){
         Properties properties = new Properties();
         String fileName = "src/main/resources/DBApp.config";
@@ -178,7 +179,7 @@ public class Page implements Serializable
     public static Page deserialize(String fileName) throws IOException, ClassNotFoundException {
         Page page;
         String[] arr = fileName.split("_");
-        FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + arr[0] + "/" + fileName + ".class");
+        FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" +  arr[0] + "/" + fileName + ".class");
         ObjectInputStream in = new ObjectInputStream(fileIn);
         page = (Page) in.readObject();
         in.close();
@@ -195,14 +196,18 @@ public class Page implements Serializable
         return result;
     }
 
-    public static void main(String[] args) throws DBAppException {
-//        Page page = new Page("Bike",2, "id");
+    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
+//        Page page = new Page("Student",2, "id");
 //        Hashtable htblColNameValue = new Hashtable( );
-//        htblColNameValue.put("id", new Integer( 1 ));
-//        htblColNameValue.put("name", new String("Ahmed Noor" ) );
-//        htblColNameValue.put("gpa", new Double( 0.95 ) );
+//        htblColNameValue.put("id", new Integer( 2 ));
+//        htblColNameValue.put("name", new String("Yara Noor" ) );
+//        htblColNameValue.put("gpa", new Double( 0.90 ) );
 //        Tuple t = new Tuple(htblColNameValue);
-//
+//        page.insert(t);
+//        System.out.println(page);
+//        page.serialize();
+//        System.out.println(deserialize("Student_2"));
+
 //        Hashtable h = new Hashtable( );
 //        h.put("id", new Integer( 3 ));
 //        h.put("name", new String("Ahmed Noor" ) );

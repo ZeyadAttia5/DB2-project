@@ -4,6 +4,7 @@
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Hashtable;
+import java.util.List;
 
 
 public class DBApp {
@@ -101,8 +102,24 @@ public class DBApp {
 	public void updateTable(String strTableName, 
 							String strClusteringKeyValue,
 							Hashtable<String,Object> htblColNameValue   )  throws DBAppException{
-	
-		throw new DBAppException("not implemented yet");
+
+        // Get the metadata of the table
+        List<String[]> metadata = csvConverter.getTableMetadata(strTableName);
+        Table currTable = Table.deserialize(strTableName);
+        // Check if the table exists
+        if (currTable == null) {
+            throw new DBAppException("Table not found: " + strTableName);
+        }
+        try {
+            currTable.updateTable(strClusteringKeyValue, htblColNameValue);
+        } catch (IOException e) {
+            System.out.println("Table not found\n" + e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.out.println("Table not found\n" + e.getMessage());
+        }
+
+        //save changes
+        currTable.serialize();
 	}
 
 
@@ -156,6 +173,13 @@ public class DBApp {
 			htblColNameValue.put("name", new String("Ahmed Noor" ) );
 			htblColNameValue.put("gpa", new Double( 0.95 ) );
 			dbApp.insertIntoTable( strTableName , htblColNameValue );
+            Hashtable<String, Object> ht = new Hashtable<>();
+            ht.put("name", "Zeyaddd");
+            ht.put("gpa", 0.8);
+
+            dbApp.updateTable("Student","0",ht);
+
+            System.out.println(Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 //
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));

@@ -67,6 +67,92 @@ public class Table implements Serializable {
 
     }
 
+    public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
+        // Find the page where the row with the clustering key value is located
+        Page page = findPage(clusteringKeyValue);
+
+        if (page == null) {
+            // Handle case where row is not found
+            System.out.println("Row with clustering key value not found.");
+            return;
+        }
+
+        // Locate and update the row within the page
+        boolean rowUpdated = updateRowInPage(page, clusteringKeyValue, ColNameType);
+
+        if (!rowUpdated) {
+            // Handle case where row is not found in the page
+            System.out.println("Row not found in the specified page.");
+        }
+    }
+
+    private Page findPage(Object clusteringKeyValue ) throws IOException, ClassNotFoundException {
+        int result =1 ;
+        Page currPage = null;
+
+        String clusteringKeyType = csvConverter.getClusteringKey(this.name);
+        if(clusteringKeyType.equalsIgnoreCase("java.lang.double")){
+            for (int i = 0; i< tablePages.size() && result!=-1 || result!=0; i++) {
+                currPage = Page.deserialize(this.name + "_" + i );
+                result = Double.compare(Double.parseDouble((String)clusteringKeyValue), (Double)currPage.max);
+            }
+        }
+        else
+            if(clusteringKeyType.equalsIgnoreCase("java.lang.string")){
+                //this means that we have a string at hand
+                for (int i = 0; i< tablePages.size()-1 && result!=-1 && result!=0; i++) {
+                    currPage = Page.deserialize(this.name + "_" + i );
+                    result = ((Comparable) clusteringKeyValue).compareTo((Comparable)currPage.max);
+                }
+            }
+            else {
+                for (int i = 0; i< tablePages.size() && result!=-1 || result!=0; i++) {
+                    currPage = Page.deserialize(this.name + "_" + i );
+                    result = Integer.compare(Integer.parseInt((String)clusteringKeyValue), (Integer)currPage.max);
+                }
+            }
+        return currPage;
+
+    }
+
+
+
+    private boolean updateRowInPage(Page currPage, Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
+        String clusteringKeyCol = csvConverter.getClusteringKey(this.name);
+
+        // Iterate through the tuples in the page
+        for (Tuple tuple : currPage.tuples) {
+            // Check if the tuple's clustering key value matches the specified value
+            Object tupleClusteringKeyValue = tuple.getValues().get(clusteringKeyCol);
+            if (tupleClusteringKeyValue.equals(clusteringKeyValue)) {
+                // Update the columns in the tuple with their new values
+                for (String colName : ColNameType.keySet()) {
+                    if (tuple.getValues().containsKey(colName)) {
+                        String colType = csvConverter.getDataType(this.name, colName);
+                        if (colType.equalsIgnoreCase("java.lang.integer")) {
+                            Integer newValue = (Integer) ColNameType.get(colName);
+                            tuple.getValues().put(colName, newValue);
+                        } else if (colType.equalsIgnoreCase("java.lang.string")) {
+                            String newValue = (String) ColNameType.get(colName);
+                            tuple.getValues().put(colName, newValue);
+                        } else if (colType.equalsIgnoreCase("java.lang.double")) {
+                            Double newValue = (Double) ColNameType.get(colName);
+                            tuple.getValues().put(colName, newValue);
+                        }
+                    } else {
+                        // Handle case where specified column name is not found in the tuple
+                        System.out.println("Column not found in the tuple: " + colName);
+                    }
+                }
+                // Serialize the updated page and save it back
+                currPage.serialize();
+                return true;  // Row updated successfully
+            }
+        }
+        return false;  // Row didn't update successfully
+    }
+
+
     public void serialize() {
         String tableName = name;
         try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class" );

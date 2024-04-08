@@ -23,6 +23,11 @@ public class Tuple implements Serializable
         return result.toString();
     }
 
+    public Hashtable getValues(){
+        return values;
+    }
+
+
     public static void main(String[] args) {
 //        Hashtable htblColNameValue = new Hashtable();
 //        htblColNameValue.put("id", new Integer(2343432));
