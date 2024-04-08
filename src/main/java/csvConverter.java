@@ -25,7 +25,7 @@ public class csvConverter {
             }
 
             // Write header to CSV file if it's empty
-            if (Files.size(Path.of("metadata.csv")) == 0) {
+            if (Files.size(Path.of(METADATA_FILE)) == 0) {
                 writer.write("Table Name, Column Name, Column Type, ClusteringKey, IndexName, IndexType\n");
             }
 
@@ -62,21 +62,22 @@ public class csvConverter {
         }
     }
 
-    public static String getDataType(String strTableName, String strColName){
-
-        try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {
+    public static String getDataType(String strTableName, String strColName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
-            while ((line = reader.readLine()) != null ) {
+            while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields[0].equals(strTableName) && fields[1].equals(strColName))
-                    return fields[2];
+                if (fields.length >= 3 && fields[0].equals(strTableName) && fields[1].equals(strColName)) {
+                    return fields[2].trim();  // Trim to remove leading/trailing whitespace
+                }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            // Handle file IO exception
+            System.err.println("Error reading metadata file: " + e.getMessage());
         }
-        return null;
-
+        return null;  // Return null if data type not found or error occurred
     }
+
 
     public static String getIndexName(String tableName, String colName){
         try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {

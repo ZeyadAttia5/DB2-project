@@ -154,6 +154,18 @@ public class Page implements Serializable
         return low;
     }
 
+//    private boolean searching(Tuple tuple, Hashtable<String, Object> conditions) {
+//        for (String column : conditions.keySet()) {
+//            Object expectedValue = conditions.get(column);
+//            Object actualValue = tuple.values.get(column);
+//            if (!expectedValue.equals(actualValue)) {
+//                return false;
+//            }
+//        }
+//        return true;
+//    }
+
+
     public void delete(int index)
     {
         this.tuples.remove(index);

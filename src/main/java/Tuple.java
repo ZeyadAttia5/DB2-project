@@ -3,7 +3,7 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 public class Tuple implements Serializable {
-    public Hashtable values;
+    public Hashtable<String, Object> values;
 
     public Tuple(Hashtable values) {
         this.values = values;

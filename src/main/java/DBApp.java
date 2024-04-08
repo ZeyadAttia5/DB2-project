@@ -73,15 +73,17 @@ public class DBApp {
 
         // Get the metadata of the table
         List<String[]> metadata = csvConverter.getTableMetadata(strTableName);
-        Table currTable = Table.deserialize(strTableName);
-        // Check if the table exists
+        Table currTable = Table.deserialize("src/main/resources/tables/"+strTableName+"/"+strTableName+".class");
         if (currTable == null) {
             throw new DBAppException("Table not found: " + strTableName);
         }
+
+
+        // Check if the table exists
         try {
             currTable.updateTable(strClusteringKeyValue, htblColNameValue);
         } catch (IOException e) {
-            System.out.println("Table not found\n" + e.getMessage());
+            System.out.println("Table not found IOException:\n" + e.getMessage());
         } catch (ClassNotFoundException e) {
             System.out.println("Table not found\n" + e.getMessage());
         }
