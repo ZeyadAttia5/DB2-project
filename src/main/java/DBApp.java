@@ -131,18 +131,18 @@ public class DBApp {
 			String strTableName = "Student";
 			DBApp	dbApp = new DBApp( );
 //
-//			Hashtable htblColNameType = new Hashtable( );
-//			htblColNameType.put("id", "java.lang.Integer");
-//			htblColNameType.put("name", "java.lang.String");
-//			htblColNameType.put("gpa", "java.lang.double");
-//			dbApp.createTable( strTableName, "id", htblColNameType );
+			Hashtable htblColNameType = new Hashtable( );
+			htblColNameType.put("id", "java.lang.Integer");
+			htblColNameType.put("name", "java.lang.String");
+			htblColNameType.put("gpa", "java.lang.double");
+			dbApp.createTable( strTableName, "id", htblColNameType );
 //			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 //
-			Hashtable htblColNameValue = new Hashtable( );
-			htblColNameValue.put("id", new Integer( 2343432 ));
-			htblColNameValue.put("name", new String("Ahmed Noor" ) );
-			htblColNameValue.put("gpa", new Double( 0.95 ) );
-			dbApp.insertIntoTable( strTableName , htblColNameValue );
+//			Hashtable htblColNameValue = new Hashtable( );
+//			htblColNameValue.put("id", new Integer( 0 ));
+//			htblColNameValue.put("name", new String("Ahmed Noor" ) );
+//			htblColNameValue.put("gpa", new Double( 0.95 ) );
+//			dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));
