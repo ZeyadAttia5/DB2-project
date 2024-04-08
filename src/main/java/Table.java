@@ -102,16 +102,13 @@ public class Table implements Serializable {
 
     public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
         // Find the page where the row with the clustering key value is located
-        int pageIndex = findPageIndex(clusteringKeyValue);
+        Page page = findPageIndex(clusteringKeyValue);
 
-        if (pageIndex == -1) {
+        if (page == null) {
             // Handle case where row is not found
             System.out.println("Row with clustering key value not found.");
             return;
         }
-
-        // Get the page where the row is located
-        String page = tablePages.get(pageIndex);
 
         // Locate and update the row within the page
         boolean rowUpdated = updateRowInPage(page, clusteringKeyValue, ColNameType);
@@ -122,29 +119,18 @@ public class Table implements Serializable {
         }
     }
 
-    private int findPageIndex(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
-        Page currPage = null;
+    private Page findPageIndex(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
         Object targetKey = clusteringKeyValue;
         int result = 1;
+        Page currPage = null;
         for (int i = 0; result > 0; i++) {
             currPage = Page.deserialize(this.name + "_" + i + ".class");
-
-            if (targetKey instanceof Integer) {
-                result = ((Integer) targetKey).compareTo((Integer) currPage.max);
-            } else if (targetKey instanceof String) {
-                result = ((String) targetKey).compareTo((String) currPage.max);
-            } else if (targetKey instanceof Double) {
-                result = ((Double) targetKey).compareTo((Double) currPage.max);
-            } else {
-                result = -1;
-            }
+            result = ((Comparable) targetKey).compareTo((Comparable) currPage.max);
         }
-        currPage.serialize();
-        return result;
+        return currPage;
     }
 
-    private boolean updateRowInPage(String page, Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
-        Page currPage = Page.deserialize(page);
+    private boolean updateRowInPage(Page currPage, Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
         String clusteringKeyCol = csvConverter.getClusteringKey(this.name);
         // Iterate through the tuples in the page
         for (Tuple tuple : currPage.tuples) {
@@ -170,14 +156,11 @@ public class Table implements Serializable {
                         System.out.println("Column not found in the tuple: " + colName);
                     }
                 }
-
                 // Serialize the updated page and save it back
                 currPage.serialize();
                 return true;  // Row updated successfully
             }
         }
-
-
         return false;  // Row didn't update successfully
     }
 
