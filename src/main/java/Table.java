@@ -46,19 +46,21 @@ public class Table implements Serializable {
             Page newPage = new Page(this.name,this.tablePages.size(),csvConverter.getClusteringKey(this.name));
             newPage.insert(tuple);
             tablePages.add(newPage.name);
+            this.serialize();
             return;
         }
         String clusteringKey = csvConverter.getClusteringKey(this.name);
         Object targetKey = tuple.values.get(clusteringKey);
         Page currPage = null;
-        int result=-1;
+        int result=1;
         for(int i = 0; result > 0; i++)
         {
-            currPage = Page.deserialize(this.name+"_"+i+".class");
+            currPage = Page.deserialize(this.name+"_"+i);
 
             result =  ((Comparable) targetKey).compareTo((Comparable) currPage.max);
         }
         currPage.insert(tuple);
+        this.serialize();
 
 
 

@@ -9,7 +9,7 @@ public class csvConverter {
     private static final String METADATA_FILE = "src/metadata.csv";
 
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
-        try (FileReader fileReader = new FileReader("metadata.csv");
+        try (FileReader fileReader = new FileReader(METADATA_FILE);
              BufferedReader bufferedReader = new BufferedReader(fileReader);
              FileWriter writer = new FileWriter("metadata.csv", true)) {
 

@@ -42,7 +42,11 @@ public class Page implements Serializable
     public int insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
         if(this.tuples.size()==0)
         {
+            String[] arr = this.name.split("_");
             this.tuples.add(tuple);
+            String clust = csvConverter.getClusteringKey(arr[0]);
+            this.max = tuple.values.get(clust);
+            this.min = this.max;
             this.serialize();
             return this.tuples.size()-1;
 
@@ -52,8 +56,9 @@ public class Page implements Serializable
         String datatype = "";
         for(String[] arr : metadata)
         {
-            if(arr[3].equals("True"))
-                datatype = arr[2].split(".")[2];
+            if(arr[3].equals("True")) {
+                datatype = arr[2].split("\\.")[2];
+            }
         }
 
         int low = 0;
