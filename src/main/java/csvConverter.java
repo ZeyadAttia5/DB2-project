@@ -11,7 +11,7 @@ public class csvConverter {
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
         try (FileReader fileReader = new FileReader(METADATA_FILE);
              BufferedReader bufferedReader = new BufferedReader(fileReader);
-             FileWriter writer = new FileWriter("metadata.csv", true)) {
+             FileWriter writer = new FileWriter(METADATA_FILE, true)) {
 
             // Check if the table name already exists in metadata
             String line;
@@ -25,7 +25,7 @@ public class csvConverter {
             }
 
             // Write header to CSV file if it's empty
-            if (Files.size(Path.of("metadata.csv")) == 0) {
+            if (Files.size(Path.of(METADATA_FILE)) == 0) {
                 writer.write("Table Name, Column Name, Column Type, ClusteringKey, IndexName, IndexType\n");
             }
 
@@ -64,7 +64,7 @@ public class csvConverter {
 
     public static String getDataType(String strTableName, String strColName){
 
-        try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
             while ((line = reader.readLine()) != null ) {
                 String[] fields = line.split(",");
@@ -79,7 +79,7 @@ public class csvConverter {
     }
 
     public static String getIndexName(String tableName, String colName){
-        try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
             while ((line = reader.readLine()) != null ) {
                 String[] fields = line.split(",");
@@ -107,6 +107,23 @@ public class csvConverter {
         return null; // No clustering key found for the table
     }
 
+    //  returns a List<String[]> of the table's metadata
+    public static List<String[]> getTableMetadata(String tableName) {
+        List<String[]> tableMetadata = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 6 && parts[0].equalsIgnoreCase(tableName)) {
+                    tableMetadata.add(parts);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return tableMetadata;
+    }
+
 
 
     // Adjusting the metadata file
@@ -114,7 +131,7 @@ public class csvConverter {
 
         // Getting names of all indices for table of interest
         HashSet<String> existingIndex = new HashSet<>();
-        try (BufferedReader reader1 = new BufferedReader(new FileReader("metadata.csv"))) {
+        try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
             while ((line = reader1.readLine()) != null ) {
                 String[] fields = line.split(",");
@@ -131,7 +148,7 @@ public class csvConverter {
         // Updating csv file
         List<String> lines = new ArrayList<>();
         boolean found = false;
-        try (BufferedReader reader = new BufferedReader(new FileReader("metadata.csv"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
 
             while ((line = reader.readLine()) != null  ) {
@@ -149,7 +166,7 @@ public class csvConverter {
             e.printStackTrace();
         }
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("metadata.csv"))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(METADATA_FILE))) {
             for (String modifiedLine : lines) {
                 writer.write(modifiedLine);
                 writer.newLine();

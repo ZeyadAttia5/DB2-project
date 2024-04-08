@@ -4,6 +4,7 @@
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Hashtable;
+import java.util.List;
 
 
 public class DBApp {
@@ -87,7 +88,7 @@ public class DBApp {
 	public void insertIntoTable(String strTableName, 
 								Hashtable<String,Object>  htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
 
-		Table target = Table.deserialize("src/main/resources/tables/"+strTableName+"/"+strTableName+".class");
+		Table target = Table.deserialize(strTableName);
 		Tuple newTuple = new Tuple(htblColNameValue);
 		target.insert(newTuple);
 		System.out.println(Page.deserialize(target.tablePages.get(0)));
@@ -101,8 +102,24 @@ public class DBApp {
 	public void updateTable(String strTableName, 
 							String strClusteringKeyValue,
 							Hashtable<String,Object> htblColNameValue   )  throws DBAppException{
-	
-		throw new DBAppException("not implemented yet");
+
+        // Get the metadata of the table
+        List<String[]> metadata = csvConverter.getTableMetadata(strTableName);
+        Table currTable = Table.deserialize(strTableName);
+        // Check if the table exists
+        if (currTable == null) {
+            throw new DBAppException("Table not found: " + strTableName);
+        }
+        try {
+            currTable.updateTable(strClusteringKeyValue, htblColNameValue);
+        } catch (IOException e) {
+            System.out.println("Table not found\n" + e.getMessage());
+        } catch (ClassNotFoundException e) {
+            System.out.println("Table not found\n" + e.getMessage());
+        }
+
+        //save changes
+        currTable.serialize();
 	}
 
 
@@ -131,18 +148,38 @@ public class DBApp {
 			String strTableName = "Student";
 			DBApp	dbApp = new DBApp( );
 //
-//			Hashtable htblColNameType = new Hashtable( );
-//			htblColNameType.put("id", "java.lang.Integer");
-//			htblColNameType.put("name", "java.lang.String");
-//			htblColNameType.put("gpa", "java.lang.double");
-//			dbApp.createTable( strTableName, "id", htblColNameType );
+			Hashtable htblColNameType = new Hashtable( );
+			htblColNameType.put("id", "java.lang.Integer");
+			htblColNameType.put("name", "java.lang.String");
+			htblColNameType.put("gpa", "java.lang.double");
+			dbApp.createTable( strTableName, "id", htblColNameType );
+
+//			String strTableName2 = "Girl";
+//
+//			Hashtable htblColNameType2 = new Hashtable<>();
+//			htblColNameType2.put("id", "java.lang.Integer");
+//			htblColNameType2.put("name", "java.lang.String");
+//			htblColNameType2.put("gpa", "java.lang.Integer");
+//			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
+//
+//			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
+//
+//			BPTree b = BPTree.deserialize("Student", "gpa");
+
 //			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 //
 			Hashtable htblColNameValue = new Hashtable( );
-			htblColNameValue.put("id", new Integer( 2343432 ));
+			htblColNameValue.put("id", new Integer( 0 ));
 			htblColNameValue.put("name", new String("Ahmed Noor" ) );
 			htblColNameValue.put("gpa", new Double( 0.95 ) );
 			dbApp.insertIntoTable( strTableName , htblColNameValue );
+            Hashtable<String, Object> ht = new Hashtable<>();
+            ht.put("name", "Zeyaddd");
+            ht.put("gpa", 0.8);
+
+            dbApp.updateTable("Student","0",ht);
+
+            System.out.println(Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 //
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));
