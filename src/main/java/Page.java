@@ -137,13 +137,13 @@ public class Page implements Serializable
         while(currPage.tuples.size()>maxSize)
         {
             Tuple temp = currPage.tuples.lastElement();
-            currPage.tuples.removeLast();
+            currPage.tuples.remove(temp);
             currPage.serialize();
             String currName = currPage.name;
             int currInt = (int) currName.charAt(currName.length()-1);
             currName = currName.replace((char) currInt,(char) (currInt+1));
             currPage = deserialize(currName);
-            currPage.tuples.addFirst(temp);
+            currPage.tuples.add(0 ,temp);
             currPage.serialize();
         }
         if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)

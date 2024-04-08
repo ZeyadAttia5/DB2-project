@@ -136,6 +136,19 @@ public class DBApp {
 			htblColNameType.put("name", "java.lang.String");
 			htblColNameType.put("gpa", "java.lang.double");
 			dbApp.createTable( strTableName, "id", htblColNameType );
+
+			String strTableName2 = "Girl";
+
+			Hashtable htblColNameType2 = new Hashtable<>();
+			htblColNameType2.put("id", "java.lang.Integer");
+			htblColNameType2.put("name", "java.lang.String");
+			htblColNameType2.put("gpa", "java.lang.Integer");
+			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
+
+			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
+
+			BPTree b = BPTree.deserialize("Student", "gpa");
+
 //			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 //
 //			Hashtable htblColNameValue = new Hashtable( );
