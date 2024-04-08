@@ -1,6 +1,7 @@
 
 /** * @author Wael Abouelsaadat */ 
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Hashtable;
 
@@ -20,7 +21,7 @@ public class DBApp {
 	// or leave it empty if there is no code you want to 
 	// execute at application startup 
 	public void init( ){
-		
+
 		
 	}
 
@@ -84,9 +85,13 @@ public class DBApp {
 	// following method inserts one row only. 
 	// htblColNameValue must include a value for the primary key
 	public void insertIntoTable(String strTableName, 
-								Hashtable<String,Object>  htblColNameValue) throws DBAppException{
-	
-		throw new DBAppException("not implemented yet");
+								Hashtable<String,Object>  htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
+
+		Table target = Table.deserialize("src/main/resources/tables/"+strTableName+"/"+strTableName+".class");
+		Tuple newTuple = new Tuple(htblColNameValue);
+		target.insert(newTuple);
+		System.out.println(Page.deserialize(target.tablePages.get(0)));
+
 	}
 
 
@@ -121,37 +126,24 @@ public class DBApp {
 
 
 	public static void main( String[] args ){
-	
-//	try{
-//			String strTableName = "Student";
-//			DBApp	dbApp = new DBApp( );
+
+		try{
+
+			String strTableName = "Student";
+			DBApp	dbApp = new DBApp( );
 //
 //			Hashtable htblColNameType = new Hashtable( );
 //			htblColNameType.put("id", "java.lang.Integer");
 //			htblColNameType.put("name", "java.lang.String");
 //			htblColNameType.put("gpa", "java.lang.double");
 //			dbApp.createTable( strTableName, "id", htblColNameType );
-//
-//
-//			String strTableName2 = "Girl";
-//
-//			Hashtable htblColNameType2 = new Hashtable<>();
-//			htblColNameType2.put("id", "java.lang.Integer");
-//			htblColNameType2.put("name", "java.lang.String");
-//			htblColNameType2.put("gpa", "java.lang.Integer");
-//			dbApp.createTable( strTableName2, "gpa", htblColNameType2 );
-//
 //			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 //
-//
-//			BPTree b = BPTree.deserialize("Student", "gpa");
-//
-
-//			Hashtable htblColNameValue = new Hashtable( );
-//			htblColNameValue.put("id", new Integer( 2343432 ));
-//			htblColNameValue.put("name", new String("Ahmed Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 0.95 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
+			Hashtable htblColNameValue = new Hashtable( );
+			htblColNameValue.put("id", new Integer( 2343432 ));
+			htblColNameValue.put("name", new String("Ahmed Noor" ) );
+			htblColNameValue.put("gpa", new Double( 0.95 ) );
+			dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));
@@ -194,13 +186,11 @@ public class DBApp {
 //			strarrOperators[0] = "OR";
 //			// select * from Student where name = "John Noor" or gpa = 1.5;
 //			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
-//		}
-//		catch(Exception exp){
-//			exp.printStackTrace( );
-//		}
-		Object x = "aa";
-		Object y = "bb";
-		System.out.println(((Comparable) x).compareTo((Comparable) y));
+		}
+		catch(Exception exp){
+			exp.printStackTrace( );
+		}
 	}
+
 
 }

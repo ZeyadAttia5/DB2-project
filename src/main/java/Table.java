@@ -19,18 +19,18 @@ public class Table implements Serializable {
 
     public static void createDirectory(String folderPath) {
         // Create a File object representing the directory
-        File directory = new File(folderPath);
+        File directory = new File("src/main/resources/tables/" + folderPath);
 
         // Create the directory if it doesn't exist
         if (!directory.exists()) {
             boolean created = directory.mkdirs();
             if (created) {
-                System.out.println("Directory created successfully: " + folderPath);
+                System.out.println("Directory created successfully: " + "src/main/resources/tables/" + folderPath);
             } else {
-                System.out.println("Failed to create directory: " + folderPath);
+                System.out.println("Failed to create directory: " + "src/main/resources/tables/" + folderPath);
             }
         } else {
-            System.out.println("Directory already exists: " + folderPath);
+            System.out.println("Directory already exists: " + "src/main/resources/tables/" + folderPath);
         }
     }
 
@@ -41,6 +41,13 @@ public class Table implements Serializable {
     }
 
     public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+        if (this.tablePages.size()==0)
+        {
+            Page newPage = new Page(this.name,this.tablePages.size(),csvConverter.getClusteringKey(this.name));
+            newPage.insert(tuple);
+            tablePages.add(newPage.name);
+            return;
+        }
         String clusteringKey = csvConverter.getClusteringKey(this.name);
         Object targetKey = tuple.values.get(clusteringKey);
         Page currPage = null;
@@ -49,18 +56,7 @@ public class Table implements Serializable {
         {
             currPage = Page.deserialize(this.name+"_"+i+".class");
 
-            if(targetKey instanceof Integer)
-            {
-                result =  ((Integer) targetKey).compareTo((Integer) currPage.max);
-            }
-            else if (targetKey instanceof String)
-            {
-                result =  ((String) targetKey).compareTo((String) currPage.max);
-            }
-            else
-            {
-                result =  ((Double) targetKey).compareTo((Double) currPage.max);
-            }
+            result =  ((Comparable) targetKey).compareTo((Comparable) currPage.max);
         }
         currPage.insert(tuple);
 
@@ -71,10 +67,10 @@ public class Table implements Serializable {
 
     public void serialize() {
         String tableName = name;
-        try (FileOutputStream fos = new FileOutputStream(tableName + "/" + name + ".class" );
+        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class" );
              ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
-            System.out.println("saved table successfully at " + tableName + "/" + name + ".class" );
+            System.out.println("saved table successfully at " + "src/main/resources/tables/" + tableName + "/" + name + ".class" );
         } catch (IOException e) {
             e.printStackTrace();
         }
