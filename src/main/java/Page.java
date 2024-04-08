@@ -40,16 +40,17 @@ public class Page implements Serializable
     }
 
     public int insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+
+        String[] arr = this.name.split("_");
+        String clust = csvConverter.getClusteringKey(arr[0]);
+
         if(this.tuples.size()==0)
         {
-            String[] arr = this.name.split("_");
             this.tuples.add(tuple);
-            String clust = csvConverter.getClusteringKey(arr[0]);
             this.max = tuple.values.get(clust);
             this.min = this.max;
             this.serialize();
             return this.tuples.size()-1;
-
         }
         String name = (this.name.split("_"))[0];
         Vector<String[]> metadata = readCSV(name);
@@ -110,12 +111,20 @@ public class Page implements Serializable
         System.out.println(low);
         if(low>this.tuples.size()-1) {
             this.tuples.add(tuple);
+            if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)
+            {
+                this.max = tuple.values.get(clust);
+            }
             this.serialize();
             return this.tuples.size()-1;
         }
 
         else if(this.tuples.get(low)!=null) {
             this.tuples.add(low, tuple);
+            if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)
+            {
+                this.max = tuple.values.get(clust);
+            }
             this.serialize();
             return low;
 
@@ -133,6 +142,10 @@ public class Page implements Serializable
             currPage = deserialize(currName);
             currPage.tuples.addFirst(temp);
             currPage.serialize();
+        }
+        if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)
+        {
+            this.max = tuple.values.get(clust);
         }
         this.serialize();
         return low;
