@@ -4,6 +4,8 @@
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Hashtable;
+import java.util.ArrayList;
+
 
 
 public class DBApp {
@@ -117,12 +119,126 @@ public class DBApp {
 	}
 
 
-	public Iterator selectFromTable(SQLTerm[] arrSQLTerms,
-									String[]  strarrOperators) throws DBAppException{
-
-		return null;
+	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[]  strarrOperators) throws DBAppException {
+		if (arrSQLTerms.length == 0)
+			throw new DBAppException("No SQL terms");
+		if (strarrOperators != null && strarrOperators.length + 1 != arrSQLTerms.length)
+			throw new DBAppException("number of operators doesn't match the SQL terms count");
+		ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
+		int j = 0;
+		Iterator finalRes = null;
+		for (SQLTerm sqlTerm : arrSQLTerms) {
+			String columnName = sqlTerm._strColumnName;
+			Object value = sqlTerm._objValue;
+			String tableName = sqlTerm._strTableName;
+			String operator = sqlTerm._strOperator;
+			if(operator!="="||operator!=">"||operator!="<"||operator!="!="||operator!=">="||operator!="<="){
+				throw new DBAppException("Invalid operator");
+			}
+			try {//ehtmal n serialize kol haga tany b3d el deserializing
+				Table tableitself = Table.deserialize(tableName);
+				if (csvConverter.getIndexName(tableName, columnName)!=null && operator!="!=") {
+					ArrayList<Tuple> helper=new ArrayList<>();
+					BPTree ind = BPTree.deserialize(tableName, columnName);
+					ArrayList<Ref> references = new ArrayList<>();
+					int indexInPage=0;
+					String pagename="";
+					Page pagenow;
+					switch (operator){
+						case "=":
+							ind.search((Comparable) value);
+							pagename = references.get(0).getPage();
+							pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+							indexInPage=references.get(0).getIndexInPage();
+							helper.add(pagenow.tuples.get(indexInPage));
+							res.add(helper);
+							break;
+						case ">=":
+							ind.searchGreaterEqual((Comparable) value);
+							for(int k=0;k<references.size();k++){
+								pagename = references.get(k).getPage();
+								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								indexInPage=references.get(k).getIndexInPage();
+								helper.add(pagenow.tuples.get(indexInPage));
+							}
+							res.add(helper);
+							break;
+						case ">":
+							ind.searchGreaterthan((Comparable) value);
+							for(int k=0;k<references.size();k++){
+								pagename = references.get(k).getPage();
+								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								indexInPage=references.get(k).getIndexInPage();
+								helper.add(pagenow.tuples.get(indexInPage));
+							}
+							res.add(helper);
+							break;
+						case "<=":
+							for(int k=0;k<=tableitself.tablePages.size();k++){
+								pagename=tableitself.tablePages.get(k);
+								pagenow=Page.deserialize(tableName + "/" + pagename + ".class");
+								for(int p=0;p<pagenow.tuples.size();p++){
+									helper.add(pagenow.tuples.get(p));
+								}
+							}
+							ind.searchGreaterEqual((Comparable) value);
+							for(int k=0;k<references.size();k++){
+								pagename = references.get(k).getPage();
+								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								indexInPage=references.get(k).getIndexInPage();
+								helper.remove(pagenow.tuples.get(indexInPage));
+							}
+							res.add(helper);
+							break;
+						case "<":
+							for(int k=0;k<=tableitself.tablePages.size();k++){
+								pagename=tableitself.tablePages.get(k);
+								pagenow=Page.deserialize(tableName + "/" + pagename + ".class");
+								for(int p=0;p<pagenow.tuples.size();p++){
+									helper.add(pagenow.tuples.get(p));
+								}
+							}
+							ind.searchGreaterthan((Comparable) value);
+							for(int k=0;k<references.size();k++){
+								pagename = references.get(k).getPage();
+								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								indexInPage=references.get(k).getIndexInPage();
+								helper.remove(pagenow.tuples.get(indexInPage));
+							}
+							res.add(helper);
+							break;
+					}
+				}
+				else{
+				res.add(tableitself.searchTable(columnName, operator, value));}
+				tableitself.serialize();//might remove depending on deserialize
+			} catch (Exception e) {
+				throw new DBAppException("Table " + tableName + "not found.");
+			}
+			if (res.size() > 1) {
+				ArrayList<Tuple> l1 = (ArrayList<Tuple>) res.remove(0);//check valid datatype
+				ArrayList<Tuple> l2 = (ArrayList<Tuple>) res.remove(0);
+				ArrayList<Tuple> anding = new ArrayList<>(l1);
+				anding.retainAll(l2);
+				ArrayList<Tuple> oring = new ArrayList<>(l1);
+				oring.addAll(l2);
+				switch (strarrOperators[j]) {
+					case "AND":
+						res.add(anding);
+						break;
+					case "OR":
+						res.add(oring);
+						break;
+					case "XOR":
+						oring.retainAll(anding);
+						res.add(oring);
+						break;
+				}
+				j++;
+			}
+		}
+		return res.remove(0).iterator();
 	}
-
 
 	public static void main( String[] args ){
 
