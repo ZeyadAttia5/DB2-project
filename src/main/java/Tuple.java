@@ -1,32 +1,12 @@
 import java.io.Serializable;
 import java.util.Hashtable;
-import java.util.Vector;
 
-public class Tuple implements Serializable
-{
+public class Tuple implements Serializable {
     public Hashtable<String, Object> values;
 
-    public Tuple(Hashtable<String, Object> values)
-    {
+    public Tuple(Hashtable<String, Object> values) {
         this.values = values;
     }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder result = new StringBuilder();
-        for(Object key : this.values.keySet())
-        {
-            result.append(this.values.get(key) + ",");
-        }
-        result.setLength(result.length()-1);
-        return result.toString();
-    }
-
-    public Hashtable getValues(){
-        return values;
-    }
-
 
     public static void main(String[] args) {
 //        Hashtable htblColNameValue = new Hashtable();
@@ -38,5 +18,19 @@ public class Tuple implements Serializable
 //        Object x = (Object) t.values.get("id");
 //        System.out.println((int)x==2343432);
 
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder result = new StringBuilder();
+        for (Object key : this.values.keySet()) {
+            result.append(this.values.get(key) + ",");
+        }
+        result.setLength(result.length() - 1);
+        return result.toString();
+    }
+
+    public Hashtable getValues() {
+        return values;
     }
 }

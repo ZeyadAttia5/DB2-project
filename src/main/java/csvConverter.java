@@ -107,6 +107,10 @@ public class csvConverter {
         return null; // No clustering key found for the table
     }
 
+    public static boolean isClusteringKey(String tableName, String clusteringKeyValue){
+        return getClusteringKey(tableName).equalsIgnoreCase(clusteringKeyValue);
+    }
+
     //  returns a List<String[]> of the table's metadata
     public static List<String[]> getTableMetadata(String tableName) {
         List<String[]> tableMetadata = new ArrayList<>();

@@ -36,8 +36,7 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class");
-             ObjectInputStream in = new ObjectInputStream(fis)) {
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class"); ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
             System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename + "/" + filename + ".class");
         } catch (IOException | ClassNotFoundException e) {
@@ -93,6 +92,12 @@ public class Table implements Serializable {
 
     }
 
+    /**
+     * @param clusteringKeyValue
+     * @param ColNameType
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
         // Find the page where the row with the clustering key value is located
         Page page = findPage(clusteringKeyValue);
@@ -112,6 +117,12 @@ public class Table implements Serializable {
         }
     }
 
+    /**
+     * @param clusteringKeyValue
+     * @return
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     private Page findPage(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
         int result = 1;
         Page currPage = null;
@@ -145,6 +156,14 @@ public class Table implements Serializable {
 
     }
 
+    /**
+     * @param currPage
+     * @param clusteringKeyValue
+     * @param ColNameType
+     * @return
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
     private boolean updateRowInPage(Page currPage, Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
         String clusteringKeyCol = csvConverter.getClusteringKey(this.name);
 
@@ -182,8 +201,7 @@ public class Table implements Serializable {
 
     public void serialize() {
         String tableName = name;
-        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class");
-             ObjectOutputStream out = new ObjectOutputStream(fos)) {
+        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class"); ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
             System.out.println("saved table successfully at " + "src/main/resources/tables/" + tableName + "/" + name + ".class");
         } catch (IOException e) {
@@ -191,6 +209,82 @@ public class Table implements Serializable {
         }
     }
 
+    /**
+     * Updates a tuple in a table that has an indexed column
+     * @param indexedColName
+     * @param clusteringKeyValue
+     * @param htblColNameType
+     * * @throws IOException
+     * @throws ClassNotFoundException
+     * @throws DBAppException
+     */
+    public void updateIndexedTable(String indexedColName, Object clusteringKeyValue, Hashtable<String, Object> htblColNameType) throws IOException, ClassNotFoundException, DBAppException {
+        /*
+            update can be done in-place since the clustering key value is NEVER updated;
+            therefore, there is no need to insert then update
+         */
+
+        // deserialize B+ tree
+        BPTree tree = BPTree.deserialize(this.name, indexedColName);
+
+        // Find the Page
+        Page page = this.binarySearch(clusteringKeyValue);
+
+        // initialize old Ref
+        int indexInPage = page.binarySearchPage(clusteringKeyValue);
+        if (indexInPage == -1){
+            // entry not found
+            System.out.println(clusteringKeyValue + " was not found in " + this.name);
+            return;
+        }
+
+        // Initializes refs
+        Ref oldRef = new Ref(page.name, indexInPage);
+        Ref newRef = new Ref(page.name, indexInPage);
+
+        // update in place
+        boolean isUpdated = page.updateTuple(oldRef, htblColNameType);
+        if (!isUpdated){
+            System.out.println("updateIndexedTable failed");
+        }
+
+        // update B+ tree
+        tree.update((Comparable) clusteringKeyValue, (Comparable) clusteringKeyValue, oldRef, newRef);
+        tree.serialize(this.name, "B+ Tree");
+
+    }
+
+
+    public Page binarySearch(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
+        // Initialize variables for binary search
+        int low = 0;
+        int high = tablePages.size() - 1;
+
+        // Binary search loop
+        while (low <= high) {
+            int mid = (low + high) / 2;
+            String midPageName = tablePages.get(mid);
+            Page midPage = Page.deserialize(midPageName);
+
+            // Compare clustering key value in midPage with clusteringKeyValue
+            Comparable<Object> midClusteringKey = (Comparable<Object>) midPage.max;
+            int compareResult = midClusteringKey.compareTo(clusteringKeyValue);
+
+            if (compareResult == 0) {
+                // Found exact match, return midPage
+                return midPage;
+            } else if (compareResult < 0) {
+                // If midPage's clustering key is less than clusteringKeyValue, search right half
+                low = mid + 1;
+            } else {
+                // If midPage's clustering key is greater than clusteringKeyValue, search left half
+                high = mid - 1;
+            }
+        }
+
+        // If not found, return null
+        return null;
+    }
 //    public static void main(String[] args){
 //        Table t1 = new Table("Student");
 //        t1.serialize();
