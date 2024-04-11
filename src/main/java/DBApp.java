@@ -19,7 +19,7 @@ public class DBApp {
     // or leave it empty if there is no code you want to
     // execute at application startup
     public void init() {
-
+        csvConverter.createMetaDataFile();
 
     }
 
@@ -139,6 +139,7 @@ public class DBApp {
 
             String strTableName = "Student";
             DBApp dbApp = new DBApp();
+            dbApp.init();
 //
             Hashtable htblColNameType = new Hashtable();
             htblColNameType.put("id", "java.lang.Integer");
@@ -155,7 +156,7 @@ public class DBApp {
             dbApp.createIndex(strTableName, "name", "nameIndex");
 
             Hashtable<String, Object> ht = new Hashtable<>();
-//            ht.put("name", "Zeyaddd");
+            ht.put("name", "Zeyaddd");
             ht.put("gpa", 0.8);
             dbApp.updateTable(strTableName, "0", ht);
 

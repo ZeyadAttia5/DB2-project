@@ -7,6 +7,20 @@ public class csvConverter {
 
     private static final String METADATA_FILE = "src/main/resources/metadata.csv";
 
+    public static void createMetaDataFile(){
+        File metadataFile = new File(METADATA_FILE);
+
+        // Check if the file exists, and create it if it doesn't
+        if (!metadataFile.exists()) {
+            try {
+                metadataFile.createNewFile();
+                System.out.println("Metadata file created: " + METADATA_FILE);
+            } catch (IOException e) {
+                System.err.println("Error creating metadata file: " + e.getMessage());
+                return; // Exit the method if file creation fails
+            }
+        }
+    }
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
         try (FileReader fileReader = new FileReader(METADATA_FILE);
              BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -56,7 +70,11 @@ public class csvConverter {
             }
 
             System.out.println("Table metadata successfully added.");
+        } catch (FileNotFoundException e) {
+            System.err.println("Metadata file not found: " + e.getMessage());
+            e.printStackTrace();
         } catch (IOException e) {
+            System.err.println("Error reading/writing metadata file: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -67,8 +85,7 @@ public class csvConverter {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields[0].equals(strTableName) && fields[1].equals(strColName))
-                    return fields[2];
+                if (fields[0].equals(strTableName) && fields[1].equals(strColName)) return fields[2];
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -83,8 +100,7 @@ public class csvConverter {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields[0].equals(tableName) && fields[1].equals(colName))
-                    return fields[4];
+                if (fields[0].equals(tableName) && fields[1].equals(colName)) return fields[4];
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -108,7 +124,7 @@ public class csvConverter {
         return null; // No clustering key found for the table
     }
 
-    public static boolean isClusteringKey(String tableName, String clusteringKeyValue){
+    public static boolean isClusteringKey(String tableName, String clusteringKeyValue) {
         return getClusteringKey(tableName).equalsIgnoreCase(clusteringKeyValue);
     }
 
@@ -139,10 +155,8 @@ public class csvConverter {
             String line;
             while ((line = reader1.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields[0].equals(strTableName))
-                    existingIndex.add(fields[4]);
-                if (!fields[0].equals(strTableName) && !existingIndex.isEmpty())
-                    break;
+                if (fields[0].equals(strTableName)) existingIndex.add(fields[4]);
+                if (!fields[0].equals(strTableName) && !existingIndex.isEmpty()) break;
             }
         } catch (IOException e) {
             e.printStackTrace();
