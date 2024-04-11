@@ -3,9 +3,7 @@
  */
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Iterator;
 import java.util.List;
 
@@ -48,46 +46,45 @@ public class DBApp {
         }
     }
 
-	// following method creates a B+tree index 
-	public void createIndex(String   strTableName, String   strColName, String   strIndexName) throws DBAppException{
+    // following method creates a B+tree index
+    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
 
-		// adjusting metadata file with new index
-		boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
-		if(!found) {
-			DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName );
-			throw e;
-		}
+        // adjusting metadata file with new index
+        boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
+        if (!found) {
+            DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName);
+            throw e;
+        }
 
-		// retrieving data type for desired column
-		String tmp = csvConverter.getDataType(strTableName, strColName);
+        // retrieving data type for desired column
+        String tmp = csvConverter.getDataType(strTableName, strColName);
 
-		// initialising b+tree
-		BPTree tree = null;
-		if (tmp.equalsIgnoreCase("java.lang.Integer")) {
-			tree = new BPTree<Integer>(10);
+        // initialising b+tree
+        BPTree tree = null;
+        if (tmp.equalsIgnoreCase("java.lang.Integer")) {
+            tree = new BPTree<Integer>(10);
 
-		} else if (tmp.equalsIgnoreCase("java.lang.String")) {
-			tree = new BPTree<String>(10);
+        } else if (tmp.equalsIgnoreCase("java.lang.String")) {
+            tree = new BPTree<String>(10);
 
-		} else if (tmp.equalsIgnoreCase("java.lang.Double")) {
-			tree = new BPTree<Double>(10);
-		} else {
-			DBAppException e = new DBAppException("Not found");
-			throw e;
-		}
+        } else if (tmp.equalsIgnoreCase("java.lang.Double")) {
+            tree = new BPTree<Double>(10);
+        } else {
+            DBAppException e = new DBAppException("Not found");
+            throw e;
+        }
 
-		tree.serialize(strTableName, strIndexName );
+        tree.serialize(strTableName, strIndexName);
 
-	}
+    }
 
+    // following method inserts one row only.
+    // htblColNameValue must include a value for the primary key
+    public void insertIntoTable(String strTableName,
+                                Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
 
-	// following method inserts one row only.
-	// htblColNameValue must include a value for the primary key
-	public void insertIntoTable(String strTableName,
-								Hashtable<String,Object>  htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
-
-        Table target = Table.deserialize("src/main/resources/tables/"+strTableName+"/"+strTableName+".class");
-        if (target == null){
+        Table target = Table.deserialize(strTableName);
+        if (target == null) {
             throw new DBAppException("target is null");
         }
         Tuple newTuple = new Tuple(htblColNameValue);
@@ -103,7 +100,7 @@ public class DBApp {
 
         // Get the metadata of the table
         List<String[]> metadata = csvConverter.getTableMetadata(strTableName);
-        Table currTable = Table.deserialize("src/main/resources/tables/"+strTableName+"/"+strTableName+".class");
+        Table currTable = Table.deserialize(strTableName);
         if (currTable == null) {
             throw new DBAppException("Table not found: " + strTableName);
         }
@@ -131,15 +128,13 @@ public class DBApp {
         throw new DBAppException("not implemented yet");
     }
 
+    public Iterator selectFromTable(SQLTerm[] arrSQLTerms,
+                                    String[] strarrOperators) throws DBAppException {
 
-	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, 
-									String[]  strarrOperators) throws DBAppException{
-										
-		return null;
-	}
+        return null;
+    }
 
-
-	public static void main( String[] args ){
+    public static void main(String[] args) {
 
         try {
             String strTableName = "Student";
@@ -149,19 +144,21 @@ public class DBApp {
             htblColNameType.put("id", "java.lang.Integer");
             htblColNameType.put("name", "java.lang.String");
             htblColNameType.put("gpa", "java.lang.double");
-            dbApp.createTable(strTableName, "ID", htblColNameType);
+            dbApp.createTable(strTableName, "id", htblColNameType);
 //			dbApp.createIndex( strTableName, "gpa", "gpaIndex" );
 //
-            Hashtable htblColNameValue = new Hashtable( );
-            htblColNameValue.put("id", new Integer( 2343432 ));
-            htblColNameValue.put("name", new String("Ahmed Noor" ) );
-            htblColNameValue.put("gpa", new Double( 0.95 ) );
-            dbApp.insertIntoTable( strTableName , htblColNameValue );
+            Hashtable htblColNameValue = new Hashtable();
+            htblColNameValue.put("id", Integer.valueOf(2343432));
+            htblColNameValue.put("name", "Ahmed Noor");
+            htblColNameValue.put("gpa", new Double(0.95));
+            dbApp.insertIntoTable(strTableName, htblColNameValue);
 
             Hashtable<String, Object> newTuple = new Hashtable<>();
             newTuple.put("gpa", 0.8);
+            newTuple.put("name", "Zeyad");
             dbApp.updateTable(strTableName, "2343432", newTuple);
-//
+            Table tabl = Table.deserialize(strTableName);
+            System.out.println(Page.deserialize(tabl.tablePages.get(0)));
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));
 //			htblColNameValue.put("name", new String("Ahmed Noor" ) );
@@ -207,5 +204,6 @@ public class DBApp {
             exp.printStackTrace();
         }
     }
+
 
 }

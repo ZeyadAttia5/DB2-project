@@ -1,10 +1,6 @@
 import java.io.*;
 import java.util.Hashtable;
 import java.util.Vector;
-import java.sql.SQLOutput;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.Vector;
 
 
 public class Table implements Serializable {
@@ -39,8 +35,7 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class");
-             ObjectInputStream in = new ObjectInputStream(fis)) {
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class"); ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
             System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename + "/" + filename + ".class");
         } catch (IOException | ClassNotFoundException e) {
@@ -166,8 +161,7 @@ public class Table implements Serializable {
 
     public void serialize() {
         String tableName = name;
-        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class");
-             ObjectOutputStream out = new ObjectOutputStream(fos)) {
+        try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class"); ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
             System.out.println("saved table successfully at " + "src/main/resources/tables/" + tableName + "/" + name + ".class");
         } catch (IOException e) {

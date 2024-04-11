@@ -1,5 +1,4 @@
 import java.io.*;
-import java.io.FileReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -62,11 +61,11 @@ public class csvConverter {
         }
     }
 
-    public static String getDataType(String strTableName, String strColName){
+    public static String getDataType(String strTableName, String strColName) {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
-            while ((line = reader.readLine()) != null ) {
+            while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
                 if (fields[0].equals(strTableName) && fields[1].equals(strColName))
                     return fields[2];
@@ -79,10 +78,10 @@ public class csvConverter {
     }
 
 
-    public static String getIndexName(String tableName, String colName){
+    public static String getIndexName(String tableName, String colName) {
         try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
-            while ((line = reader.readLine()) != null ) {
+            while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
                 if (fields[0].equals(tableName) && fields[1].equals(colName))
                     return fields[4];
@@ -127,7 +126,6 @@ public class csvConverter {
     }
 
 
-
     // Adjusting the metadata file
     public static boolean addIndexToCSV(String strTableName, String strColName, String strIndexName) {
 
@@ -135,11 +133,11 @@ public class csvConverter {
         HashSet<String> existingIndex = new HashSet<>();
         try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
-            while ((line = reader1.readLine()) != null ) {
+            while ((line = reader1.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields[0].equals(strTableName) )
+                if (fields[0].equals(strTableName))
                     existingIndex.add(fields[4]);
-                if(!fields[0].equals(strTableName) && !existingIndex.isEmpty())
+                if (!fields[0].equals(strTableName) && !existingIndex.isEmpty())
                     break;
             }
         } catch (IOException e) {
@@ -153,7 +151,7 @@ public class csvConverter {
         try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
 
-            while ((line = reader.readLine()) != null  ) {
+            while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
                 if (fields[0].equals(strTableName) && fields[1].equals(strColName) && !existingIndex.contains(strIndexName)) {
                     found = true;
@@ -182,7 +180,7 @@ public class csvConverter {
         return found;
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
 //        Hashtable htblColNameType = new Hashtable( );
 //        htblColNameType.put("id", "java.lang.Integer");
 //        htblColNameType.put("name", "java.lang.String");
