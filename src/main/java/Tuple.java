@@ -8,6 +8,18 @@ public class Tuple implements Serializable {
         this.values = values;
     }
 
+    public static void main(String[] args) {
+//        Hashtable htblColNameValue = new Hashtable();
+//        htblColNameValue.put("id", new Integer(2343432));
+//        htblColNameValue.put("name", new String("Ahmed Noor"));
+//        htblColNameValue.put("gpa", new Double(0.95));
+//        Tuple t = new Tuple(htblColNameValue);
+//        System.out.println(t.values.get("id").getClass().toString().equals(" java.lang.Integer"));
+//        Object x = (Object) t.values.get("id");
+//        System.out.println((int)x==2343432);
+
+    }
+
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
@@ -21,17 +33,4 @@ public class Tuple implements Serializable {
     public Hashtable getValues() {
         return values;
     }
-
-
-//    public static void main(String[] args) {
-//        Hashtable htblColNameValue = new Hashtable();
-//        htblColNameValue.put("id", new Integer(2343432));
-//        htblColNameValue.put("name", new String("Ahmed Noor"));
-//        htblColNameValue.put("gpa", new Double(0.95));
-//        Tuple t = new Tuple(htblColNameValue);
-//        System.out.println(t.values.get("id").getClass().toString().equals(" java.lang.Integer"));
-//        Object x = (Object) t.values.get("id");
-//        System.out.println((int)x==2343432);
-
-//    }
 }

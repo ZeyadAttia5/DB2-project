@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -45,25 +46,18 @@ public class Page implements Serializable {
         return page;
     }
 
-//    private boolean searching(Tuple tuple, Hashtable<String, Object> conditions) {
-//        for (String column : conditions.keySet()) {
-//            Object expectedValue = conditions.get(column);
-//            Object actualValue = tuple.values.get(column);
-//            if (!expectedValue.equals(actualValue)) {
-//                return false;
-//            }
-//        }
-//        return true;
-//    }
-
     public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
 //        Page page = new Page("Student",2, "id");
 //        Hashtable htblColNameValue = new Hashtable( );
-//        htblColNameValue.put("id", new Integer( 1 ));
-//        htblColNameValue.put("name", new String("Ahmed Noor" ) );
-//        htblColNameValue.put("gpa", new Double( 0.95 ) );
+//        htblColNameValue.put("id", new Integer( 2 ));
+//        htblColNameValue.put("name", new String("Yara Noor" ) );
+//        htblColNameValue.put("gpa", new Double( 0.90 ) );
 //        Tuple t = new Tuple(htblColNameValue);
-//
+//        page.insert(t);
+//        System.out.println(page);
+//        page.serialize();
+//        System.out.println(deserialize("Student_2"));
+
 //        Hashtable h = new Hashtable( );
 //        h.put("id", new Integer( 3 ));
 //        h.put("name", new String("Ahmed Noor" ) );
@@ -82,6 +76,14 @@ public class Page implements Serializable {
 //
 //        page.insert(t3);
 //        System.out.println(page);
+    }
+
+    public Vector<Tuple> getTuples() {
+        return tuples;
+    }
+
+    public Tuple getTuple(int indexInPage) {
+        return this.getTuples().get(indexInPage);
     }
 
     public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
@@ -165,6 +167,71 @@ public class Page implements Serializable {
         }
         this.serialize();
         return new Ref(this.name, low);
+    }
+
+    public int binarySearchPage(Object clusteringKeyValue) throws DBAppException {
+        // Check if tuples is null or empty
+        if (tuples == null || tuples.isEmpty()) {
+            throw new DBAppException("Page tuples are not initialized or empty.");
+        }
+
+        // Initialize variables for binary search
+        int low = 0;
+        int high = tuples.size() - 1;
+
+        // Binary search loop
+        while (low <= high) {
+            int mid = (low + high) / 2;
+            Tuple midTuple = tuples.get(mid);
+
+            // Compare clustering key value in midTuple with clusteringKeyValue
+            Object midClusteringKeyValue = midTuple.getValues().get(clusteringKey);
+            Comparable<Object> comparableClusteringKeyValue = (Comparable<Object>) clusteringKeyValue;
+            int compareResult = comparableClusteringKeyValue.compareTo(midClusteringKeyValue);
+
+            if (compareResult == 0) {
+                // Found exact match, return mid
+                return mid;
+            } else if (compareResult < 0) {
+                // If midTuple's clustering key is greater than clusteringKeyValue, search left half
+                high = mid - 1;
+            } else {
+                // If midTuple's clustering key is less than clusteringKeyValue, search right half
+                low = mid + 1;
+            }
+        }
+
+        // If not found, return -1
+        return -1;
+    }
+
+
+    /**
+     * Updates a tuple in place
+     * @param refToOldTuple
+     * @param htblColNameType
+     * @return true if update was successful, false otherwise
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    public boolean updateTuple(Ref refToOldTuple, Hashtable<String, Object> htblColNameType) throws IOException, ClassNotFoundException {
+        Page oldPage = Page.deserialize(refToOldTuple.getPage());
+        Tuple oldTuple = oldPage.getTuple(refToOldTuple.getIndexInPage());
+        boolean isSuccess = false;
+        for (String col : htblColNameType.keySet()) {
+            if ((oldTuple.getValues().containsKey(col))) {
+                //
+                oldTuple.getValues().put(col, htblColNameType.get(col));
+                isSuccess = true;
+            }
+            else {
+                // do nothing :)
+            }
+        }
+        if (isSuccess == false){
+            System.out.println("Couldn't update");
+        }
+        return isSuccess;
     }
 
     public void delete(int index) {
