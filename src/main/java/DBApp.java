@@ -3,7 +3,9 @@
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Iterator;
 import java.util.List;
 
@@ -46,15 +48,43 @@ public class DBApp {
         }
     }
 
-    // following method creates a B+tree index
-    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
+	// following method creates a B+tree index 
+	public void createIndex(String   strTableName, String   strColName, String   strIndexName) throws DBAppException{
 
-        throw new DBAppException("not implemented yet");
-    }
+		// adjusting metadata file with new index
+		boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
+		if(!found) {
+			DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName );
+			throw e;
+		}
 
-    // following method inserts one row only.
-    // htblColNameValue must include a value for the primary key
-    public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
+		// retrieving data type for desired column
+		String tmp = csvConverter.getDataType(strTableName, strColName);
+
+		// initialising b+tree
+		BPTree tree = null;
+		if (tmp.equalsIgnoreCase("java.lang.Integer")) {
+			tree = new BPTree<Integer>(10);
+
+		} else if (tmp.equalsIgnoreCase("java.lang.String")) {
+			tree = new BPTree<String>(10);
+
+		} else if (tmp.equalsIgnoreCase("java.lang.Double")) {
+			tree = new BPTree<Double>(10);
+		} else {
+			DBAppException e = new DBAppException("Not found");
+			throw e;
+		}
+
+		tree.serialize(strTableName, strIndexName );
+
+	}
+
+
+	// following method inserts one row only.
+	// htblColNameValue must include a value for the primary key
+	public void insertIntoTable(String strTableName,
+								Hashtable<String,Object>  htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
 
         Table target = Table.deserialize("src/main/resources/tables/"+strTableName+"/"+strTableName+".class");
         if (target == null){
@@ -101,12 +131,15 @@ public class DBApp {
         throw new DBAppException("not implemented yet");
     }
 
-    public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
 
-        return null;
-    }
+	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, 
+									String[]  strarrOperators) throws DBAppException{
+										
+		return null;
+	}
 
-    public static void main(String[] args) {
+
+	public static void main( String[] args ){
 
         try {
             String strTableName = "Student";

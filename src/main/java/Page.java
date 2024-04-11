@@ -39,10 +39,17 @@ public class Page implements Serializable
         return result;
     }
 
-    public int insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+    public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
         String[] arr = this.name.split("_");
         String clust = csvConverter.getClusteringKey(arr[0]);
+
+
+        for(String colName : tuple.values.keySet())
+        {
+
+        }
+
 
         if(this.tuples.size()==0)
         {
@@ -50,8 +57,9 @@ public class Page implements Serializable
             this.max = tuple.values.get(clust);
             this.min = this.max;
             this.serialize();
-            return this.tuples.size()-1;
+            return new Ref(this.name, this.tuples.size()-1);
         }
+
         String name = (this.name.split("_"))[0];
         Vector<String[]> metadata = readCSV(name);
         String datatype = "";
@@ -70,45 +78,17 @@ public class Page implements Serializable
         {
             int mid = low + (high - low)/2;
             Tuple midTuple = this.tuples.get(mid);
-            if(datatype.equals("String"))
-            {
-                String midValue = (String) midTuple.values.get(this.clusteringKey);
-                if (midValue.equals(value)) {
-                    low = mid; // Value already exists
-                    System.out.println("Can not insert duplicate tuple");
-                    return -1;
-                } else if (midValue.compareTo((String) value) < 0) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
-            }
-            else if (datatype.equals("Double"))
-            {
-                double midValue = (Double) midTuple.values.get(this.clusteringKey);
-                if (midValue == (Double) value) {
-                    low = mid; // Value already exists
-                    System.out.println("Can not insert duplicate tuple");
-                    return -1;
-                } else if (midValue < (Double) value) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
 
-            }
-            else
+            Object midValue = midTuple.values.get(this.clusteringKey);
+            if(((Comparable) midValue).compareTo((Comparable) value) == 0)
             {
-                int midValue = (Integer) midTuple.values.get(this.clusteringKey);
-                if (midValue == (Integer) value) {
-                    low = mid; // Value already exists
-                    System.out.println("Can not insert duplicate tuple");
-                    return -1;
-                } else if (midValue < (Integer) value) {
-                    low = mid + 1;
-                } else {
-                    high = mid - 1;
-                }
+                low = mid; // Value already exists
+                System.out.println("Can not insert duplicate tuple");
+                return null;
+            } else if (((Comparable) midValue).compareTo((Comparable) value) < 0) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
             }
         }
         System.out.println(low);
@@ -119,7 +99,7 @@ public class Page implements Serializable
                 this.max = tuple.values.get(clust);
             }
             this.serialize();
-            return this.tuples.size()-1;
+            return new Ref(this.name, this.tuples.size()-1);
         }
 
         else if(this.tuples.get(low)!=null) {
@@ -129,21 +109,20 @@ public class Page implements Serializable
                 this.max = tuple.values.get(clust);
             }
             this.serialize();
-            return low;
-
+            return new Ref(this.name, low);
         }
 
         Page currPage = this;
         while(currPage.tuples.size()>maxSize)
         {
             Tuple temp = currPage.tuples.lastElement();
-            currPage.tuples.removeLast();
+            currPage.tuples.remove(temp);
             currPage.serialize();
             String currName = currPage.name;
             int currInt = (int) currName.charAt(currName.length()-1);
             currName = currName.replace((char) currInt,(char) (currInt+1));
             currPage = deserialize(currName);
-            currPage.tuples.addFirst(temp);
+            currPage.tuples.add(0 ,temp);
             currPage.serialize();
         }
         if(((Comparable) this.max).compareTo((Comparable) tuple.values.get(clust)) < 0)
@@ -151,7 +130,7 @@ public class Page implements Serializable
             this.max = tuple.values.get(clust);
         }
         this.serialize();
-        return low;
+        return new Ref(this.name, low);
     }
 
 //    private boolean searching(Tuple tuple, Hashtable<String, Object> conditions) {
@@ -175,6 +154,7 @@ public class Page implements Serializable
             file.delete();
         }
     }
+
 
     public int readConfigFile(){
         Properties properties = new Properties();
@@ -211,7 +191,7 @@ public class Page implements Serializable
     public static Page deserialize(String fileName) throws IOException, ClassNotFoundException {
         Page page;
         String[] arr = fileName.split("_");
-        FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + arr[0] + "/" + fileName + ".class");
+        FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" +  arr[0] + "/" + fileName + ".class");
         ObjectInputStream in = new ObjectInputStream(fileIn);
         page = (Page) in.readObject();
         in.close();
@@ -228,8 +208,8 @@ public class Page implements Serializable
         return result;
     }
 
-//    public static void main(String[] args) throws DBAppException {
-//        Page page = new Page("Bike",2, "id");
+    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
+//        Page page = new Page("Student",2, "id");
 //        Hashtable htblColNameValue = new Hashtable( );
 //        htblColNameValue.put("id", new Integer( 1 ));
 //        htblColNameValue.put("name", new String("Ahmed Noor" ) );
@@ -254,5 +234,5 @@ public class Page implements Serializable
 //
 //        page.insert(t3);
 //        System.out.println(page);
-//    }
+    }
 }
