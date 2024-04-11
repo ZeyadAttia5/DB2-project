@@ -169,7 +169,17 @@ public class Page implements Serializable {
         return new Ref(this.name, low);
     }
 
-    public int binarySearchPage(Object clusteringKeyValue) throws DBAppException {
+    public int binarySearchPage(String clusteringKeyValue, String dataType) throws DBAppException {
+
+        Object newValue = null;
+        if (dataType.equalsIgnoreCase("java.lang.integer")) {
+            newValue = Integer.parseInt(clusteringKeyValue);
+        } else if (dataType.equalsIgnoreCase("java.lang.string")) {
+            newValue = (String) clusteringKeyValue;
+        } else if (dataType.equalsIgnoreCase("java.lang.double")) {
+            newValue = Double.parseDouble(clusteringKeyValue);
+        }
+
         // Check if tuples is null or empty
         if (tuples == null || tuples.isEmpty()) {
             throw new DBAppException("Page tuples are not initialized or empty.");
@@ -186,7 +196,7 @@ public class Page implements Serializable {
 
             // Compare clustering key value in midTuple with clusteringKeyValue
             Object midClusteringKeyValue = midTuple.getValues().get(clusteringKey);
-            Comparable<Object> comparableClusteringKeyValue = (Comparable<Object>) clusteringKeyValue;
+            Comparable<Object> comparableClusteringKeyValue = (Comparable<Object>) newValue;
             int compareResult = comparableClusteringKeyValue.compareTo(midClusteringKeyValue);
 
             if (compareResult == 0) {

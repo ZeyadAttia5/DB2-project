@@ -156,6 +156,7 @@ public class Table implements Serializable {
 
     }
 
+
     /**
      * @param currPage
      * @param clusteringKeyValue
@@ -211,10 +212,10 @@ public class Table implements Serializable {
 
     /**
      * Updates a tuple in a table that has an indexed column
+     *
      * @param indexedColName
      * @param clusteringKeyValue
-     * @param htblColNameType
-     * * @throws IOException
+     * @param htblColNameType    * @throws IOException
      * @throws ClassNotFoundException
      * @throws DBAppException
      */
@@ -227,12 +228,18 @@ public class Table implements Serializable {
         // deserialize B+ tree
         BPTree tree = BPTree.deserialize(this.name, indexedColName);
 
+        // Find clustering col name
+        String clusteringColName = csvConverter.getClusteringKey(this.name);
+
+        // Find the clustering data type
+        String clusteringDataType = csvConverter.getDataType(this.name, clusteringColName);
+
         // Find the Page
-        Page page = this.binarySearch(clusteringKeyValue);
+        Page page = this.binarySearch(clusteringKeyValue.toString(), clusteringDataType);
 
         // initialize old Ref
-        int indexInPage = page.binarySearchPage(clusteringKeyValue);
-        if (indexInPage == -1){
+        int indexInPage = page.binarySearchPage(clusteringKeyValue.toString(), clusteringDataType);
+        if (indexInPage == -1) {
             // entry not found
             System.out.println(clusteringKeyValue + " was not found in " + this.name);
             return;
@@ -244,7 +251,7 @@ public class Table implements Serializable {
 
         // update in place
         boolean isUpdated = page.updateTuple(oldRef, htblColNameType);
-        if (!isUpdated){
+        if (!isUpdated) {
             System.out.println("updateIndexedTable failed");
         }
 
@@ -255,7 +262,18 @@ public class Table implements Serializable {
     }
 
 
-    public Page binarySearch(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
+    public Page binarySearch(String clusteringKeyValue, String dataType) throws IOException, ClassNotFoundException {
+
+        Object newValue = null;
+        if (dataType.equalsIgnoreCase("java.lang.integer")) {
+            newValue = Integer.parseInt(clusteringKeyValue);
+        } else if (dataType.equalsIgnoreCase("java.lang.string")) {
+            newValue = (String) clusteringKeyValue;
+        } else if (dataType.equalsIgnoreCase("java.lang.double")) {
+            newValue = Double.parseDouble(clusteringKeyValue);
+        }
+
+
         // Initialize variables for binary search
         int low = 0;
         int high = tablePages.size() - 1;
@@ -268,7 +286,8 @@ public class Table implements Serializable {
 
             // Compare clustering key value in midPage with clusteringKeyValue
             Comparable<Object> midClusteringKey = (Comparable<Object>) midPage.max;
-            int compareResult = midClusteringKey.compareTo(clusteringKeyValue);
+
+            int compareResult = midClusteringKey.compareTo(newValue);
 
             if (compareResult == 0) {
                 // Found exact match, return midPage
@@ -285,14 +304,6 @@ public class Table implements Serializable {
         // If not found, return null
         return null;
     }
-//    public static void main(String[] args){
-//        Table t1 = new Table("Student");
-//        t1.serialize();
-//        Table temp = deserialize("Student/Student");
-//        System.out.println(temp.tablePages);
-//        System.out.println(temp.name);
-//
-//    }
 
 
 }
