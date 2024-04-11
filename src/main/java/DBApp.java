@@ -222,7 +222,7 @@ public class DBApp {
 				anding.retainAll(l2);
 				ArrayList<Tuple> oring = new ArrayList<>(l1);
 				oring.addAll(l2);
-				switch (strarrOperators[j]) {
+				switch (strarrOperators[j].toUpperCase()) {
 					case "AND":
 						res.add(anding);
 						break;
