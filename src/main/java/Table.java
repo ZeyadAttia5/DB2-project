@@ -62,11 +62,7 @@ public class Table implements Serializable {
         currPage.insert(tuple);
         this.serialize();
 
-
-
-
     }
-
     public void serialize() {
         String tableName = name;
         try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class" );
