@@ -5,7 +5,7 @@ import java.util.*;
 
 public class csvConverter {
 
-    private static final String METADATA_FILE = "src/metadata.csv";
+    private static final String METADATA_FILE = "src/main/resources/metadata.csv";
 
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
         try (FileReader fileReader = new FileReader(METADATA_FILE);
