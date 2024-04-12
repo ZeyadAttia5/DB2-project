@@ -86,15 +86,25 @@ public class Page implements Serializable {
         return this.getTuples().get(indexInPage);
     }
 
+    private void insertHelper(Ref reference, Tuple tuple, String tableName)
+    {
+        for (String colName : tuple.values.keySet()) {
+            String result = csvConverter.getIndexName(tableName,colName);
+            if(result != null)
+            {
+                BPTree tree = BPTree.deserialize(tableName,colName);
+                tree.insert((Comparable) tuple.values.get(colName), reference);
+            }
+        }
+    }
+
     public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
         String[] arr = this.name.split("_");
         String clust = csvConverter.getClusteringKey(arr[0]);
 
 
-        for (String colName : tuple.values.keySet()) {
 
-        }
 
 
         if (this.tuples.size() == 0) {
@@ -102,7 +112,9 @@ public class Page implements Serializable {
             this.max = tuple.values.get(clust);
             this.min = this.max;
             this.serialize();
-            return new Ref(this.name, this.tuples.size() - 1);
+            Ref result = new Ref(this.name, this.tuples.size() - 1);
+            insertHelper(result, tuple, arr[0]);
+            return result;
         }
 
         String name = (this.name.split("_"))[0];
@@ -140,14 +152,18 @@ public class Page implements Serializable {
                 this.max = tuple.values.get(clust);
             }
             this.serialize();
-            return new Ref(this.name, this.tuples.size() - 1);
+            Ref result = new Ref(this.name, this.tuples.size() - 1);
+            insertHelper(result, tuple, arr[0]);
+            return result;
         } else if (this.tuples.get(low) != null) {
             this.tuples.add(low, tuple);
             if (((Comparable) this.max).compareTo(tuple.values.get(clust)) < 0) {
                 this.max = tuple.values.get(clust);
             }
             this.serialize();
-            return new Ref(this.name, low);
+            Ref result = new Ref(this.name, low);
+            insertHelper(result, tuple, arr[0]);
+            return result;
         }
 
         Page currPage = this;

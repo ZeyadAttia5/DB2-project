@@ -85,6 +85,10 @@ public class Table implements Serializable {
             currPage = Page.deserialize(this.name + "_" + i);
 
             result = ((Comparable) targetKey).compareTo(currPage.max);
+            if(currPage.tuples.size()<currPage.maxSize && result>0)
+            {
+                break;
+            }
         }
         currPage.insert(tuple);
         this.serialize();
