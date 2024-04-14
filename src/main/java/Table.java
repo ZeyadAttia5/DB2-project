@@ -4,16 +4,19 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 
+
 public class Table implements Serializable {
     // Map to store the number of pages for each table
     public Vector<String> tablePages;
     public String name;
+    public Hashtable<String, Object[]> pageInfo; // Object [] = [max,min,pageSize]
 
 
     public Table(String name) {
         createDirectory(name);
         this.name = name;
         tablePages = new Vector<>();
+        pageInfo = new Hashtable<>();
 
     }
 
@@ -70,28 +73,54 @@ public class Table implements Serializable {
     }
 
     public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+
         if (this.tablePages.size() == 0) {
             Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
             newPage.insert(tuple);
             tablePages.add(newPage.name);
+            pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
             this.serialize();
             return;
         }
+
+        File pageFolder = new File("src/main/resources/tables/" + this.name);
+        File[] files = Page.sortFiles(pageFolder.listFiles());
+        files = Arrays.copyOfRange(files, 1,  files.length);
         String clusteringKey = csvConverter.getClusteringKey(this.name);
         Object targetKey = tuple.values.get(clusteringKey);
-        Page currPage = null;
+        int maxSize = Page.readConfigFile();
         int result = 1;
-        for (int i = 0; result > 0; i++) {
-            currPage = Page.deserialize(this.name + "_" + i);
+        Page currPage = null;
 
-            result = ((Comparable) targetKey).compareTo(currPage.max);
-            if(currPage.tuples.size()<currPage.maxSize && result>0)
+        for(File file : files)
+        {
+            String fileName = file.getName();
+            Object[] info = this.pageInfo.get(fileName.substring(0, fileName.length()-6)); //remove .class from the string
+            result = ((Comparable) targetKey).compareTo(info[0]);
+
+            if(result==0)
             {
+                System.out.println("Can't insert duplicate clustering key");
+                return;
+            }
+            if((int) info[2] < maxSize || result < 0)
+            {
+                currPage = Page.deserialize(fileName.substring(0, fileName.length()-6));
                 break;
             }
         }
-        currPage.insert(tuple);
-        this.serialize();
+
+        if(currPage != null)
+        {
+            currPage.insert(tuple);
+        }
+        else
+        {
+            Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
+            newPage.insert(tuple);
+            pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
+        }
+
 
 
     }
