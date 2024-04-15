@@ -1,10 +1,6 @@
 import java.io.*;
-import java.util.Hashtable;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 import java.io.File;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -103,6 +99,18 @@ public class Page implements Serializable {
         }
     }
 
+    private void insertHelperShifting(Ref reference, Tuple tuple, String tableName)
+    {
+        for (String colName : tuple.values.keySet()) {
+            String result = csvConverter.getIndexName(tableName,colName);
+            if(!result.equals("null"))
+            {
+                BPTree tree = BPTree.deserialize(tableName,colName);
+                tree.insertingWithShifting((Comparable) tuple.values.get(colName), reference, this.maxSize);
+            }
+        }
+    }
+
     public static File[] sortFiles(File[] files) {
         Arrays.sort(files, new Comparator<File>() {
             @Override
@@ -173,7 +181,7 @@ public class Page implements Serializable {
             this.tuples.add(low, tuple);
             this.serialize();
             result = new Ref(this.name, low);
-            insertHelper(result, tuple, arr[0]);
+            insertHelperShifting(result, tuple, arr[0]);
         }
         this.max = this.tuples.lastElement().values.get(clusteringKey);
 
@@ -204,6 +212,7 @@ public class Page implements Serializable {
                     String fileName = file.getName();
                     currPage = Page.deserialize(fileName.substring(0, fileName.length()-6));
                     currPage.tuples.add(0, extra);
+                    insertHelperShifting(new Ref(currPage.name, 0), tuple, arr[0]);
                     currPage.min = currPage.tuples.get(0).values.get(clusteringKey);
                     currPage.max = currPage.tuples.get(currPage.maxSize-1).values.get(clusteringKey);
                     currTable.pageInfo.put(currPage.name, new Object[] {currPage.max, currPage.min, currPage.tuples.size()});
@@ -233,7 +242,6 @@ public class Page implements Serializable {
         currTable.serialize();
         return result;
     }
-
     public int binarySearchPage(String clusteringKeyValue, String dataType) throws DBAppException {
 
         Object newValue = null;
