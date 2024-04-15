@@ -131,9 +131,14 @@ public class DBApp {
     // htblColNameValue holds the key and value. This will be used in search
     // to identify which rows/tuples to delete.
     // htblColNameValue enteries are ANDED together
-    public void deleteFromTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
-
-        throw new DBAppException("not implemented yet");
+    public void deleteFromTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
+        Table table = Table.deserialize( strTableName);
+        if (table != null) {
+            table.delete(htblColNameValue);
+            table.serialize();
+        } else {
+            throw new DBAppException("table " + strTableName + " does not exist");
+        }
     }
 
     public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
@@ -148,26 +153,68 @@ public class DBApp {
             String strTableName = "Student";
             DBApp dbApp = new DBApp();
             dbApp.init();
-//
+
 //            Hashtable htblColNameType = new Hashtable();
 //            htblColNameType.put("id", "java.lang.Integer");
 //            htblColNameType.put("name", "java.lang.String");
 //            htblColNameType.put("gpa", "java.lang.double");
+//            htblColNameType.put("age", "java.lang.Integer");
 //            dbApp.createTable(strTableName, "id", htblColNameType);
-//
-//            Hashtable htblColNameValue = new Hashtable();
-//            htblColNameValue.put("id", Integer.valueOf(30));
-//            htblColNameValue.put("name", "Ahmed Noor");
-//            htblColNameValue.put("gpa", new Double(0.95));
-//            dbApp.insertIntoTable(strTableName, htblColNameValue);
 
-//            dbApp.createIndex(strTableName, "name", "nameIndex");
-//
-//            Hashtable<String, Object> ht = new Hashtable<>();
-//            ht.put("name", "Zeyaddd");
-//            ht.put("gpa", 0.8);
+            Hashtable htblColNameValue1 = new Hashtable();
+            htblColNameValue1.put("id", Integer.valueOf(1));
+            htblColNameValue1.put("name", "Ahmed");
+            htblColNameValue1.put("gpa", 3.95);
+            htblColNameValue1.put("age", 20);
+            dbApp.insertIntoTable(strTableName, htblColNameValue1);
+
+            Hashtable htblColNameValue2 = new Hashtable();
+            htblColNameValue2.put("id", Integer.valueOf(2));
+            htblColNameValue2.put("name", "Mohamed");
+            htblColNameValue2.put("gpa", 1.77);
+            htblColNameValue2.put("age", 19);
+            dbApp.insertIntoTable(strTableName, htblColNameValue2);
+
+            Hashtable htblColNameValue3 = new Hashtable();
+            htblColNameValue3.put("id", Integer.valueOf(3));
+            htblColNameValue3.put("name", "Amr");
+            htblColNameValue3.put("gpa", 2.35);
+            htblColNameValue3.put("age", 21);
+            dbApp.insertIntoTable(strTableName, htblColNameValue3);
+
+            Hashtable htblColNameValue4 = new Hashtable();
+            htblColNameValue4.put("id", Integer.valueOf(4));
+            htblColNameValue4.put("name", "Salma");
+            htblColNameValue4.put("gpa", 0.7);
+            htblColNameValue4.put("age", 21);
+            dbApp.insertIntoTable(strTableName, htblColNameValue4);
+
+            Hashtable htblColNameValue5 = new Hashtable();
+            htblColNameValue5.put("id", Integer.valueOf(5));
+            htblColNameValue5.put("name", "Nabila");
+            htblColNameValue5.put("gpa", 0.7);
+            htblColNameValue5.put("age", 21);
+            dbApp.insertIntoTable(strTableName, htblColNameValue5);
+
+            Hashtable htblColNameValue6 = new Hashtable();
+            htblColNameValue6.put("id", Integer.valueOf(6));
+            htblColNameValue6.put("name", "Jana");
+            htblColNameValue6.put("gpa", 1.11);
+            htblColNameValue6.put("age", 21);
+            dbApp.insertIntoTable(strTableName, htblColNameValue6);
+
+            dbApp.createIndex(strTableName, "gpa", "gpaIndex");
+
+            Hashtable<String, Object> ht = new Hashtable<>();
+            ht.put("gpa", 0.7);
+            ht.put("name","Salma");
+
+            dbApp.deleteFromTable(strTableName,ht);
+            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+
+            //ht.put("gpa", 0.8);
 //            dbApp.updateTable(strTableName, "0", ht);
-//
+
 //            System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 //
 //			htblColNameValue.clear( );

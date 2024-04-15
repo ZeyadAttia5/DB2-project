@@ -280,6 +280,103 @@ public class Page implements Serializable {
         return -1;
     }
 
+    public void deleteTuples(Hashtable<String, Object> htblColNameValue) {
+        //check if there's a clustering key in the conditions
+        if (!htblColNameValue.containsKey(clusteringKey)) {
+            //if it's not; we loop through the tuples & for each we check if all the conditions are met
+            for (int i = tuples.size() - 1; i >= 0; i--) {
+                Tuple tuple = tuples.get(i);
+                if (tupleMatchesConditions(tuple, htblColNameValue)) {
+                    tuples.remove(i);
+                }
+            }
+        } else{
+            //if there's a clustering key we perform binary search to find the tuples then see if they match
+            Object clusteringKeyValue = htblColNameValue.get(clusteringKey);
+            int index = binarySearch(clusteringKeyValue);
+            if (index != -1) {
+                //if we found the tuple corresponding to the clustering key, we check the rest of the conditions
+                Tuple matchingTuple = tuples.get(index);
+                htblColNameValue.remove(clusteringKey);
+                if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
+                    tuples.remove(index);
+                }
+            }
+        }
+        if (tuples.isEmpty()) {
+            File file = new File(this.name + ".class");
+            file.delete();
+        }
+    }
+
+    public boolean deleteIndexedTuples(Ref ref, Hashtable<String, Object> conditions) {
+        //we take a tuple reference to check whether it matches the rest of the conditions before deleting the tuple
+        int refIndex = ref.getIndexInPage();
+        Tuple tuple = tuples.get(refIndex);
+        boolean result = false;
+        //check if there's a clustering key in the remaining conditions
+        if (!conditions.containsKey(clusteringKey)) {
+            //if there isn't, we check if the tuple matches the other conditions to delete it
+            if (tupleMatchesConditions(tuple, conditions)) {
+                tuples.remove(tuple);
+                result = true;
+            }
+        }
+        else {
+            //if there's a clustering key we perform binary search to find the tuple with the specified clustering key value
+            Object clusteringKeyValue = conditions.get(clusteringKey);
+            int clusteringIndex = binarySearch(clusteringKeyValue);
+            if (clusteringIndex == refIndex) {
+                //if we found that the tuple corresponding to the clustering key value is the same as the tuple we are checking we check that they match the rest of the conditions if they exist minus the clustering key column
+                conditions.remove(clusteringKey);
+                if (!conditions.isEmpty()){
+                    if (tupleMatchesConditions(tuple, conditions)) {
+                        tuples.remove(tuple);
+                        result = true;
+                    }
+                } else{
+                    tuples.remove(tuple);
+                }
+            }
+            if (tuples.isEmpty()) {
+                File file = new File(this.name + ".class");
+                file.delete();
+            }
+        }
+        return result;
+    }
+
+    private boolean tupleMatchesConditions(Tuple tuple, Hashtable<String, Object> conditions) {
+        for (String column : conditions.keySet()) {
+            Object expectedValue = conditions.get(column);
+            Object actualValue = tuple.values.get(column);
+            if (!expectedValue.equals(actualValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private int binarySearch(Object clusteringKeyValue) {
+        int low = 0;
+        int high = tuples.size() - 1;
+
+        while (low <= high) {
+            int mid = low + (high - low) / 2;
+            Tuple midTuple = tuples.get(mid);
+            Comparable midValue = (Comparable) midTuple.values.get(clusteringKey);
+
+            int cmp = midValue.compareTo(clusteringKeyValue);
+            if (cmp == 0) {
+                return mid;
+            } else if (cmp < 0) {
+                low = mid + 1;
+            } else {
+                high = mid - 1;
+            }
+        }
+        return -1;
+    }
 
     /**
      * Updates a tuple in place
@@ -307,14 +404,6 @@ public class Page implements Serializable {
             System.out.println("Couldn't update");
         }
         return isSuccess;
-    }
-
-    public void delete(int index) {
-        this.tuples.remove(index);
-        if (this.tuples.isEmpty()) {
-            File file = new File(this.name + ".class");
-            file.delete();
-        }
     }
 
     public static int readConfigFile() {

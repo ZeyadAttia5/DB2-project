@@ -1,8 +1,5 @@
 import java.io.*;
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.Vector;
-
+import java.util.*;
 
 
 public class Table implements Serializable {
@@ -123,6 +120,136 @@ public class Table implements Serializable {
 
 
 
+    }
+    public void delete(Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
+        
+        Hashtable<String, Object> conditionsTemp = new Hashtable<>();
+        Enumeration<String> keys = htblColNameValue.keys();
+        
+        // Storing a temporary version of the conditions (ht)
+        while (keys.hasMoreElements()) {
+            String key = keys.nextElement();
+            Object value = htblColNameValue.get(key);
+            conditionsTemp.put(key, value);
+        }
+        
+        // Deleting one row in the case of a clustering key being present + index 
+        for(String column:htblColNameValue.keySet()){
+            if(csvConverter.isClusteringKey(name,column)){
+                String indexName = csvConverter.getIndexName(name, column);
+                
+                if(!indexName.equals("null")){
+                    BPTree b = BPTree.deserialize (name, column);
+                    ArrayList<Ref> reference = b.search((Comparable) htblColNameValue.get(column));
+                    if(!reference.isEmpty()) {
+                        String pageToGoTo = reference.get(0).getPage();
+                        Page page = Page.deserialize(name + "/" + pageToGoTo);
+                        page.deleteIndexedTuples(reference.get(0), htblColNameValue);
+                        b.serialize(name,csvConverter.getIndexName(name, column));
+                    }
+                    else{
+                        System.out.println("no matching tuple");
+                        return;
+                    }
+                }
+            }
+        }
+        
+        
+        ArrayList<Ref> toDelete = new ArrayList<>();
+        HashSet<String> uniquePages = new HashSet<>();
+        
+        // We will iterate through the columns to check if there's an index on them
+        for (Iterator<String> iterator = htblColNameValue.keySet().iterator(); iterator.hasNext();) {
+            String column = iterator.next();
+            String indexName = csvConverter.getIndexName(this.name, column);
+            System.out.println(indexName);
+            // If an index was found on a column it should be added to the array of references to delete
+            if (!Objects.equals(indexName, "null")) {
+                BPTree b = BPTree.deserialize (this.name, column);
+                ArrayList<Ref> references = b.search((Comparable) htblColNameValue.get(column));
+                if (toDelete.isEmpty())
+                    toDelete = references;
+                else{
+                    intersection(toDelete,references);
+                }
+                //htblColNameValue.remove(column);
+                //remove the indexed column from the conditions
+                iterator.remove();
+            }
+
+        }
+        
+
+        for(Ref ref:toDelete){
+            if(!uniquePages.contains(ref.getPage()))
+                uniquePages.add(ref.getPage());
+        }
+
+        // Checking if there are columns in the conditions hashtable where an index doesn't exist
+
+        if (!htblColNameValue.isEmpty() ) {
+            if (!uniquePages.isEmpty()) {
+                for (String fileName : uniquePages) {
+                    try {
+                        Page page = Page.deserialize(name + "/" + fileName);
+                        //we will iterate through the references that should be deleted if they exist
+                        for (Ref ref : toDelete) {
+                            if (ref.getPage().equals(fileName)) ;
+                            {
+                                //call the page deleteIndexedTuples method to check if the tuple matches the rest of the conditions by accessing the number of the tuple specified in the reference
+                                if (!page.deleteIndexedTuples(ref, htblColNameValue)) {
+                                    toDelete.remove(ref);
+                                }
+                            }
+                        }
+                        page.serialize();
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+                for (String fileName : tablePages) {
+                    try {
+                        Page page = Page.deserialize(fileName);
+                        page.deleteTuples(htblColNameValue);
+                        page.serialize();
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
+        for(String column:conditionsTemp.keySet()){
+            String indexName = csvConverter.getIndexName(name, column);
+            if(!Objects.equals(indexName, "null")){
+                for(Ref ref : toDelete){
+                    BPTree b = BPTree.deserialize (name, column);
+                    b.delete((Comparable) conditionsTemp.get(column), ref);
+                    b.serialize(name, column);
+                }
+            }
+        }
+    }
+
+    public static <T> ArrayList<T> intersection(ArrayList<T> list1, ArrayList<T> list2) {
+        // Create a HashSet to store unique elements from list1
+        HashSet<T> set = new HashSet<>(list1);
+
+        // Create a result ArrayList to store the intersection
+        ArrayList<T> intersectionList = new ArrayList<>();
+
+        // Iterate through list2 and check if each element is present in the HashSet
+        for (T element : list2) {
+            if (set.contains(element)) {
+                intersectionList.add(element);
+                // Remove the element from the HashSet to avoid duplicates in the intersection
+                set.remove(element);
+            }
+        }
+
+        return intersectionList;
     }
 
     /**
