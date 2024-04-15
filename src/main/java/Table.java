@@ -361,6 +361,105 @@ public class Table implements Serializable {
 
         return result;
     }
+    public ArrayList<Tuple> searchTable(String columnName, String operator, Object value) throws DBAppException {
+        ArrayList<Tuple> results = new ArrayList<>();
+        Vector<String[]> columnstuff = Page.readCSV(this.name);
+        ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
+        String isclusteringkey = "False";
+        String columnType=null;
+        for (String[] column : columnstuff) {
+            if (column[1].equals(columnName)) {
+                isclusteringkey = column[3];
+                columnType = column[2];
+                break;
+            }
+        }
+        if (columnType == null) {
+            throw new DBAppException("Column "+ columnName +" not found");
+        }
+        if (!compatibleTypes(value, columnType)) {
+            throw new DBAppException("Datatype of value doesn't match the column datatype: ");
+        }
+        if (isclusteringkey == "False" || operator == "!=") {
+            for (String pagename : tablePages) {
+                try {
+                    Page page = Page.deserialize(pagename + ".class");// you removed hagat mn hena gt mn salma's incase 3amal moshkela
+                    pageResults = new ArrayList<Tuple>();
+                    pageResults = page.searchlinearPage(columnName, value, operator);
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                results.addAll(pageResults);
+            }
+            return results;
+        } else {
+            if(operator.equals("=")){
+                Comparable<Object> comparableValue = (Comparable<Object>) value;
+                int low = 0;
+                int high = tablePages.size() - 1;
+                while (low <= high) {
+                    int mid = (low + high) / 2;
+                    String pagename = tablePages.get(mid);
+                    try {//getters and setterssss!
+                        Page page = Page.deserialize(pagename + ".class");
+                        if (comparableValue.compareTo(page.min) < 0) {
+                            high = mid - 1; // Search in the lower half
+                        } else if (comparableValue.compareTo(page.max) > 0) {
+                            low = mid + 1; // Search in the upper half
+                        } else {
+                            pageResults = page.binarysearchPage(columnName, value, operator);
+                            results.addAll(pageResults);
+                            return results;
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if(operator==">"||operator==">=") {
+                for (int i = tablePages.size() - 1; i >= 0; i--) {
+                    try {
+                        Page page = Page.deserialize(this.tablePages.get(i)+".class");
+                        int maximum =page.max;
+                        if (((Comparable) maximum).compareTo((Comparable) value) > 0) {
+                            ArrayList<Tuple> tempp = new ArrayList<>();
+                            tempp = page.binarysearchPage(columnName, value, operator);
+                            page.serialize();
+                            pageResults.addAll(tempp);
+                        }else{
+                            for(int j= pageResults.size()-1;j>=0;j--){
+                                results.add(pageResults.get(i));
+                            }
+                            return results;
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if (operator=="<"||operator=="<=") {
+                for (int i=0;i< tablePages.size();i++){
+                    try {
+                        Page page = Page.deserialize(this.tablePages.get(i)+".class");
+                        Object minimum =page.min;
+                        if (((Comparable) minimum).compareTo((Comparable) value) < 0) {
+                            pageResults = new ArrayList<Tuple>();
+                            pageResults = page.binarysearchPage(columnName, value, operator);
+                            page.serialize();
+
+                            results.addAll(pageResults);
+                        }
+                        else{
+                            return results;
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return results;
+    }
 
 
 }
