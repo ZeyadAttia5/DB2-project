@@ -85,6 +85,14 @@ public class DBApp {
         Tuple newTuple = new Tuple(htblColNameValue);
         target.insert(newTuple);
         System.out.println(Page.deserialize(target.tablePages.get(0)));
+        target = Table.deserialize(strTableName);
+        for(String pageName : target.tablePages)
+        {
+            System.out.println("Page name: " + pageName);
+            System.out.println("The page: " + Page.deserialize(pageName));
+        }
+        System.out.println(target.tablePages);
+        System.out.println();
     }
 
     // following method updates one row only
@@ -141,33 +149,33 @@ public class DBApp {
             DBApp dbApp = new DBApp();
             dbApp.init();
 //
-            Hashtable htblColNameType = new Hashtable();
-            htblColNameType.put("id", "java.lang.Integer");
-            htblColNameType.put("name", "java.lang.String");
-            htblColNameType.put("gpa", "java.lang.double");
-            dbApp.createTable(strTableName, "id", htblColNameType);
+//            Hashtable htblColNameType = new Hashtable();
+//            htblColNameType.put("id", "java.lang.Integer");
+//            htblColNameType.put("name", "java.lang.String");
+//            htblColNameType.put("gpa", "java.lang.double");
+//            dbApp.createTable(strTableName, "id", htblColNameType);
+//
+//            Hashtable htblColNameValue = new Hashtable();
+//            htblColNameValue.put("id", Integer.valueOf(30));
+//            htblColNameValue.put("name", "Ahmed Noor");
+//            htblColNameValue.put("gpa", new Double(0.95));
+//            dbApp.insertIntoTable(strTableName, htblColNameValue);
 
-            Hashtable htblColNameValue = new Hashtable();
-            htblColNameValue.put("id", Integer.valueOf(0));
-            htblColNameValue.put("name", "Ahmed Noor");
-            htblColNameValue.put("gpa", new Double(0.95));
-            dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-            dbApp.createIndex(strTableName, "name", "nameIndex");
-
-            Hashtable<String, Object> ht = new Hashtable<>();
-            ht.put("name", "Zeyaddd");
-            ht.put("gpa", 0.8);
-            dbApp.updateTable(strTableName, "0", ht);
-
-            System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+//            dbApp.createIndex(strTableName, "name", "nameIndex");
+//
+//            Hashtable<String, Object> ht = new Hashtable<>();
+//            ht.put("name", "Zeyaddd");
+//            ht.put("gpa", 0.8);
+//            dbApp.updateTable(strTableName, "0", ht);
+//
+//            System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 //
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));
 //			htblColNameValue.put("name", new String("Ahmed Noor" ) );
 //			htblColNameValue.put("gpa", new Double( 0.95 ) );
 //			dbApp.insertIntoTable( strTableName , htblColNameValue );
-//
+
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 5674567 ));
 //			htblColNameValue.put("name", new String("Dalia Noor" ) );

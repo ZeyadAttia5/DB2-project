@@ -2,6 +2,11 @@ import java.io.*;
 import java.util.Hashtable;
 import java.util.Properties;
 import java.util.Vector;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Page implements Serializable {
     public String name;
@@ -14,7 +19,7 @@ public class Page implements Serializable {
     public Page(String tableName, int count, String clusteringKey) {
         this.name = tableName + "_" + count;
         this.tuples = new Vector<>();
-        this.maxSize = readConfigFile();
+        this.maxSize = Page.readConfigFile();
         this.clusteringKey = clusteringKey;
     }
 
@@ -86,38 +91,64 @@ public class Page implements Serializable {
         return this.getTuples().get(indexInPage);
     }
 
+    private void insertHelper(Ref reference, Tuple tuple, String tableName)
+    {
+        for (String colName : tuple.values.keySet()) {
+            String result = csvConverter.getIndexName(tableName,colName);
+            if(!result.equals("null"))
+            {
+                BPTree tree = BPTree.deserialize(tableName,colName);
+                tree.insert((Comparable) tuple.values.get(colName), reference);
+            }
+        }
+    }
+
+    public static File[] sortFiles(File[] files) {
+        Arrays.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File file1, File file2) {
+                int num1 = extractNumber(file1.getName());
+                int num2 = extractNumber(file2.getName());
+                return Integer.compare(num1, num2);
+            }
+
+            private int extractNumber(String fileName) {
+                // Regex pattern to match underscore followed by digits
+                Pattern pattern = Pattern.compile("_(\\d+)\\.class");
+                Matcher matcher = pattern.matcher(fileName);
+                if (matcher.find()) {
+                    return Integer.parseInt(matcher.group(1));
+                }
+                return -1; // Return -1 if no number found
+            }
+        });
+        return files;
+    }
+
     public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
         String[] arr = this.name.split("_");
+        Table currTable = Table.deserialize(arr[0]);
         String clust = csvConverter.getClusteringKey(arr[0]);
-
-
-        for (String colName : tuple.values.keySet()) {
-
-        }
-
+        Ref result = null;
 
         if (this.tuples.size() == 0) {
             this.tuples.add(tuple);
             this.max = tuple.values.get(clust);
             this.min = this.max;
             this.serialize();
-            return new Ref(this.name, this.tuples.size() - 1);
+            currTable.tablePages.add(this.name);
+            currTable.pageInfo.put(this.name, new Object[] {this.max, this.min, this.tuples.size()});
+            currTable.serialize();
+            result = new Ref(this.name, this.tuples.size() - 1);
+            insertHelper(result, tuple, arr[0]);
+            return result;
         }
 
-        String name = (this.name.split("_"))[0];
-        Vector<String[]> metadata = readCSV(name);
-        String datatype = "";
-        for (String[] array : metadata) {
-            if (array[3].equals("True")) {
-                datatype = array[2].split("\\.")[2];
-            }
-        }
 
         int low = 0;
         int high = this.tuples.size() - 1;
         Object value = tuple.values.get(this.clusteringKey);
-        System.out.println(value);
         while (low <= high) {
             int mid = low + (high - low) / 2;
             Tuple midTuple = this.tuples.get(mid);
@@ -133,40 +164,74 @@ public class Page implements Serializable {
                 high = mid - 1;
             }
         }
-        System.out.println(low);
-        if (low > this.tuples.size() - 1) {
+        if (low > this.tuples.size() - 1 && ((Comparable) this.tuples.lastElement().values.get(clusteringKey)).compareTo(tuple.values.get(clusteringKey))!=0) {
             this.tuples.add(tuple);
-            if (((Comparable) this.max).compareTo(tuple.values.get(clust)) < 0) {
-                this.max = tuple.values.get(clust);
-            }
             this.serialize();
-            return new Ref(this.name, this.tuples.size() - 1);
+            result = new Ref(this.name, this.tuples.size() - 1);
+            insertHelper(result, tuple, arr[0]);
         } else if (this.tuples.get(low) != null) {
             this.tuples.add(low, tuple);
-            if (((Comparable) this.max).compareTo(tuple.values.get(clust)) < 0) {
-                this.max = tuple.values.get(clust);
-            }
             this.serialize();
-            return new Ref(this.name, low);
+            result = new Ref(this.name, low);
+            insertHelper(result, tuple, arr[0]);
         }
+        this.max = this.tuples.lastElement().values.get(clusteringKey);
 
-        Page currPage = this;
-        while (currPage.tuples.size() > maxSize) {
-            Tuple temp = currPage.tuples.lastElement();
-            currPage.tuples.remove(temp);
-            currPage.serialize();
-            String currName = currPage.name;
-            int currInt = currName.charAt(currName.length() - 1);
-            currName = currName.replace((char) currInt, (char) (currInt + 1));
-            currPage = deserialize(currName);
-            currPage.tuples.add(0, temp);
-            currPage.serialize();
+        if(this.tuples.size()>maxSize) {
+
+            Page currPage = null;
+            File pageFolder = new File("src/main/resources/tables/" + arr[0]);
+            File[] files = pageFolder.listFiles();
+            files = Page.sortFiles(files);
+            for (int i = 0; i < files.length; i++) {
+                if ((this.name + ".class").equals(files[i].getName())) {
+                    files = Arrays.copyOfRange(files, i+1, files.length);
+                    break;
+                }
+            }
+
+            Object[] temp;
+            Tuple extra = this.tuples.lastElement();
+            this.tuples.remove(extra);
+            this.max = (this.tuples.get(this.maxSize-1)).values.get(clusteringKey);
+            this.min = (this.tuples.get(0)).values.get(clusteringKey);
+
+
+            for(File file : files)
+            {
+                if(extra != null)
+                {
+                    String fileName = file.getName();
+                    currPage = Page.deserialize(fileName.substring(0, fileName.length()-6));
+                    currPage.tuples.add(0, extra);
+                    currPage.min = currPage.tuples.get(0).values.get(clusteringKey);
+                    currPage.max = currPage.tuples.get(currPage.maxSize-1).values.get(clusteringKey);
+                    currTable.pageInfo.put(currPage.name, new Object[] {currPage.max, currPage.min, currPage.tuples.size()});
+                    currPage.serialize();
+                    if(currPage.tuples.size()>maxSize)
+                    {
+                        extra = currPage.tuples.lastElement();
+                        currPage.tuples.remove(extra);
+                        currPage.serialize();
+                    }
+                    else
+                        extra = null;
+                }
+            }
+
+            if(extra!=null)
+            {
+                Page newPage = new Page(currTable.name, currTable.tablePages.size(), this.clusteringKey);
+                newPage.insert(extra);
+                newPage.serialize();
+                currTable.pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
+                currTable.tablePages.add(newPage.name);
+            }
         }
-        if (((Comparable) this.max).compareTo(tuple.values.get(clust)) < 0) {
-            this.max = tuple.values.get(clust);
-        }
+        currTable.pageInfo.put(this.name, new Object[] {this.max, this.min, this.tuples.size()});
         this.serialize();
-        return new Ref(this.name, low);
+        currTable.serialize();
+        return result;
     }
 
     public int binarySearchPage(String clusteringKeyValue, String dataType) throws DBAppException {
@@ -252,7 +317,7 @@ public class Page implements Serializable {
         }
     }
 
-    public int readConfigFile() {
+    public static int readConfigFile() {
         Properties properties = new Properties();
         String fileName = "src/main/resources/DBApp.config";
         FileInputStream fis = null;
@@ -268,10 +333,10 @@ public class Page implements Serializable {
         }
         String maxSizeStr = properties.getProperty("MaximumRowsCountinPage");
         if (maxSizeStr != null) {
-            return maxSize = Integer.parseInt(maxSizeStr);
+            return Integer.parseInt(maxSizeStr);
         } else {
 
-            return maxSize = 200; // Default value
+            return 200; // Default value
         }
     }
 
