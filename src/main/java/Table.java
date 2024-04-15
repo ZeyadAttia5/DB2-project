@@ -432,7 +432,7 @@ public class Table implements Serializable {
                 for (int i = tablePages.size() - 1; i >= 0; i--) {
                     try {
                         Page page = Page.deserialize(this.tablePages.get(i)+".class");
-                        int maximum =page.max;
+                        Object maximum =page.max;
                         if (((Comparable) maximum).compareTo((Comparable) value) > 0) {
                             ArrayList<Tuple> tempp = new ArrayList<>();
                             tempp = page.binarysearchPage(columnName, value, operator);
