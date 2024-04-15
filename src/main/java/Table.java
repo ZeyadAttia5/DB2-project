@@ -86,7 +86,7 @@ public class Table implements Serializable {
 
         File pageFolder = new File("src/main/resources/tables/" + this.name);
         File[] files = Page.sortFiles(pageFolder.listFiles());
-        files = Arrays.copyOfRange(files, 1,  files.length);
+        files = Arrays.copyOfRange(files, files.length-this.tablePages.size(),  files.length);
         String clusteringKey = csvConverter.getClusteringKey(this.name);
         Object targetKey = tuple.values.get(clusteringKey);
         int maxSize = Page.readConfigFile();
@@ -473,6 +473,5 @@ public class Table implements Serializable {
         }
         return results;
     }
-
 
 }

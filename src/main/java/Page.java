@@ -95,6 +95,7 @@ public class Page implements Serializable {
             {
                 BPTree tree = BPTree.deserialize(tableName,colName);
                 tree.insert((Comparable) tuple.values.get(colName), reference);
+                tree.serialize(tableName,result);
             }
         }
     }

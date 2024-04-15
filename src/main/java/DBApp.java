@@ -94,6 +94,7 @@ public class DBApp {
         }
         System.out.println(target.tablePages);
         System.out.println();
+
     }
 
     // following method updates one row only
@@ -268,19 +269,23 @@ public class DBApp {
             DBApp dbApp = new DBApp();
             dbApp.init();
 //
+
+
 //            Hashtable htblColNameType = new Hashtable();
 //            htblColNameType.put("id", "java.lang.Integer");
 //            htblColNameType.put("name", "java.lang.String");
 //            htblColNameType.put("gpa", "java.lang.double");
 //            dbApp.createTable(strTableName, "id", htblColNameType);
 //
-//            Hashtable htblColNameValue = new Hashtable();
-//            htblColNameValue.put("id", Integer.valueOf(30));
-//            htblColNameValue.put("name", "Ahmed Noor");
-//            htblColNameValue.put("gpa", new Double(0.95));
-//            dbApp.insertIntoTable(strTableName, htblColNameValue);
+//			dbApp.createIndex(strTableName, "name", "nameIndex");
 
-//            dbApp.createIndex(strTableName, "name", "nameIndex");
+            Hashtable htblColNameValue = new Hashtable();
+            htblColNameValue.put("id", Integer.valueOf(20));
+            htblColNameValue.put("name", "Ahmed Noor");
+            htblColNameValue.put("gpa", new Double(0.95));
+            dbApp.insertIntoTable(strTableName, htblColNameValue);
+
+
 //
 //            Hashtable<String, Object> ht = new Hashtable<>();
 //            ht.put("name", "Zeyaddd");
