@@ -132,6 +132,8 @@ public class Table implements Serializable {
      * @throws ClassNotFoundException
      */
     public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
+        System.out.println(this);
+
         // Find the page where the row with the clustering key value is located
         Page page = findPage(clusteringKeyValue);
 
@@ -270,6 +272,10 @@ public class Table implements Serializable {
         // Find the Page
         Page page = this.binarySearch(clusteringKeyValue.toString(), clusteringDataType);
 
+        if(page == null){
+            throw new DBAppException("tuple not found :)");
+        }
+
         // initialize old Ref
         int indexInPage = page.binarySearchPage(clusteringKeyValue.toString(), clusteringDataType);
         if (indexInPage == -1) {
@@ -336,6 +342,24 @@ public class Table implements Serializable {
 
         // If not found, return null
         return null;
+    }
+
+    @Override
+    public String toString(){
+        String result = "";
+            for (String page_name: this.tablePages){
+                Page page = null;
+                try {
+                    page = Page.deserialize(page_name);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                result += page.toString();
+            }
+
+        return result;
     }
 
 
