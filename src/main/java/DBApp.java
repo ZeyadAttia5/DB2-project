@@ -150,7 +150,7 @@ public class DBApp {
 			Object value = sqlTerm._objValue;
 			String tableName = sqlTerm._strTableName;
 			String operator = sqlTerm._strOperator.toUpperCase();
-			if(operator!="="||operator!=">"||operator!="<"||operator!="!="||operator!=">="||operator!="<="){
+			if(!operator.equals("=") || !operator.equals(">") || !operator.equals("<") ||operator!="!="||operator!=">="||operator!="<="){
 				throw new DBAppException("Invalid operator");
 			}
 			try {//ehtmal n serialize kol haga tany b3d el deserializing

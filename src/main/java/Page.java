@@ -176,7 +176,12 @@ public class Page implements Serializable {
             this.tuples.add(tuple);
             this.serialize();
             result = new Ref(this.name, this.tuples.size() - 1);
-            insertHelper(result, tuple, arr[0]);
+            if(this.tuples.size()>this.maxSize)
+            {
+                insertHelperShifting(result, tuple, arr[0]);
+            }
+            else
+                insertHelper(result, tuple, arr[0]);
         } else if (this.tuples.get(low) != null) {
             this.tuples.add(low, tuple);
             this.serialize();
