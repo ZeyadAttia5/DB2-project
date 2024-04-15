@@ -29,6 +29,14 @@ public class Ref implements Serializable {
         return indexInPage;
     }
 
+    public void setIndexInPage( int newPageIndex){
+        indexInPage = newPageIndex;
+    }
+
+    public void setPageName( String newPage){
+        pageName = newPage;
+    }
+
 
     public boolean isEqual(Ref ref) {
         return this.pageName.equals(ref.pageName) && this.indexInPage == ref.indexInPage;

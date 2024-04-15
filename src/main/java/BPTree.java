@@ -237,7 +237,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
      */
 //    public Ref insertRef(T key, int maxRows, String tableName, boolean empty) {
 //        if (empty) {
-//            return new Ref(tableName + "0" + ".ser", 0);
+//            return new Ref(tableName + "0" + ".class", 0);
 //        } else {
 //            BPTreeLeafNode b = this.searchGreaterthan(key);
 //            if (b == null) {
@@ -263,7 +263,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 //                    int newRow = 0;
 //                    n++;
 //                    String nn = Integer.toString(n);
-//                    String pageNew = tableName + nn + ".ser";
+//                    String pageNew = tableName + nn + ".class";
 //                    return new Ref(pageNew, newRow);
 //
 //                } else {
@@ -452,67 +452,112 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         }
     }
 
+    public void insertingWithShifting(T key, Ref recordReference, int maxPageSize){
+
+        int insertedIndex = recordReference.getIndexInPage();
+        String insertedPage = recordReference.getPage();
+        BPTreeLeafNode currLeaf = this.searchMinNode();
+
+        while(currLeaf!=null ){
+
+            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+
+                // Shifting keys' references without considering duplicates
+                if(currLeaf.records[i].getPage().compareToIgnoreCase(insertedPage) > 0|| currLeaf.records[i].getPage().compareToIgnoreCase(insertedPage) == 0 && currLeaf.records[i].getIndexInPage()>=insertedIndex ){
+                    int currIndex = currLeaf.records[i].getIndexInPage();
+                    // Handling case where there is no room in the page
+                    if(currIndex+1 > maxPageSize){
+                        String[] x = currLeaf.records[i].getPage().split("_");
+                        int pageNum = Integer.parseInt(x[1]);
+                        String tableName = x[0];
+                        currLeaf.records[i].setIndexInPage(1);
+                        currLeaf.records[i].setPageName(tableName+"_"+ (pageNum+1));
+                    }
+                    else{
+                        currLeaf.records[i].setIndexInPage(currLeaf.records[i].getIndexInPage()+1);
+                    }
+                }
+
+                // Handling duplicates (if present)
+                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+                    int size = currLeaf.getOverflow(i).size();
+                    // Traverse the duplicates and check if they should be changed or not
+                    for(int j =0; j< size; j++){
+                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+                        if(currentPage.compareToIgnoreCase(insertedPage)> 0 || currentPage.compareToIgnoreCase(insertedPage) == 0 && currentIndex>= insertedIndex){
+                            // Handling case where there is no room in the page
+                            if(currentIndex+1 > maxPageSize){
+                                String[] x = currentPage.split("_");
+                                int pageNum = Integer.parseInt(x[1]);
+                                String tableName = x[0];
+                                currLeaf.getOverflow(i).remove(j);
+                                currLeaf.getOverflow(i).add(j, new Ref(tableName+"_"+ (pageNum+1), 1));
+                            }
+                            else{
+                                currLeaf.getOverflow(i).remove(j);
+                                currLeaf.getOverflow(i).add(j, new Ref(currentPage, currentIndex+1));
+                            }
+                        }
+                    }
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+        this.insert( key, recordReference);
+
+    }
+
     public static void main(String[] args) {
 
 
 
         BPTree<String> treename= new BPTree<>(2);
-        treename.insert("salma", new Ref("p1", 1));// here
-        treename.insert("salma", new Ref("p2", 1)); // here
-        treename.insert("salma", new Ref("p3", 1));
-        treename.insert("salma", new Ref("p1", 3));
-        treename.insert("salma", new Ref("p1", 3));
 
-        BPTree<Integer> treeage =new BPTree<>(2);
-        treeage.insert(20, new Ref("p1", 1)); // here
-        treeage.insert(20, new Ref("p2", 1)); //here
-        treeage.insert(20, new Ref("p2", 3));
-        treeage.insert(20, new Ref("p2", 3));
-        treeage.insert(20, new Ref("p2", 3));
+        //first page inserts
+        treename.insert("salma", new Ref("p_1", 1));
+        treename.insert("ahmed", new Ref("p_1", 2));
+        treename.insert("farida", new Ref("p_1", 3));
+        treename.insert("alia", new Ref("p_1", 4));
+        treename.insert("karma", new Ref("p_1", 5));
+
+        // second page inserts
+        treename.insert("fady", new Ref("p_2", 1));
+        treename.insert("mai", new Ref("p_2", 2));
+        treename.insert("razan", new Ref("p_2", 3));
+        treename.insert("tala", new Ref("p_2", 4));
+        treename.insert("alia", new Ref("p_2", 5));
+
+        //third page inserts
+        treename.insert("alia", new Ref("p_3", 1));
+        treename.insert("alia", new Ref("p_3", 2));
+        treename.insert("alia", new Ref("p_3", 3));
+        System.out.println(treename);
 
 
-//        ArrayList<>treename.search("farida");
+        int insertedIndex = 4;
+        String insertedPage = "p_1";
+        //inserting something in the middle requiring shifting
+        treename.insertingWithShifting("naya", new Ref(insertedPage,insertedIndex), 5);
 
-        treename.delete("salma",new Ref("p1", 1) );
-        ArrayList<Ref> a = treename.search("salma");
-        System.out.println(a.size());
-        ArrayList<Ref> b= treeage.search(20);
-        System.out.println(b.size());
-        for(int i=0; i< b.size();i++){
-            System.out.println(b.get(i));
+
+        BPTreeLeafNode firstLeaf = treename.searchMinNode();
+        BPTreeLeafNode currLeaf = firstLeaf;
+
+        while(currLeaf!=null) {
+            System.out.println(currLeaf);
+            for (int i = 0; i < currLeaf.numberOfKeys; i++) {
+                System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
+                if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                    int size = currLeaf.getOverflow(i).size();
+                    for (int j = 0; j < size; j++)
+                        System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
+                }
+            }
+            currLeaf = currLeaf.getNext();
         }
 
-        ArrayList<Ref> x = intersection(a,b);
-        System.out.println(x.size());
-
-
-//        System.out.println(treeage);
-//        System.out.println(treename);
-//        treename.visualizeTree();
-
-//        BPTree<String> newTree = new BPTree<>(2);
-//        newTree.insert("salma", new Ref("p1", 1));
-//        newTree.insert("ahmed", new Ref("p1", 2));
-//        newTree.insert("alia", new Ref("p1", 3));
-//        newTree.insert("farida", new Ref("p1", 4));
-//        newTree.insert("nabila",new Ref("p1", 5));
-//        newTree.insert("jana", new Ref("p1", 11));
-//        newTree.insert("zeyad", new Ref("p1", 6));
-//        newTree.insert("yara",new Ref("p1", 7));
-//        newTree.insert("youssef", new Ref("p1", 8));
-//        newTree.insert("yasmine", new Ref("p1", 9));
-//        newTree.insert("zeina", new Ref("p1", 10));
-//        System.out.println(newTree);
-//        System.out.println(newTree.delete("yasmine", new Ref("p1", 9) ));
-//        System.out.println(newTree.delete("yara", new Ref("p1", 7) ));
-//        System.out.println(newTree.delete("salma", new Ref("p1", 1)));
-//        newTree.insert("farida", new Ref("p1", 12));
-//        newTree.insert("farida", new Ref("p1", 13));
-//        newTree.delete("farida",  new Ref("p1", 13));
-//        newTree.delete("farida",  new Ref("p1", 4));
-
-//        System.out.println(newTree);
-
+        System.out.println(treename);
 
 
 

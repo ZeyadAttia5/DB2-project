@@ -1,19 +1,23 @@
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Vector;
+
 
 
 public class Table implements Serializable {
     // Map to store the number of pages for each table
     public Vector<String> tablePages;
     public String name;
+    public Hashtable<String, Object[]> pageInfo; // Object [] = [max,min,pageSize]
 
 
     public Table(String name) {
         createDirectory(name);
         this.name = name;
         tablePages = new Vector<>();
+        pageInfo = new Hashtable<>();
 
     }
 
@@ -70,24 +74,54 @@ public class Table implements Serializable {
     }
 
     public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
+
         if (this.tablePages.size() == 0) {
             Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
             newPage.insert(tuple);
             tablePages.add(newPage.name);
+            pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
             this.serialize();
             return;
         }
+
+        File pageFolder = new File("src/main/resources/tables/" + this.name);
+        File[] files = Page.sortFiles(pageFolder.listFiles());
+        files = Arrays.copyOfRange(files, 1,  files.length);
         String clusteringKey = csvConverter.getClusteringKey(this.name);
         Object targetKey = tuple.values.get(clusteringKey);
-        Page currPage = null;
+        int maxSize = Page.readConfigFile();
         int result = 1;
-        for (int i = 0; result > 0; i++) {
-            currPage = Page.deserialize(this.name + "_" + i);
+        Page currPage = null;
 
-            result = ((Comparable) targetKey).compareTo(currPage.max);
+        for(File file : files)
+        {
+            String fileName = file.getName();
+            Object[] info = this.pageInfo.get(fileName.substring(0, fileName.length()-6)); //remove .class from the string
+            result = ((Comparable) targetKey).compareTo(info[0]);
+
+            if(result==0)
+            {
+                System.out.println("Can't insert duplicate clustering key");
+                return;
+            }
+            if((int) info[2] < maxSize || result < 0)
+            {
+                currPage = Page.deserialize(fileName.substring(0, fileName.length()-6));
+                break;
+            }
         }
-        currPage.insert(tuple);
-        this.serialize();
+
+        if(currPage != null)
+        {
+            currPage.insert(tuple);
+        }
+        else
+        {
+            Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
+            newPage.insert(tuple);
+            pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
+        }
+
 
 
     }
@@ -99,6 +133,8 @@ public class Table implements Serializable {
      * @throws ClassNotFoundException
      */
     public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
+        System.out.println(this);
+
         // Find the page where the row with the clustering key value is located
         Page page = findPage(clusteringKeyValue);
 
@@ -237,6 +273,10 @@ public class Table implements Serializable {
         // Find the Page
         Page page = this.binarySearch(clusteringKeyValue.toString(), clusteringDataType);
 
+        if(page == null){
+            throw new DBAppException("tuple not found :)");
+        }
+
         // initialize old Ref
         int indexInPage = page.binarySearchPage(clusteringKeyValue.toString(), clusteringDataType);
         if (indexInPage == -1) {
@@ -303,6 +343,135 @@ public class Table implements Serializable {
 
         // If not found, return null
         return null;
+    }
+
+    @Override
+    public String toString(){
+        String result = "";
+            for (String page_name: this.tablePages){
+                Page page = null;
+                try {
+                    page = Page.deserialize(page_name);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+                result += page.toString();
+            }
+
+        return result;
+    }
+    public boolean compatibleTypes(Object value, String columnType) {
+        switch (columnType.toLowerCase()) {
+            case "java.lang.integer":
+                return value instanceof Integer;
+            case "java.lang.double":
+                return value instanceof Double;
+            case "java.lang.string":
+                return value instanceof String;
+        }
+        return false;
+    }
+
+    public ArrayList<Tuple> searchTable(String columnName, String operator, Object value) throws DBAppException {
+        ArrayList<Tuple> results = new ArrayList<>();
+        Vector<String[]> columnstuff = Page.readCSV(this.name);
+        ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
+        String isclusteringkey = "False";
+        String columnType=null;
+        for (String[] column : columnstuff) {
+            if (column[1].equals(columnName)) {
+                isclusteringkey = column[3];
+                columnType = column[2];
+                break;
+            }
+        }
+        if (columnType == null) {
+            throw new DBAppException("Column "+ columnName +" not found");
+        }
+        if (!compatibleTypes(value, columnType)) {
+            throw new DBAppException("Datatype of value doesn't match the column datatype: ");
+        }
+        if (isclusteringkey == "False" || operator == "!=") {
+            for (String pagename : tablePages) {
+                try {
+                    Page page = Page.deserialize(pagename + ".class");// you removed hagat mn hena gt mn salma's incase 3amal moshkela
+                    pageResults = new ArrayList<Tuple>();
+                    pageResults = page.searchlinearPage(columnName, value, operator);
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+                results.addAll(pageResults);
+            }
+            return results;
+        } else {
+            if(operator.equals("=")){
+                Comparable<Object> comparableValue = (Comparable<Object>) value;
+                int low = 0;
+                int high = tablePages.size() - 1;
+                while (low <= high) {
+                    int mid = (low + high) / 2;
+                    String pagename = tablePages.get(mid);
+                    try {//getters and setterssss!
+                        Page page = Page.deserialize(pagename + ".class");
+                        if (comparableValue.compareTo(page.min) < 0) {
+                            high = mid - 1; // Search in the lower half
+                        } else if (comparableValue.compareTo(page.max) > 0) {
+                            low = mid + 1; // Search in the upper half
+                        } else {
+                            pageResults = page.binarysearchPage(columnName, value, operator);
+                            results.addAll(pageResults);
+                            return results;
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if(operator==">"||operator==">=") {
+                for (int i = tablePages.size() - 1; i >= 0; i--) {
+                    try {
+                        Page page = Page.deserialize(this.tablePages.get(i)+".class");
+                        Object maximum =page.max;
+                        if (((Comparable) maximum).compareTo((Comparable) value) > 0) {
+                            ArrayList<Tuple> tempp = new ArrayList<>();
+                            tempp = page.binarysearchPage(columnName, value, operator);
+                            page.serialize();
+                            pageResults.addAll(tempp);
+                        }else{
+                            for(int j= pageResults.size()-1;j>=0;j--){
+                                results.add(pageResults.get(i));
+                            }
+                            return results;
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if (operator=="<"||operator=="<=") {
+                for (int i=0;i< tablePages.size();i++){
+                    try {
+                        Page page = Page.deserialize(this.tablePages.get(i)+".class");
+                        Object minimum =page.min;
+                        if (((Comparable) minimum).compareTo((Comparable) value) < 0) {
+                            pageResults = new ArrayList<Tuple>();
+                            pageResults = page.binarysearchPage(columnName, value, operator);
+                            page.serialize();
+
+                            results.addAll(pageResults);
+                        }
+                        else{
+                            return results;
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+        return results;
     }
 
 

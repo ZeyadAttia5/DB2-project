@@ -8,7 +8,7 @@ public class BPTreeLeafNode<T extends Comparable<T>> extends BPTreeNode<T> imple
      *
      */
     private static final long serialVersionUID = 1L;
-    private Ref[] records;
+    public Ref[] records;
     ArrayList<Vector<Ref>> overflow;
     private BPTreeLeafNode<T> next;
 
