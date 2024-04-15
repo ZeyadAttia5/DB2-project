@@ -348,6 +348,89 @@ public class Page implements Serializable {
         out.close();
         fileOut.close();
     }
+    public ArrayList<Tuple> searchlinearPage(String columnName, Object value, String operator) throws DBAppException {
+        ArrayList<Tuple> results = new ArrayList<>();
+        try {
+            Page page = deserialize(this.name);//might delete based on whether i deserialize mn bara wala no
+            for (Tuple tuple : page.tuples) {
+                Object columnValue = tuple.values.get(columnName);
+                if (columnValue != null && compareValues(columnValue, value, operator)) {
+                    results.add(tuple);
+                }
+            }
+        }
+        catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return results;
+    }
+    public ArrayList<Tuple> binarysearchPage(String columnName, Object value, String operator) throws DBAppException {
+        ArrayList<Tuple> results = new ArrayList<>();
+        if(operator.equals("=")){
+            int left = 0;
+            int right = tuples.size()- 1;
+            while (left <= right) {
+                int mid = left + (right - left) / 2;
+                if (tuples.get(mid).values.get(columnName)== value) {
+                    results.add(tuples.get(mid));
+                    return results;
+                }
+                if  (((Comparable)tuples.get(mid).values.get(columnName)).compareTo((Comparable)value) < 0)
+                    left = mid + 1;
+                else
+                    right = mid - 1;
+            }
+        }
+        if(operator==">"||operator==">=") {
+            for (int i = tuples.size()-1; i>=0; i--) {
+                Object columnValue = tuples.get(i).values.get(columnName);
+                if (columnValue != null && compareValues(columnValue, value, operator)) {
+                    results.add(tuples.get(i));
+                }
+                else{
+                    return results;
+                }
+            }
+        }
+        if (operator=="<"||operator=="<=") {
+            for (int i=0;i<tuples.size();i++) {
+                Object columnValue = tuples.get(i).values.get(columnName);
+                if (columnValue != null && compareValues(columnValue, value, operator)) {
+                    results.add(tuples.get(i));
+                }
+                else{
+                    return results;
+                }
+            }
+        }
+        return results;
+    }
+    private boolean compareValues(Object columnValue, Object searchValue, String operator) {
+        switch (operator) {
+            case "=":
+                return columnValue.equals(searchValue);
+            case ">":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) > 0;
+                }
+            case "<":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) < 0;
+                }
+            case ">=":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) >= 0;
+                }
+            case "<=":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) <= 0;
+                }
+            case"!=":
+                return !columnValue.equals(searchValue);
+        }
+        return false;
+    }
+
 
     @Override
     public String toString() {
