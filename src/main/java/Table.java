@@ -167,9 +167,12 @@ public class Table implements Serializable {
             // If an index was found on a column it should be added to the array of references to delete
             if (!Objects.equals(indexName, "null")) {
                 BPTree b = BPTree.deserialize (this.name, column);
+                System.out.println(htblColNameValue.get(column));
                 ArrayList<Ref> references = b.search((Comparable) htblColNameValue.get(column));
                 if (toDelete.isEmpty())
-                    toDelete = references;
+                    for(Ref ref : references){
+                        toDelete.add(ref);
+                    }
                 else{
                     intersection(toDelete,references);
                 }
@@ -192,7 +195,7 @@ public class Table implements Serializable {
             if (!uniquePages.isEmpty()) {
                 for (String fileName : uniquePages) {
                     try {
-                        Page page = Page.deserialize(name + "/" + fileName);
+                        Page page = Page.deserialize(fileName);
                         //we will iterate through the references that should be deleted if they exist
                         for (Ref ref : toDelete) {
                             if (ref.getPage().equals(fileName)) ;
