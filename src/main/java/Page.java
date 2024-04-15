@@ -108,6 +108,8 @@ public class Page implements Serializable {
             {
                 BPTree tree = BPTree.deserialize(tableName,colName);
                 tree.insertingWithShifting((Comparable) tuple.values.get(colName), reference, this.maxSize);
+                tree.serialize(tableName,result);
+
             }
         }
     }
