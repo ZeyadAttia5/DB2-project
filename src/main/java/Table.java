@@ -75,6 +75,7 @@ public class Table implements Serializable {
 
     public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
+        // Inserting a tuple into an empty page
         if (this.tablePages.size() == 0) {
             Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
             newPage.insert(tuple);

@@ -21,6 +21,7 @@ public class csvConverter {
             }
         }
     }
+
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
         try (FileReader fileReader = new FileReader(METADATA_FILE);
              BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -143,6 +144,21 @@ public class csvConverter {
             e.printStackTrace();
         }
         return tableMetadata;
+    }
+
+    public static boolean tablePresent(String tableName){
+
+        try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader1.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(tableName))
+                    return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
 

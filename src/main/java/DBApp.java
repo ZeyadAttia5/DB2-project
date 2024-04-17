@@ -3,6 +3,7 @@
  */
 
 import java.io.IOException;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -32,13 +33,14 @@ public class DBApp {
     // type as value
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
 
+		// Check if the table already exists
+		if(csvConverter.tablePresent(strTableName))
+			throw new DBAppException("This page is already present.");
         try {
-
-            //initialize a new table object
+            // Initialize a new table object
             Table newTable = new Table(strTableName);
-            // should do something here to prevent calling createTable twice onthe same parameters from overwriting a serialized object
             newTable.serialize();
-            //create the metaData.csv file using the hashtable input and store it in the metaData package
+            // Create the metaData.csv file using the hashtable input and store it in the metaData package
             csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
 
         } catch (Exception e) {
@@ -103,24 +105,6 @@ public class DBApp {
         }
         System.out.println(target.tablePages);
         System.out.println();
-
-		BPTree temp = BPTree.deserialize(strTableName, "name");
-
-		BPTreeLeafNode firstLeaf = temp.searchMinNode();
-		BPTreeLeafNode currLeaf = firstLeaf;
-
-		while(currLeaf!=null) {
-			System.out.println(currLeaf);
-			for (int i = 0; i < currLeaf.numberOfKeys; i++) {
-				System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
-				if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
-					int size = currLeaf.getOverflow(i).size();
-					for (int j = 0; j < size; j++)
-						System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
-				}
-			}
-			currLeaf = currLeaf.getNext();
-		}
 
     }
 
@@ -292,59 +276,83 @@ public class DBApp {
 
         try {
 
-            String strTableName = "Student";
             DBApp dbApp = new DBApp();
             dbApp.init();
-//
 
 
+			String strTableName = "Student";
+
+//			// Table Creation
 //            Hashtable htblColNameType = new Hashtable();
 //            htblColNameType.put("id", "java.lang.Integer");
 //            htblColNameType.put("name", "java.lang.String");
 //            htblColNameType.put("gpa", "java.lang.double");
 //            dbApp.createTable(strTableName, "id", htblColNameType);
 //
-//			dbApp.createIndex(strTableName, "name", "nameIndex");
-
-            Hashtable htblColNameValue = new Hashtable();
-            htblColNameValue.put("id", Integer.valueOf(25));
-            htblColNameValue.put("name", "Ahmed Noor");
-            htblColNameValue.put("gpa", new Double(0.95));
-            dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-
 //
-//            Hashtable<String, Object> ht = new Hashtable<>();
-//            ht.put("name", "Zeyaddd");
-//            ht.put("gpa", 0.8);
-//            dbApp.updateTable(strTableName, "0", ht);
+//			// inserting: 25, ahmed noor, 0.95
+//            Hashtable htblColNameValue = new Hashtable();
+//            htblColNameValue.put("id", Integer.valueOf(25));
+//            htblColNameValue.put("name", "Ahmed Noor");
+//            htblColNameValue.put("gpa", new Double(0.95));
+//            dbApp.insertIntoTable(strTableName, htblColNameValue);
 //
-//            System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 //
+//			// inserting: 453455, ahmed noor, 0.95
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 453455 ));
 //			htblColNameValue.put("name", new String("Ahmed Noor" ) );
 //			htblColNameValue.put("gpa", new Double( 0.95 ) );
 //			dbApp.insertIntoTable( strTableName , htblColNameValue );
-
+//
+//
+//			// inserting: 5674567, dalia noor, 1.25
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 5674567 ));
 //			htblColNameValue.put("name", new String("Dalia Noor" ) );
 //			htblColNameValue.put("gpa", new Double( 1.25 ) );
 //			dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
+//
+//			// inserting 23498, john noor, 1.5
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 23498 ));
 //			htblColNameValue.put("name", new String("John Noor" ) );
 //			htblColNameValue.put("gpa", new Double( 1.5 ) );
 //			dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
+//			// inserting 78452, zaky noor, 0.88
 //			htblColNameValue.clear( );
 //			htblColNameValue.put("id", new Integer( 78452 ));
 //			htblColNameValue.put("name", new String("Zaky Noor" ) );
 //			htblColNameValue.put("gpa", new Double( 0.88 ) );
 //			dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
+//			dbApp.createIndex(strTableName, "name", "nameIndex");
+
+//			 Attempting to re-create the same table -> should throw an exception yay
+//			Hashtable htblColNameType = new Hashtable();
+//            htblColNameType.put("id", "java.lang.Integer");
+//            htblColNameType.put("name", "java.lang.String");
+//            htblColNameType.put("gpa", "java.lang.double");
+//            dbApp.createTable(strTableName, "id", htblColNameType);
+
+			// Attempting to insert a tuple with the same clustering key
+//			Hashtable htblColNameValue = new Hashtable();
+//            htblColNameValue.put("id", Integer.valueOf(25));
+//            htblColNameValue.put("name", "Ahmed Noor");
+//            htblColNameValue.put("gpa", new Double(0.95));
+//            dbApp.insertIntoTable(strTableName, htblColNameValue);
+
+
+			Table currentTable = Table.deserialize("Student");
+			System.out.println(currentTable);
+//			Hashtable<String, Object> ht = new Hashtable<>();
+//			ht.put("name", "Zeyaddd");
+//			ht.put("gpa", 0.8);
+//			dbApp.updateTable(strTableName, "0", ht);
+//
+//			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 //
 //			SQLTerm[] arrSQLTerms;
 //			arrSQLTerms = new SQLTerm[2];
