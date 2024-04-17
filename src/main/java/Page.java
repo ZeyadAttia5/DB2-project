@@ -20,7 +20,7 @@ public class Page implements Serializable {
     }
 
     public static Vector<String[]> readCSV(String tableName) {
-        String csvFilePath = "src/metadata.csv";
+        String csvFilePath = "src/main/resources/metadata.csv";
         Vector<String[]> result = new Vector<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath))) {
             String line;

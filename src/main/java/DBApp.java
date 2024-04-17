@@ -3,6 +3,7 @@
  */
 
 import java.io.IOException;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -32,13 +33,14 @@ public class DBApp {
     // type as value
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
 
+		// Check if the table already exists
+		if(csvConverter.tablePresent(strTableName))
+			throw new DBAppException("This page is already present.");
         try {
-
-            //initialize a new table object
+            // Initialize a new table object
             Table newTable = new Table(strTableName);
-            // should do something here to prevent calling createTable twice onthe same parameters from overwriting a serialized object
             newTable.serialize();
-            //create the metaData.csv file using the hashtable input and store it in the metaData package
+            // Create the metaData.csv file using the hashtable input and store it in the metaData package
             csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
 
         } catch (Exception e) {
@@ -47,32 +49,41 @@ public class DBApp {
     }
 
     // following method creates a B+tree index
-    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
+    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException, IOException, ClassNotFoundException {
 
-        // adjusting metadata file with new index
+        // Adjusting metadata file with new index
         boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
         if (!found) {
             DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName);
             throw e;
         }
 
-        // retrieving data type for desired column
+        // Retrieving data type for desired column
         String tmp = csvConverter.getDataType(strTableName, strColName);
 
-        // initialising b+tree
+        // Initialising b+tree
         BPTree tree = null;
         if (tmp.equalsIgnoreCase("java.lang.Integer")) {
             tree = new BPTree<Integer>(10);
-
         } else if (tmp.equalsIgnoreCase("java.lang.String")) {
             tree = new BPTree<String>(10);
-
         } else if (tmp.equalsIgnoreCase("java.lang.Double")) {
             tree = new BPTree<Double>(10);
         } else {
             DBAppException e = new DBAppException("Not found");
             throw e;
         }
+
+		// Populating tree if table is not empty
+		Table currentTable = Table.deserialize(strTableName);
+		for(String page: currentTable.tablePages){
+			Page currentPage = Page.deserialize(page);
+			for(int i =0; i< currentPage.getTuples().size(); i++){
+				Tuple currentTuple = currentPage.getTuples().get(i);
+				Object value = currentTuple.getValues().get(strColName);
+				tree.insert((Comparable) value, new Ref(page, i));
+			}
+		}
 
         tree.serialize(strTableName, strIndexName);
 
@@ -94,24 +105,6 @@ public class DBApp {
         }
         System.out.println(target.tablePages);
         System.out.println();
-
-		BPTree temp = BPTree.deserialize(strTableName, "name");
-
-		BPTreeLeafNode firstLeaf = temp.searchMinNode();
-		BPTreeLeafNode currLeaf = firstLeaf;
-
-		while(currLeaf!=null) {
-			System.out.println(currLeaf);
-			for (int i = 0; i < currLeaf.numberOfKeys; i++) {
-				System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
-				if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
-					int size = currLeaf.getOverflow(i).size();
-					for (int j = 0; j < size; j++)
-						System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
-				}
-			}
-			currLeaf = currLeaf.getNext();
-		}
 
     }
 
@@ -164,17 +157,21 @@ public class DBApp {
 		ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
 		int j = 0;
 		Iterator finalRes = null;
+
+
 		for (SQLTerm sqlTerm : arrSQLTerms) {
 			String columnName = sqlTerm._strColumnName;
 			Object value = sqlTerm._objValue;
 			String tableName = sqlTerm._strTableName;
 			String operator = sqlTerm._strOperator.toUpperCase();
-			if(!operator.equals("=") || !operator.equals(">") || !operator.equals("<") ||operator!="!="||operator!=">="||operator!="<="){
+			if(!operator.equals("=") && !operator.equals(">") && !operator.equals("<") && !operator.equals("!=") && !operator.equals(">=")&& !operator.equals("<=")){
 				throw new DBAppException("Invalid operator");
 			}
 			try {//ehtmal n serialize kol haga tany b3d el deserializing
+				System.out.println("inside try");
 				Table tableitself = Table.deserialize(tableName);
-				if (csvConverter.getIndexName(tableName, columnName)!=null && operator!="!=") {
+				System.out.println("Table deserialized");
+				if (!csvConverter.getIndexName(tableName, columnName).equals("null") && operator!="!=") {
 					ArrayList<Tuple> helper=new ArrayList<>();
 					BPTree ind = BPTree.deserialize(tableName, columnName);
 					ArrayList<Ref> references = new ArrayList<>();
@@ -183,28 +180,30 @@ public class DBApp {
 					Page pagenow;
 					switch (operator){
 						case "=":
-							ind.search((Comparable) value);
+							references = ind.search((Comparable) value);
 							pagename = references.get(0).getPage();
-							pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
-							indexInPage=references.get(0).getIndexInPage();
-							helper.add(pagenow.tuples.get(indexInPage));
+							pagenow = Page.deserialize(pagename );
+							for(int i=0; i< references.size();i++){
+								indexInPage=references.get(i).getIndexInPage();
+								helper.add(pagenow.tuples.get(indexInPage));
+							}
 							res.add(helper);
 							break;
 						case ">=":
-							ind.searchGreaterEqual((Comparable) value);
+							references = BPTree.getRefs(ind.searchGreaterEqual((Comparable) value));
 							for(int k=0;k<references.size();k++){
 								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								pagenow = Page.deserialize( pagename );
 								indexInPage=references.get(k).getIndexInPage();
 								helper.add(pagenow.tuples.get(indexInPage));
 							}
 							res.add(helper);
 							break;
 						case ">":
-							ind.searchGreaterthan((Comparable) value);
+							references = BPTree.getRefs(ind.searchGreaterthan((Comparable) value));
 							for(int k=0;k<references.size();k++){
 								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								pagenow = Page.deserialize(pagename  );
 								indexInPage=references.get(k).getIndexInPage();
 								helper.add(pagenow.tuples.get(indexInPage));
 							}
@@ -213,15 +212,15 @@ public class DBApp {
 						case "<=":
 							for(int k=0;k<=tableitself.tablePages.size();k++){
 								pagename=tableitself.tablePages.get(k);
-								pagenow=Page.deserialize(tableName + "/" + pagename + ".class");
+								pagenow=Page.deserialize( pagename );
 								for(int p=0;p<pagenow.tuples.size();p++){
 									helper.add(pagenow.tuples.get(p));
 								}
 							}
-							ind.searchGreaterEqual((Comparable) value);
+							references = BPTree.getRefs(ind.searchGreaterEqual((Comparable) value));
 							for(int k=0;k<references.size();k++){
 								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								pagenow = Page.deserialize(pagename );
 								indexInPage=references.get(k).getIndexInPage();
 								helper.remove(pagenow.tuples.get(indexInPage));
 							}
@@ -230,15 +229,15 @@ public class DBApp {
 						case "<":
 							for(int k=0;k<=tableitself.tablePages.size();k++){
 								pagename=tableitself.tablePages.get(k);
-								pagenow=Page.deserialize(tableName + "/" + pagename + ".class");
+								pagenow=Page.deserialize(pagename );
 								for(int p=0;p<pagenow.tuples.size();p++){
 									helper.add(pagenow.tuples.get(p));
 								}
 							}
-							ind.searchGreaterthan((Comparable) value);
+							references = BPTree.getRefs(ind.searchGreaterthan((Comparable) value));
 							for(int k=0;k<references.size();k++){
 								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
+								pagenow = Page.deserialize(pagename );
 								indexInPage=references.get(k).getIndexInPage();
 								helper.remove(pagenow.tuples.get(indexInPage));
 							}
@@ -247,10 +246,10 @@ public class DBApp {
 					}
 				}
 				else{
-				res.add(tableitself.searchTable(columnName, operator, value));}
-				tableitself.serialize();//might remove depending on deserialize
+					res.add(tableitself.searchTable(columnName, operator, value));}
+
 			} catch (Exception e) {
-				throw new DBAppException("Table " + tableName + "not found.");
+				throw new DBAppException("Table " + tableName + " not found.");
 			}
 			if (res.size() > 1) {
 				ArrayList<Tuple> l1 = (ArrayList<Tuple>) res.remove(0);//check valid datatype
@@ -283,20 +282,21 @@ public class DBApp {
 
         try {
 
-            String strTableName = "Student";
             DBApp dbApp = new DBApp();
             dbApp.init();
-//
 
 
-//            Hashtable htblColNameType = new Hashtable();
-//            htblColNameType.put("id", "java.lang.Integer");
-//            htblColNameType.put("name", "java.lang.String");
-//            htblColNameType.put("gpa", "java.lang.double");
-//            dbApp.createTable(strTableName, "id", htblColNameType);
-//
-//			dbApp.createIndex(strTableName, "name", "nameIndex");
+			String strTableName = "Student";
 
+			// Table Creation
+            Hashtable htblColNameType = new Hashtable();
+            htblColNameType.put("id", "java.lang.Integer");
+            htblColNameType.put("name", "java.lang.String");
+            htblColNameType.put("gpa", "java.lang.double");
+            dbApp.createTable(strTableName, "id", htblColNameType);
+
+
+			// inserting: 25, ahmed noor, 0.95
             Hashtable htblColNameValue = new Hashtable();
             htblColNameValue.put("id", Integer.valueOf(25));
             htblColNameValue.put("name", "Ahmed Noor");
@@ -304,55 +304,82 @@ public class DBApp {
             dbApp.insertIntoTable(strTableName, htblColNameValue);
 
 
-//
-//            Hashtable<String, Object> ht = new Hashtable<>();
-//            ht.put("name", "Zeyaddd");
-//            ht.put("gpa", 0.8);
-//            dbApp.updateTable(strTableName, "0", ht);
-//
-//            System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
-//
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 453455 ));
-//			htblColNameValue.put("name", new String("Ahmed Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 0.95 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
+			// inserting: 453455, ahmed noor, 0.95
+			htblColNameValue.clear( );
+			htblColNameValue.put("id", new Integer( 453455 ));
+			htblColNameValue.put("name", new String("Ahmed Noor" ) );
+			htblColNameValue.put("gpa", new Double( 0.95 ) );
+			dbApp.insertIntoTable( strTableName , htblColNameValue );
 
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 5674567 ));
-//			htblColNameValue.put("name", new String("Dalia Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 1.25 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
+
+			// inserting: 5674567, dalia noor, 1.25
+			htblColNameValue.clear( );
+			htblColNameValue.put("id", new Integer( 5674567 ));
+			htblColNameValue.put("name", new String("Dalia Noor" ) );
+			htblColNameValue.put("gpa", new Double( 1.25 ) );
+			dbApp.insertIntoTable( strTableName , htblColNameValue );
+
+
+			// inserting 23498, john noor, 1.5
+			htblColNameValue.clear( );
+			htblColNameValue.put("id", new Integer( 23498 ));
+			htblColNameValue.put("name", new String("John Noor" ) );
+			htblColNameValue.put("gpa", new Double( 1.5 ) );
+			dbApp.insertIntoTable( strTableName , htblColNameValue );
+
+			// inserting 78452, zaky noor, 0.88
+			htblColNameValue.clear( );
+			htblColNameValue.put("id", new Integer( 78452 ));
+			htblColNameValue.put("name", new String("Zaky Noor" ) );
+			htblColNameValue.put("gpa", new Double( 0.88 ) );
+			dbApp.insertIntoTable( strTableName , htblColNameValue );
+
+			dbApp.createIndex(strTableName, "name", "nameIndex");
+
+//			 Attempting to re-create the same table -> should throw an exception yay
+//			Hashtable htblColNameType = new Hashtable();
+//            htblColNameType.put("id", "java.lang.Integer");
+//            htblColNameType.put("name", "java.lang.String");
+//            htblColNameType.put("gpa", "java.lang.double");
+//            dbApp.createTable(strTableName, "id", htblColNameType);
+
+//			 Attempting to insert a tuple with the same clustering key
+//			Hashtable htblColNameValue = new Hashtable();
+//            htblColNameValue.put("id", Integer.valueOf(25));
+//            htblColNameValue.put("name", "Ahmed Noor");
+//            htblColNameValue.put("gpa", new Double(0.95));
+//            dbApp.insertIntoTable(strTableName, htblColNameValue);
+
+
+			Table currentTable = Table.deserialize("Student");
+			System.out.println(currentTable);
+//			Hashtable<String, Object> ht = new Hashtable<>();
+//			ht.put("name", "Zeyaddd");
+//			ht.put("gpa", 0.8);
+//			dbApp.updateTable(strTableName, "0", ht);
 //
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 23498 ));
-//			htblColNameValue.put("name", new String("John Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 1.5 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
+//			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+
 //
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 78452 ));
-//			htblColNameValue.put("name", new String("Zaky Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 0.88 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
-//
-//
-//			SQLTerm[] arrSQLTerms;
-//			arrSQLTerms = new SQLTerm[2];
-//			arrSQLTerms[0]._strTableName =  "Student";
-//			arrSQLTerms[0]._strColumnName=  "name";
-//			arrSQLTerms[0]._strOperator  =  "=";
-//			arrSQLTerms[0]._objValue     =  "John Noor";
-//
+			SQLTerm[] arrSQLTerms;
+			arrSQLTerms = new SQLTerm[1];
+			arrSQLTerms[0] = new SQLTerm();
+			arrSQLTerms[0]._strTableName =  "Student";
+			arrSQLTerms[0]._strColumnName=  "name";
+			arrSQLTerms[0]._strOperator  =  "=";
+			arrSQLTerms[0]._objValue     =  "Ahmed Noor";
+//			arrSQLTerms[1] = new SQLTerm();
 //			arrSQLTerms[1]._strTableName =  "Student";
 //			arrSQLTerms[1]._strColumnName=  "gpa";
 //			arrSQLTerms[1]._strOperator  =  "=";
-//			arrSQLTerms[1]._objValue     =  new Double( 1.5 );
-//
-//			String[]strarrOperators = new String[1];
+//			arrSQLTerms[1]._objValue     =  new Double( 7 );
+
+			String[]strarrOperators = new String[0];
 //			strarrOperators[0] = "OR";
-//			// select * from Student where name = "John Noor" or gpa = 1.5;
-//			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
+			// select * from Student where name = "John Noor" or gpa = 1.5;
+			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
+			while(resultSet.hasNext())
+				System.out.println(resultSet.next());
         } catch (Exception exp) {
             exp.printStackTrace();
         }

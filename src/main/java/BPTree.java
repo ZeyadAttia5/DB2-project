@@ -34,7 +34,6 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
     }
 
     public static BPTree deserialize(String tableName, String colName) {
-
         String indexName = csvConverter.getIndexName(tableName, colName);
         BPTree bTree = null;
         try (FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
@@ -506,6 +505,25 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         }
         this.insert( key, recordReference);
 
+    }
+
+    public static ArrayList<Ref> getRefs(BPTreeLeafNode bnode){
+        ArrayList<Ref> allRefs = new ArrayList<>();
+        BPTreeLeafNode currLeaf = bnode;
+
+        while(currLeaf!=null) {
+            System.out.println(currLeaf);
+            for (int i = 0; i < currLeaf.numberOfKeys; i++) {
+                System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
+                if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                    int size = currLeaf.getOverflow(i).size();
+                    for (int j = 0; j < size; j++)
+                        allRefs.add((Ref) currLeaf.getOverflow(i).get(j));
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+        return allRefs;
     }
 
     public static void main(String[] args) {
