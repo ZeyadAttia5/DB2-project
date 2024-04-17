@@ -526,9 +526,123 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         return allRefs;
     }
 
+    public ArrayList<Ref> getRefsGreaterThan ( T key){
+        ArrayList<Ref> allRefs = new ArrayList<>();
+        BPTreeLeafNode currLeaf = this.searchGreaterthan(key);
+        System.out.println(currLeaf.findIndex((Comparable) key));
+        System.out.println(currLeaf);
+
+        boolean firstLeaf = true;
+        while(currLeaf!=null) {
+            if(firstLeaf){
+                for (int i = currLeaf.findIndex((Comparable) key); i < currLeaf.numberOfKeys; i++) {
+                    allRefs.add(currLeaf.records[i]);
+                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                        int size = currLeaf.getOverflow(i).size();
+                        for (int j = 0; j < size; j++)
+                            allRefs.add((Ref) currLeaf.getOverflow(i).get(j));
+                    }
+                }
+                firstLeaf =false;
+            }
+            else{
+                for (int i = 0; i < currLeaf.numberOfKeys; i++) {
+                    allRefs.add(currLeaf.records[i]);
+                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                        int size = currLeaf.getOverflow(i).size();
+                        for (int j = 0; j < size; j++)
+                            allRefs.add((Ref) currLeaf.getOverflow(i).get(j));
+                    }
+                }
+
+            }
+
+            currLeaf = currLeaf.getNext();
+        }
+
+        return allRefs;
+    }
+
+    public ArrayList<Ref> getRefsGreaterEqual ( T key){
+        ArrayList<Ref> allRefs = new ArrayList<>();
+        BPTreeLeafNode currLeaf = this.searchGreaterEqual(key);
+        System.out.println(currLeaf.findIndex((Comparable) key));
+
+        boolean firstLeaf = true;
+        while(currLeaf!=null) {
+            if(firstLeaf){
+                for (int i = currLeaf.findIndex((Comparable) key)-1; i < currLeaf.numberOfKeys; i++) {
+                    allRefs.add(currLeaf.records[i]);
+                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                        int size = currLeaf.getOverflow(i).size();
+                        for (int j = 0; j < size; j++)
+                            allRefs.add((Ref) currLeaf.getOverflow(i).get(j));
+                    }
+                }
+                firstLeaf =false;
+            }
+            else{
+                for (int i = 0; i < currLeaf.numberOfKeys; i++) {
+                    allRefs.add(currLeaf.records[i]);
+                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                        int size = currLeaf.getOverflow(i).size();
+                        for (int j = 0; j < size; j++)
+                            allRefs.add((Ref) currLeaf.getOverflow(i).get(j));
+                    }
+                }
+
+            }
+
+            currLeaf = currLeaf.getNext();
+        }
+
+        return allRefs;
+    }
+
+    public ArrayList<Ref> getRefsLessThan ( T key){
+        ArrayList<Ref> allRefs = new ArrayList<>();
+        BPTreeLeafNode currLeaf = this.searchMinNode();
+
+        while(currLeaf!=null ) {
+            for (int i = 0; i < currLeaf.numberOfKeys ; i++) {
+                if(currLeaf.keys[i].equals(key))
+                    return allRefs;
+                allRefs.add(currLeaf.records[i]);
+                if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                    int size = currLeaf.getOverflow(i).size();
+                    for (int j = 0; j < size; j++)
+                        allRefs.add((Ref) currLeaf.getOverflow(i).get(j));
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+        return allRefs;
+    }
+
+    public ArrayList<Ref> getRefsLessEqual ( T key){
+        ArrayList<Ref> allRefs = new ArrayList<>();
+        BPTreeLeafNode currLeaf = this.searchMinNode();
+        boolean flag = false;
+
+        while(currLeaf!=null && !flag ) {
+            for (int i = 0; i < currLeaf.numberOfKeys && !flag ; i++) {
+                if(currLeaf.keys[i].equals(key))
+                    flag = true;
+                allRefs.add(currLeaf.records[i]);
+                if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+                    int size = currLeaf.getOverflow(i).size();
+                    for (int j = 0; j < size; j++)
+                        allRefs.add((Ref) currLeaf.getOverflow(i).get(j));
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+        return allRefs;
+    }
+
+
+
     public static void main(String[] args) {
-
-
 
         BPTree<String> treename= new BPTree<>(2);
 
@@ -559,23 +673,48 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         treename.insertingWithShifting("naya", new Ref(insertedPage,insertedIndex), 5);
 
 
-        BPTreeLeafNode firstLeaf = treename.searchMinNode();
-        BPTreeLeafNode currLeaf = firstLeaf;
 
-        while(currLeaf!=null) {
-            System.out.println(currLeaf);
-            for (int i = 0; i < currLeaf.numberOfKeys; i++) {
-                System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
-                if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
-                    int size = currLeaf.getOverflow(i).size();
-                    for (int j = 0; j < size; j++)
-                        System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
-                }
-            }
-            currLeaf = currLeaf.getNext();
-        }
+//        BPTreeLeafNode firstLeaf = treename.searchMinNode();
+//        BPTreeLeafNode currLeaf = firstLeaf;
+
+//        Object searchingWith = "mai";
+//        BPTreeLeafNode currLeaf = treename.searchGreaterEqual("mai");
+//        currLeaf = treename.searchGreaterEqual("mai");
+//        System.out.println(currLeaf.findIndex((Comparable) searchingWith));
+//
+//        boolean firstLeaf = true;
+//        while(currLeaf!=null) {
+//            System.out.println(currLeaf);
+//            if(firstLeaf){
+//                for (int i = currLeaf.findIndex((Comparable) searchingWith); i < currLeaf.numberOfKeys; i++) {
+//                    System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
+//                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+//                        int size = currLeaf.getOverflow(i).size();
+//                        for (int j = 0; j < size; j++)
+//                            System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
+//                    }
+//                }
+//                firstLeaf =false;
+//            }
+//            else{
+//                for (int i = 0; i < currLeaf.numberOfKeys; i++) {
+//                    System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
+//                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+//                        int size = currLeaf.getOverflow(i).size();
+//                        for (int j = 0; j < size; j++)
+//                            System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
+//                    }
+//                }
+//
+//            }
+//
+//            currLeaf = currLeaf.getNext();
+//        }
+
 
         System.out.println(treename);
+        System.out.println(treename.getRefsGreaterThan("mai"));
+        System.out.println(treename.getRefsGreaterEqual("mai"));
 
 
 
