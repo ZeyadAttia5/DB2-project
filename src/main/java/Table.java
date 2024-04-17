@@ -40,7 +40,8 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class"); ObjectInputStream in = new ObjectInputStream(fis)) {
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class");
+             ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
             System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename + "/" + filename + ".class");
         } catch (IOException | ClassNotFoundException e) {
@@ -380,24 +381,20 @@ public class Table implements Serializable {
         Vector<String[]> columnstuff = Page.readCSV(this.name);
         ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
         String isclusteringkey = "False";
-        String columnType=null;
-        for (String[] column : columnstuff) {
-            if (column[1].equals(columnName)) {
-                isclusteringkey = column[3];
-                columnType = column[2];
-                break;
-            }
-        }
+        String columnType= csvConverter.getColumnType(this.name, columnName);
+
         if (columnType == null) {
             throw new DBAppException("Column "+ columnName +" not found");
         }
         if (!compatibleTypes(value, columnType)) {
             throw new DBAppException("Datatype of value doesn't match the column datatype: ");
         }
-        if (isclusteringkey == "False" || operator == "!=") {
+
+        // Linear searching
+        if (isclusteringkey.equals("False") || operator.equals("!=") ) {
             for (String pagename : tablePages) {
                 try {
-                    Page page = Page.deserialize(pagename + ".class");// you removed hagat mn hena gt mn salma's incase 3amal moshkela
+                    Page page = Page.deserialize(pagename );
                     pageResults = new ArrayList<Tuple>();
                     pageResults = page.searchlinearPage(columnName, value, operator);
                 } catch (IOException | ClassNotFoundException e) {
@@ -430,7 +427,7 @@ public class Table implements Serializable {
                     }
                 }
             }
-            if(operator==">"||operator==">=") {
+            if(operator.equals(">")||operator.equals(">=")) {
                 for (int i = tablePages.size() - 1; i >= 0; i--) {
                     try {
                         Page page = Page.deserialize(this.tablePages.get(i)+".class");
@@ -441,9 +438,9 @@ public class Table implements Serializable {
                             page.serialize();
                             pageResults.addAll(tempp);
                         }else{
-                            for(int j= pageResults.size()-1;j>=0;j--){
-                                results.add(pageResults.get(i));
-                            }
+//                            for(int j= pageResults.size()-1;j>=0;j--){
+//                                results.add(pageResults.get(i));
+//                            }
                             return results;
                         }
                     } catch (IOException | ClassNotFoundException e) {
@@ -451,7 +448,7 @@ public class Table implements Serializable {
                     }
                 }
             }
-            if (operator=="<"||operator=="<=") {
+            if (operator.equals("<")||operator.equals("<=")) {
                 for (int i=0;i< tablePages.size();i++){
                     try {
                         Page page = Page.deserialize(this.tablePages.get(i)+".class");
@@ -474,5 +471,6 @@ public class Table implements Serializable {
         }
         return results;
     }
+
 
 }

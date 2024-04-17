@@ -161,6 +161,21 @@ public class csvConverter {
         return false;
     }
 
+    public static String getColumnType(String tableName, String columnName){
+
+        try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader1.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(tableName) && fields[1].equals(columnName))
+                    return fields[2];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     // Adjusting the metadata file
     public static boolean addIndexToCSV(String strTableName, String strColName, String strIndexName) {
