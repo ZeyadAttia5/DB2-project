@@ -167,8 +167,7 @@ public class Page implements Serializable {
             Object midValue = midTuple.values.get(this.clusteringKey);
             if (((Comparable) midValue).compareTo(value) == 0) {
                 low = mid; // Value already exists
-                System.out.println("Can not insert duplicate tuple");
-                return null;
+                throw new DBAppException("Can't Insert duplicate clustering keys");
             } else if (((Comparable) midValue).compareTo(value) < 0) {
                 low = mid + 1;
             } else {
