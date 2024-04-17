@@ -104,6 +104,24 @@ public class DBApp {
         System.out.println(target.tablePages);
         System.out.println();
 
+		BPTree temp = BPTree.deserialize(strTableName, "name");
+
+		BPTreeLeafNode firstLeaf = temp.searchMinNode();
+		BPTreeLeafNode currLeaf = firstLeaf;
+
+		while(currLeaf!=null) {
+			System.out.println(currLeaf);
+			for (int i = 0; i < currLeaf.numberOfKeys; i++) {
+				System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
+				if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
+					int size = currLeaf.getOverflow(i).size();
+					for (int j = 0; j < size; j++)
+						System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
+				}
+			}
+			currLeaf = currLeaf.getNext();
+		}
+
     }
 
     // following method updates one row only
@@ -289,7 +307,7 @@ public class DBApp {
 //			dbApp.createIndex(strTableName, "name", "nameIndex");
 
             Hashtable htblColNameValue = new Hashtable();
-            htblColNameValue.put("id", Integer.valueOf(20));
+            htblColNameValue.put("id", Integer.valueOf(25));
             htblColNameValue.put("name", "Ahmed Noor");
             htblColNameValue.put("gpa", new Double(0.95));
             dbApp.insertIntoTable(strTableName, htblColNameValue);
