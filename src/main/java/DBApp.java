@@ -47,32 +47,41 @@ public class DBApp {
     }
 
     // following method creates a B+tree index
-    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
+    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException, IOException, ClassNotFoundException {
 
-        // adjusting metadata file with new index
+        // Adjusting metadata file with new index
         boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
         if (!found) {
             DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName);
             throw e;
         }
 
-        // retrieving data type for desired column
+        // Retrieving data type for desired column
         String tmp = csvConverter.getDataType(strTableName, strColName);
 
-        // initialising b+tree
+        // Initialising b+tree
         BPTree tree = null;
         if (tmp.equalsIgnoreCase("java.lang.Integer")) {
             tree = new BPTree<Integer>(10);
-
         } else if (tmp.equalsIgnoreCase("java.lang.String")) {
             tree = new BPTree<String>(10);
-
         } else if (tmp.equalsIgnoreCase("java.lang.Double")) {
             tree = new BPTree<Double>(10);
         } else {
             DBAppException e = new DBAppException("Not found");
             throw e;
         }
+
+		// Populating tree if table is not empty
+		Table currentTable = Table.deserialize(strTableName);
+		for(String page: currentTable.tablePages){
+			Page currentPage = Page.deserialize(page);
+			for(int i =0; i< currentPage.getTuples().size(); i++){
+				Tuple currentTuple = currentPage.getTuples().get(i);
+				Object value = currentTuple.getValues().get(strColName);
+				tree.insert((Comparable) value, new Ref(page, i));
+			}
+		}
 
         tree.serialize(strTableName, strIndexName);
 
