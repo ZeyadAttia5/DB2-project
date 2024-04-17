@@ -42,43 +42,19 @@ public class Page implements Serializable {
         FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + arr[0] + "/" + fileName + ".class");
         ObjectInputStream in = new ObjectInputStream(fileIn);
         page = (Page) in.readObject();
-        in.close();
-        fileIn.close();
+        //in.close();
+        //fileIn.close();
         return page;
     }
-
-    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
-//        Page page = new Page("Student",2, "id");
-//        Hashtable htblColNameValue = new Hashtable( );
-//        htblColNameValue.put("id", new Integer( 2 ));
-//        htblColNameValue.put("name", new String("Yara Noor" ) );
-//        htblColNameValue.put("gpa", new Double( 0.90 ) );
-//        Tuple t = new Tuple(htblColNameValue);
-//        page.insert(t);
-//        System.out.println(page);
-//        page.serialize();
-//        System.out.println(deserialize("Student_2"));
-
-//        Hashtable h = new Hashtable( );
-//        h.put("id", new Integer( 3 ));
-//        h.put("name", new String("Ahmed Noor" ) );
-//        h.put("gpa", new Double( 0.95 ) );
-//        Tuple t2 = new Tuple(h);
-//
-//        Hashtable h2 = new Hashtable( );
-//        h2.put("id", new Integer( 2 ));
-//        h2.put("name", new String("Ahmed Noor" ) );
-//        h2.put("gpa", new Double( 0.95 ) );
-//        Tuple t3 = new Tuple(h2);
-//
-//        page.insert(t);
-//        page.insert(t2);
-//        System.out.println(page);
-//
-//        page.insert(t3);
-//        System.out.println(page);
-    }
-
+//try (FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
+//    ObjectInputStream objectIn = new ObjectInputStream(fileIn)) {
+//        bTree = (BPTree) objectIn.readObject();
+//        System.out.println("B+ tree deserialized successfully.");
+//    } catch (IOException | ClassNotFoundException e) {
+//        e.printStackTrace();
+//    }
+//        return bTree;
+//}
     public Vector<Tuple> getTuples() {
         return tuples;
     }
@@ -87,26 +63,22 @@ public class Page implements Serializable {
         return this.getTuples().get(indexInPage);
     }
 
-    private void insertHelper(Ref reference, Tuple tuple, String tableName)
-    {
+    private void insertHelper(Ref reference, Tuple tuple, String tableName) {
         for (String colName : tuple.values.keySet()) {
-            String result = csvConverter.getIndexName(tableName,colName);
-            if(!result.equals("null"))
-            {
-                BPTree tree = BPTree.deserialize(tableName,colName);
+            String result = csvConverter.getIndexName(tableName, colName);
+            if (!result.equals("null")) {
+                BPTree tree = BPTree.deserialize(tableName, colName);
                 tree.insert((Comparable) tuple.values.get(colName), reference);
-                tree.serialize(tableName,result);
+                tree.serialize(tableName, result);
             }
         }
     }
 
-    private void insertHelperShifting(Ref reference, Tuple tuple, String tableName)
-    {
+    private void insertHelperShifting(Ref reference, Tuple tuple, String tableName) {
         for (String colName : tuple.values.keySet()) {
-            String result = csvConverter.getIndexName(tableName,colName);
-            if(!result.equals("null"))
-            {
-                BPTree tree = BPTree.deserialize(tableName,colName);
+            String result = csvConverter.getIndexName(tableName, colName);
+            if (!result.equals("null")) {
+                BPTree tree = BPTree.deserialize(tableName, colName);
                 tree.insertingWithShifting((Comparable) tuple.values.get(colName), reference, this.maxSize);
             }
         }
@@ -147,7 +119,7 @@ public class Page implements Serializable {
             this.min = this.max;
             this.serialize();
             currTable.tablePages.add(this.name);
-            currTable.pageInfo.put(this.name, new Object[] {this.max, this.min, this.tuples.size()});
+            currTable.pageInfo.put(this.name, new Object[]{this.max, this.min, this.tuples.size()});
             currTable.serialize();
             result = new Ref(this.name, this.tuples.size() - 1);
             insertHelper(result, tuple, arr[0]);
@@ -173,15 +145,13 @@ public class Page implements Serializable {
                 high = mid - 1;
             }
         }
-        if (low > this.tuples.size() - 1 && ((Comparable) this.tuples.lastElement().values.get(clusteringKey)).compareTo(tuple.values.get(clusteringKey))!=0) {
+        if (low > this.tuples.size() - 1 && ((Comparable) this.tuples.lastElement().values.get(clusteringKey)).compareTo(tuple.values.get(clusteringKey)) != 0) {
             this.tuples.add(tuple);
             this.serialize();
             result = new Ref(this.name, this.tuples.size() - 1);
-            if(this.tuples.size()>this.maxSize)
-            {
+            if (this.tuples.size() > this.maxSize) {
                 insertHelperShifting(result, tuple, arr[0]);
-            }
-            else
+            } else
                 insertHelper(result, tuple, arr[0]);
         } else if (this.tuples.get(low) != null) {
             this.tuples.add(low, tuple);
@@ -191,7 +161,7 @@ public class Page implements Serializable {
         }
         this.max = this.tuples.lastElement().values.get(clusteringKey);
 
-        if(this.tuples.size()>maxSize) {
+        if (this.tuples.size() > maxSize) {
 
             Page currPage = null;
             File pageFolder = new File("src/main/resources/tables/" + arr[0]);
@@ -199,7 +169,7 @@ public class Page implements Serializable {
             files = Page.sortFiles(files);
             for (int i = 0; i < files.length; i++) {
                 if ((this.name + ".class").equals(files[i].getName())) {
-                    files = Arrays.copyOfRange(files, i+1, files.length);
+                    files = Arrays.copyOfRange(files, i + 1, files.length);
                     break;
                 }
             }
@@ -207,35 +177,30 @@ public class Page implements Serializable {
             Object[] temp;
             Tuple extra = this.tuples.lastElement();
             this.tuples.remove(extra);
-            this.max = (this.tuples.get(this.maxSize-1)).values.get(clusteringKey);
+            this.max = (this.tuples.get(this.maxSize - 1)).values.get(clusteringKey);
             this.min = (this.tuples.get(0)).values.get(clusteringKey);
 
 
-            for(File file : files)
-            {
-                if(extra != null)
-                {
+            for (File file : files) {
+                if (extra != null) {
                     String fileName = file.getName();
-                    currPage = Page.deserialize(fileName.substring(0, fileName.length()-6));
+                    currPage = Page.deserialize(fileName.substring(0, fileName.length() - 6));
                     currPage.tuples.add(0, extra);
                     insertHelperShifting(new Ref(currPage.name, 0), tuple, arr[0]);
                     currPage.min = currPage.tuples.get(0).values.get(clusteringKey);
-                    currPage.max = currPage.tuples.get(currPage.maxSize-1).values.get(clusteringKey);
-                    currTable.pageInfo.put(currPage.name, new Object[] {currPage.max, currPage.min, currPage.tuples.size()});
+                    currPage.max = currPage.tuples.get(currPage.maxSize - 1).values.get(clusteringKey);
+                    currTable.pageInfo.put(currPage.name, new Object[]{currPage.max, currPage.min, currPage.tuples.size()});
                     currPage.serialize();
-                    if(currPage.tuples.size()>maxSize)
-                    {
+                    if (currPage.tuples.size() > maxSize) {
                         extra = currPage.tuples.lastElement();
                         currPage.tuples.remove(extra);
                         currPage.serialize();
-                    }
-                    else
+                    } else
                         extra = null;
                 }
             }
 
-            if(extra!=null)
-            {
+            if (extra != null) {
                 Page newPage = new Page(currTable.name, currTable.tablePages.size(), this.clusteringKey);
                 newPage.insert(extra);
                 newPage.serialize();
@@ -243,11 +208,12 @@ public class Page implements Serializable {
                 currTable.tablePages.add(newPage.name);
             }
         }
-        currTable.pageInfo.put(this.name, new Object[] {this.max, this.min, this.tuples.size()});
+        currTable.pageInfo.put(this.name, new Object[]{this.max, this.min, this.tuples.size()});
         this.serialize();
         currTable.serialize();
         return result;
     }
+
     public int binarySearchPage(String clusteringKeyValue, String dataType) throws DBAppException {
 
         Object newValue = null;
@@ -298,22 +264,22 @@ public class Page implements Serializable {
         //check if there's a clustering key in the conditions
         if (!htblColNameValue.containsKey(clusteringKey)) {
             //if it's not; we loop through the tuples & for each we check if all the conditions are met
-            for (int i = tuples.size() - 1; i >= 0; i--) {
+            for (int i = 0; i<=tuples.size() - 1; i++) {
                 Tuple tuple = tuples.get(i);
                 if (tupleMatchesConditions(tuple, htblColNameValue)) {
-                    tuples.remove(i);
+                    tuple.setValuesToNull();
                 }
             }
-        } else{
+        } else {
             //if there's a clustering key we perform binary search to find the tuples then see if they match
             Object clusteringKeyValue = htblColNameValue.get(clusteringKey);
-            int index = binarySearch(clusteringKeyValue);
+            int index = binarySearchDelete(clusteringKeyValue);
             if (index != -1) {
                 //if we found the tuple corresponding to the clustering key, we check the rest of the conditions
                 Tuple matchingTuple = tuples.get(index);
                 htblColNameValue.remove(clusteringKey);
                 if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
-                    tuples.remove(index);
+                    matchingTuple.setValuesToNull();
                 }
             }
         }
@@ -323,39 +289,20 @@ public class Page implements Serializable {
         }
     }
 
-    public boolean deleteIndexedTuples(Ref ref, Hashtable<String, Object> conditions) {
-        //we take a tuple reference to check whether it matches the rest of the conditions before deleting the tuple
+    public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
+        //we take a tuple reference to check whether it matches the rest of the conditions without indices
         int refIndex = ref.getIndexInPage();
+        System.out.println(refIndex);
         Tuple tuple = tuples.get(refIndex);
+        System.out.println(tuple.values);
         boolean result = false;
-        //check if there's a clustering key in the remaining conditions
-        if (!conditions.containsKey(clusteringKey)) {
-            //if there isn't, we check if the tuple matches the other conditions to delete it
-            if (tupleMatchesConditions(tuple, conditions)) {
-                tuples.remove(tuple);
-                result = true;
-            }
+        if (tupleMatchesConditions(tuple, conditions)) {
+            tuple.setValuesToNull();
+            result = true;
         }
-        else {
-            //if there's a clustering key we perform binary search to find the tuple with the specified clustering key value
-            Object clusteringKeyValue = conditions.get(clusteringKey);
-            int clusteringIndex = binarySearch(clusteringKeyValue);
-            if (clusteringIndex == refIndex) {
-                //if we found that the tuple corresponding to the clustering key value is the same as the tuple we are checking we check that they match the rest of the conditions if they exist minus the clustering key column
-                conditions.remove(clusteringKey);
-                if (!conditions.isEmpty()){
-                    if (tupleMatchesConditions(tuple, conditions)) {
-                        tuples.remove(tuple);
-                        result = true;
-                    }
-                } else{
-                    tuples.remove(tuple);
-                }
-            }
-            if (tuples.isEmpty()) {
-                File file = new File(this.name + ".class");
-                file.delete();
-            }
+        if (tuples.isEmpty()) {
+            File file = new File(this.name + ".class");
+            file.delete();
         }
         return result;
     }
@@ -371,15 +318,45 @@ public class Page implements Serializable {
         return true;
     }
 
-    private int binarySearch(Object clusteringKeyValue) {
+    public void deleteClusteringIndex(Ref ref, Hashtable<String, Object> conditions) {
+        //if there's a clustering key we perform binary search to find the tuple with the specified clustering key value
+        boolean deleted = false;
+        int refIndex = ref.getIndexInPage();
+        System.out.println("refIndex in page:" + refIndex);
+        Tuple tuple = tuples.get(refIndex);
+        System.out.println(tuple.values);
+        Object clusteringKeyValue = conditions.get(clusteringKey);
+        int clusteringIndex = binarySearchDelete(clusteringKeyValue);
+        System.out.println("clusteringIndex:" + clusteringIndex);
+        if (clusteringIndex == refIndex) {
+            //if we found that the tuple corresponding to the clustering key value is the same as the tuple we are checking we check that they match the rest of the conditions if they exist minus the clustering key column
+            conditions.remove(clusteringKey);
+            if (!conditions.isEmpty()) {
+                if (tupleMatchesConditions(tuple, conditions)) {
+                    System.out.println("matches");
+                    tuple.setValuesToNull();
+                }
+                else {
+                    System.out.println("clustering indexed tuple doesn't match the rest of the conditions");
+                }
+            } else {
+                tuple.setValuesToNull();
+            }
+        }
+    }
+
+    private int binarySearchDelete(Object clusteringKeyValue) {
         int low = 0;
         int high = tuples.size() - 1;
 
         while (low <= high) {
             int mid = low + (high - low) / 2;
             Tuple midTuple = tuples.get(mid);
+
+            // Assuming the clustering key value is a Comparable type
             Comparable midValue = (Comparable) midTuple.values.get(clusteringKey);
 
+            // Compare the clustering key value with the provided clusteringKeyValue
             int cmp = midValue.compareTo(clusteringKeyValue);
             if (cmp == 0) {
                 return mid;
@@ -394,6 +371,7 @@ public class Page implements Serializable {
 
     /**
      * Updates a tuple in place
+     *
      * @param refToOldTuple
      * @param htblColNameType
      * @return true if update was successful, false otherwise
@@ -409,12 +387,11 @@ public class Page implements Serializable {
                 //
                 oldTuple.getValues().put(col, htblColNameType.get(col));
                 isSuccess = true;
-            }
-            else {
+            } else {
                 // do nothing :)
             }
         }
-        if (isSuccess == false){
+        if (isSuccess == false) {
             System.out.println("Couldn't update");
         }
         return isSuccess;
@@ -451,6 +428,7 @@ public class Page implements Serializable {
         out.close();
         fileOut.close();
     }
+
     public ArrayList<Tuple> searchlinearPage(String columnName, Object value, String operator) throws DBAppException {
         ArrayList<Tuple> results = new ArrayList<>();
         try {
@@ -461,53 +439,52 @@ public class Page implements Serializable {
                     results.add(tuple);
                 }
             }
-        }
-        catch (IOException | ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return results;
     }
+
     public ArrayList<Tuple> binarysearchPage(String columnName, Object value, String operator) throws DBAppException {
         ArrayList<Tuple> results = new ArrayList<>();
-        if(operator.equals("=")){
+        if (operator.equals("=")) {
             int left = 0;
-            int right = tuples.size()- 1;
+            int right = tuples.size() - 1;
             while (left <= right) {
                 int mid = left + (right - left) / 2;
-                if (tuples.get(mid).values.get(columnName)== value) {
+                if (tuples.get(mid).values.get(columnName) == value) {
                     results.add(tuples.get(mid));
                     return results;
                 }
-                if  (((Comparable)tuples.get(mid).values.get(columnName)).compareTo((Comparable)value) < 0)
+                if (((Comparable) tuples.get(mid).values.get(columnName)).compareTo((Comparable) value) < 0)
                     left = mid + 1;
                 else
                     right = mid - 1;
             }
         }
-        if(operator==">"||operator==">=") {
-            for (int i = tuples.size()-1; i>=0; i--) {
+        if (operator == ">" || operator == ">=") {
+            for (int i = tuples.size() - 1; i >= 0; i--) {
                 Object columnValue = tuples.get(i).values.get(columnName);
                 if (columnValue != null && compareValues(columnValue, value, operator)) {
                     results.add(tuples.get(i));
-                }
-                else{
+                } else {
                     return results;
                 }
             }
         }
-        if (operator=="<"||operator=="<=") {
-            for (int i=0;i<tuples.size();i++) {
+        if (operator == "<" || operator == "<=") {
+            for (int i = 0; i < tuples.size(); i++) {
                 Object columnValue = tuples.get(i).values.get(columnName);
                 if (columnValue != null && compareValues(columnValue, value, operator)) {
                     results.add(tuples.get(i));
-                }
-                else{
+                } else {
                     return results;
                 }
             }
         }
         return results;
     }
+
     private boolean compareValues(Object columnValue, Object searchValue, String operator) {
         switch (operator) {
             case "=":
@@ -528,7 +505,7 @@ public class Page implements Serializable {
                 if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
                     return ((Comparable) columnValue).compareTo((Comparable) searchValue) <= 0;
                 }
-            case"!=":
+            case "!=":
                 return !columnValue.equals(searchValue);
         }
         return false;
@@ -541,5 +518,37 @@ public class Page implements Serializable {
         for (Tuple tuple : this.tuples)
             result += tuple.toString() + "///";
         return result;
+    }
+
+    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
+//      Page page = new Page("Student",2, "id");
+//      Hashtable htblColNameValue = new Hashtable( );
+//      htblColNameValue.put("id", new Integer( 2 ));
+//      htblColNameValue.put("name", new String("Yara Noor" ) );
+//      htblColNameValue.put("gpa", new Double( 0.90 ) );
+//      Tuple t = new Tuple(htblColNameValue);
+//      page.insert(t);
+//      System.out.println(page);
+//      page.serialize();
+//      System.out.println(deserialize("Student_2"));
+
+//        Hashtable h = new Hashtable( );
+//        h.put("id", new Integer( 3 ));
+//        h.put("name", new String("Ahmed Noor" ) );
+//        h.put("gpa", new Double( 0.95 ) );
+//        Tuple t2 = new Tuple(h);
+//
+//        Hashtable h2 = new Hashtable( );
+//        h2.put("id", new Integer( 2 ));
+//        h2.put("name", new String("Ahmed Noor" ) );
+//        h2.put("gpa", new Double( 0.95 ) );
+//        Tuple t3 = new Tuple(h2);
+//
+//        page.insert(t);
+//        page.insert(t2);
+//        System.out.println(page);
+//
+//        page.insert(t3);
+//        System.out.println(page);
     }
 }

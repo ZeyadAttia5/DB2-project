@@ -274,97 +274,162 @@ public class DBApp {
             DBApp dbApp = new DBApp();
             dbApp.init();
 
-
-//            Hashtable htblColNameType = new Hashtable();
-//            htblColNameType.put("id", "java.lang.Integer");
-//            htblColNameType.put("name", "java.lang.String");
-//            htblColNameType.put("gpa", "java.lang.double");
-//            htblColNameType.put("age", "java.lang.Integer");
-//            dbApp.createTable(strTableName, "id", htblColNameType);
 //
-//			            dbApp.createIndex(strTableName, "gpa", "gpaIndex");
+//          	Hashtable htblColNameType = new Hashtable();
+//          	htblColNameType.put("id", "java.lang.Integer");
+//          	htblColNameType.put("name", "java.lang.String");
+//			htblColNameType.put("age", "java.lang.Integer");
+//			htblColNameType.put("gpa", "java.lang.double");
+//			htblColNameType.put("city", "java.lang.String");
+//			htblColNameType.put("uni", "java.lang.String");
+//			htblColNameType.put("birth", "java.lang.Integer");
 //
-//            Hashtable htblColNameValue1 = new Hashtable();
-//            htblColNameValue1.put("id", Integer.valueOf(1));
-//            htblColNameValue1.put("name", "Ahmed");
-//            htblColNameValue1.put("gpa", 3.95);
-//            htblColNameValue1.put("age", 20);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue1);
 //
-//            Hashtable htblColNameValue2 = new Hashtable();
-//            htblColNameValue2.put("id", Integer.valueOf(2));
-//            htblColNameValue2.put("name", "Mohamed");
-//            htblColNameValue2.put("gpa", 1.77);
-//            htblColNameValue2.put("age", 19);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue2);
+//			dbApp.createTable(strTableName, "id", htblColNameType);
 //
-//            Hashtable htblColNameValue3 = new Hashtable();
-//            htblColNameValue3.put("id", Integer.valueOf(3));
-//            htblColNameValue3.put("name", "Amr");
-//            htblColNameValue3.put("gpa", 2.35);
-//            htblColNameValue3.put("age", 21);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue3);
+//          	dbApp.createIndex(strTableName, "gpa", "gpaIndex");
+//          	dbApp.createIndex(strTableName,"id","idIndex");
+//          	dbApp.createIndex(strTableName,"name","nameIndex");
+//          	dbApp.createIndex(strTableName,"birth","birthIndex");
 //
-//            Hashtable htblColNameValue4 = new Hashtable();
-//            htblColNameValue4.put("id", Integer.valueOf(4));
-//            htblColNameValue4.put("name", "Salma");
-//            htblColNameValue4.put("gpa", 0.7);
-//            htblColNameValue4.put("age", 21);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue4);
+//          	Hashtable htblColNameValue1 = new Hashtable();
+//          	htblColNameValue1.put("id", Integer.valueOf(1));
+//          	htblColNameValue1.put("name", "Jana");
+//			htblColNameValue1.put("age", 21);
+//			htblColNameValue1.put("gpa", 0.7);
+//			htblColNameValue1.put("city", "Cairo");
+//			htblColNameValue1.put("uni", "GUC");
+//			htblColNameValue1.put("birth", 5);
 //
-//            Hashtable htblColNameValue5 = new Hashtable();
-//            htblColNameValue5.put("id", Integer.valueOf(5));
-//            htblColNameValue5.put("name", "Nabila");
-//            htblColNameValue5.put("gpa", 0.7);
-//            htblColNameValue5.put("age", 21);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue5);
+//			Hashtable htblColNameValue2 = new Hashtable();
+//			htblColNameValue2.put("id", Integer.valueOf(2));htblColNameValue2.put("name", "Nabila");
+//			htblColNameValue2.put("age", 21);
+//			htblColNameValue2.put("gpa", 0.7);
+//			htblColNameValue2.put("city", "Cairo");
+//			htblColNameValue2.put("uni", "GUC");
+//			htblColNameValue2.put("birth", 6);
 //
-//            Hashtable htblColNameValue6 = new Hashtable();
-//            htblColNameValue6.put("id", Integer.valueOf(6));
-//            htblColNameValue6.put("name", "Jana");
-//            htblColNameValue6.put("gpa", 1.11);
-//            htblColNameValue6.put("age", 21);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue6);
+//			Hashtable htblColNameValue3 = new Hashtable();
+//			htblColNameValue3.put("id", Integer.valueOf(3));
+//			htblColNameValue3.put("name", "Amr");
+//			htblColNameValue3.put("age", 21);
+//			htblColNameValue3.put("gpa", 0.7);
+//			htblColNameValue3.put("city", "Cairo");
+//			htblColNameValue3.put("uni", "GUC");
+//			htblColNameValue3.put("birth", 6);
 //
-
+//			Hashtable htblColNameValue4 = new Hashtable();
+//			htblColNameValue4.put("id", Integer.valueOf(4));
+//			htblColNameValue4.put("name", "Laila");
+//			htblColNameValue4.put("age", 10);
+//			htblColNameValue4.put("gpa", 1.0);
+//			htblColNameValue4.put("city", "Alex");
+//			htblColNameValue4.put("uni", "ELS");
+//			htblColNameValue4.put("birth", 11);
+//
+//			Hashtable htblColNameValue5 = new Hashtable();
+//			htblColNameValue5.put("id", Integer.valueOf(5));
+//			htblColNameValue5.put("name", "Maya");
+//			htblColNameValue5.put("age", 20);
+//			htblColNameValue5.put("gpa", 1.2);
+//			htblColNameValue5.put("city", "Mans");
+//			htblColNameValue5.put("uni", "GUC");
+//			htblColNameValue5.put("birth", 6);
+//
+//			Hashtable htblColNameValue6 = new Hashtable();
+//			htblColNameValue6.put("id", Integer.valueOf(6));
+//			htblColNameValue6.put("name", "Gamila");
+//			htblColNameValue6.put("age", 19);
+//			htblColNameValue6.put("gpa", 1.5);
+//			htblColNameValue6.put("city", "Mans");
+//			htblColNameValue6.put("uni", "GUC");
+//			htblColNameValue6.put("birth", 8);
+//
+//			Hashtable htblColNameValue7 = new Hashtable();
+//			htblColNameValue7.put("id", Integer.valueOf(7));
+//			htblColNameValue7.put("name", "Alia");
+//			htblColNameValue7.put("age", 15);
+//			htblColNameValue7.put("gpa", 2.2);
+//			htblColNameValue7.put("city", "Cairo");
+//			htblColNameValue7.put("uni", "BIS");
+//			htblColNameValue7.put("birth", 9);
+//
+//			Hashtable htblColNameValue8 = new Hashtable();
+//			htblColNameValue8.put("id", Integer.valueOf(8));
+//			htblColNameValue8.put("name", "Farida");
+//			htblColNameValue8.put("age", 15);
+//			htblColNameValue8.put("gpa", 3.3);
+//			htblColNameValue8.put("city", "Alex");
+//			htblColNameValue8.put("uni", "BIS");
+//			htblColNameValue8.put("birth", 9);
+//
+//			Hashtable htblColNameValue9 = new Hashtable();
+//			htblColNameValue9.put("id", Integer.valueOf(9));
+//			htblColNameValue9.put("name", "Ahmed");
+//			htblColNameValue9.put("age", 23);
+//			htblColNameValue9.put("gpa", 1.1);
+//			htblColNameValue9.put("city", "Alex");
+//			htblColNameValue9.put("uni", "SU");
+//			htblColNameValue9.put("birth", 11);
+//
+//			Hashtable htblColNameValue10 = new Hashtable();
+//			htblColNameValue10.put("id", Integer.valueOf(10));
+//			htblColNameValue10.put("name", "Ali");
+//			htblColNameValue10.put("age", 16);
+//			htblColNameValue10.put("gpa", 2.2);
+//			htblColNameValue10.put("city", "Cairo");
+//			htblColNameValue10.put("uni", "ES");
+//			htblColNameValue10.put("birth", 5);
+//
+//			Hashtable htblColNameValue11 = new Hashtable();
+//			htblColNameValue11.put("id", Integer.valueOf(11));
+//			htblColNameValue11.put("name", "Ibraheem");
+//			htblColNameValue11.put("age", 5);
+//			htblColNameValue11.put("gpa", 4.4);
+//			htblColNameValue11.put("city", "Mans");
+//			htblColNameValue11.put("uni", "ES");
+//			htblColNameValue11.put("birth", 5);
+//
+//			Hashtable htblColNameValue12 = new Hashtable();
+//			htblColNameValue12.put("id", Integer.valueOf(12));
+//			htblColNameValue12.put("name", "Bika");
+//			htblColNameValue12.put("age", 2);
+//			htblColNameValue12.put("gpa", 0.1);
+//			htblColNameValue12.put("city", "Cats");
+//			htblColNameValue12.put("uni", "Kitten");
+//			htblColNameValue12.put("birth", 11);
+//
+//			dbApp.insertIntoTable(strTableName, htblColNameValue1);
+//          dbApp.insertIntoTable(strTableName, htblColNameValue2);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue3);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue4);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue5);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue6);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue7);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue8);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue9);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue10);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue11);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue12);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue13);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue14);
 
             Hashtable<String, Object> ht = new Hashtable<>();
-            ht.put("gpa", 0.7);
-            ht.put("name","Salma");
+            ht.put("id", 8);
+            ht.put("name","Farida");
+//            ht.put("age",23);
+//			  ht.put("gpa",2.2);
+
+//			ht.put("city","Cairo");
+//			ht.put("uni","GUC");
+//			ht.put("birth",8);
 
             dbApp.deleteFromTable(strTableName,ht);
             System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 
-            //ht.put("gpa", 0.8);
-//            dbApp.updateTable(strTableName, "0", ht);
-//
-//            System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+//          dbApp.updateTable(strTableName, "3", ht);
 //
 //			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 453455 ));
-//			htblColNameValue.put("name", new String("Ahmed Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 0.95 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
-
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 5674567 ));
-//			htblColNameValue.put("name", new String("Dalia Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 1.25 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
-//
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 23498 ));
-//			htblColNameValue.put("name", new String("John Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 1.5 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
-//
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 78452 ));
-//			htblColNameValue.put("name", new String("Zaky Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 0.88 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
-//
-//
 //			SQLTerm[] arrSQLTerms;
 //			arrSQLTerms = new SQLTerm[2];
 //			arrSQLTerms[0]._strTableName =  "Student";

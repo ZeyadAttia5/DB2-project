@@ -8,6 +8,11 @@ public class Tuple implements Serializable {
         this.values = values;
     }
 
+    public void setValuesToNull() {
+        for (String key : values.keySet()) {
+            values.put(key, "null");
+        }
+    }
     public static void main(String[] args) {
 //        Hashtable htblColNameValue = new Hashtable();
 //        htblColNameValue.put("id", new Integer(2343432));
