@@ -508,7 +508,7 @@ public class Table implements Serializable {
                             page.serialize();
                             results.addAll(pageResults);
                         } else {
-                            return results;
+                            break;
                         }
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
@@ -526,7 +526,7 @@ public class Table implements Serializable {
                             page.serialize();
                             results.addAll(pageResults);
                         } else {
-                            return results;
+                            break;
                         }
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
