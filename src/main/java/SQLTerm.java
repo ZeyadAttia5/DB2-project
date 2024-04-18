@@ -21,10 +21,10 @@ public class SQLTerm {
 		this._objValue = _objValue;
 	}
 
-	public boolean invalidOperator(){
+	public boolean validOperator(){
 		if(!_strOperator.equals("=") && !_strOperator.equals(">") && !_strOperator.equals("<") && !_strOperator.equals("!=") && !_strOperator.equals(">=")&& !_strOperator.equals("<="))
-			return true;
-		return false;
+			return false;
+		return true;
 	}
 
 	public ArrayList<Tuple> searchEqualToWithIndex(BPTree ind, String pagename, int indexInPage) throws IOException, ClassNotFoundException {

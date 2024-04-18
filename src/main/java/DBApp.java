@@ -33,7 +33,7 @@ public class DBApp {
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
 
         // Check if the table already exists
-        if (csvConverter.tablePresent(strTableName)) throw new DBAppException("This table is already present.");
+        if (csvConverter.tablePresent(strTableName)) throw new DBAppException("This page is already present.");
         try {
             // Initialize a new table object
             Table newTable = new Table(strTableName);
@@ -50,26 +50,19 @@ public class DBApp {
     public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException, IOException, ClassNotFoundException {
 
         // Adjusting metadata file with new index
-        boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
-        if (!found) {
-            DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName);
-            throw e;
-        }
+        csvConverter.addIndexToMetadata(strTableName, strColName, strIndexName);
 
         // Retrieving data type for desired column
-        String tmp = csvConverter.getDataType(strTableName, strColName);
+        String dataType = csvConverter.getDataType(strTableName, strColName);
 
         // Initialising b+tree
         BPTree tree = null;
-        if (tmp.equalsIgnoreCase("java.lang.Integer")) {
-            tree = new BPTree<Integer>(10);
-        } else if (tmp.equalsIgnoreCase("java.lang.String")) {
-            tree = new BPTree<String>(10);
-        } else if (tmp.equalsIgnoreCase("java.lang.Double")) {
-            tree = new BPTree<Double>(10);
-        } else {
-            DBAppException e = new DBAppException("Not found");
-            throw e;
+        if (dataType.equalsIgnoreCase("java.lang.Integer")) {
+            tree = new BPTree<Integer>(3);
+        } else if (dataType.equalsIgnoreCase("java.lang.String")) {
+            tree = new BPTree<String>(3);
+        } else  {
+            tree = new BPTree<Double>(3);
         }
 
         // Populating tree if table is not empty
@@ -165,9 +158,12 @@ public class DBApp {
             Object value = sqlTerm._objValue;
             String tableName = sqlTerm._strTableName;
             String operator = sqlTerm._strOperator.toUpperCase();
-
+            String columnType = csvConverter.getColumnType(tableName, columnName);
+            if (columnType == null) {
+                throw new DBAppException("Column " + columnName + " not found");
+            }
             // If operator is invalid
-            if (sqlTerm.invalidOperator()) {
+            if (!sqlTerm.validOperator()) {
                 throw new DBAppException("Invalid operator");
             }
             try {
@@ -246,22 +242,64 @@ public class DBApp {
                     throw new DBAppException("Engine is not supporting joins");
                 }
                 prev =tableName;
-                ArrayList<Tuple> l1 = res.remove(0);//check valid datatype
+                ArrayList<Tuple> l1 = res.remove(0);
                 ArrayList<Tuple> l2 = res.remove(0);
-                ArrayList<Tuple> anding = new ArrayList<>(l1);
-                anding.retainAll(l2);
-                ArrayList<Tuple> oring = new ArrayList<>(l1);
-                oring.addAll(l2);
+                ArrayList<Tuple> midres = new ArrayList<>();
                 switch (strarrOperators[j].toUpperCase()) {
                     case "AND":
-                        res.add(anding);
+                        for (Tuple tuple: l1) {
+                            for(Tuple tuple2 :l2){
+                                if(tuple2.getValues().equals(tuple.getValues())){
+                                    midres.add(tuple);
+                                }
+                            }
+                        }
+                        res.add(midres);
                         break;
                     case "OR":
-                        res.add(oring);
+                        for (Tuple tuple: l1) {
+                            midres.add(tuple);
+                        }
+                        int mid=midres.size();
+                        for(Tuple t2 :l2) {
+                            boolean flag = false;
+                            for(int i=0;i<mid;i++){
+                                if (midres.get(i).getValues().equals(t2.getValues())){
+                                    flag=true;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t2);
+                            }
+                        }
+                        res.add(midres);
                         break;
                     case "XOR":
-                        oring.removeAll(anding);
-                        res.add(oring);
+                        for(Tuple t1:l1){
+                            boolean flag=false;
+                            for(Tuple t2:l2){
+                                if(t1.getValues().equals(t2.getValues())){
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t1);
+                            }
+                        }
+                        for(Tuple t1:l2){
+                            boolean flag=false;
+                            for(Tuple t2:l1){
+                                if(t1.getValues().equals(t2.getValues())){
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t1);
+                            }
+                        }
+                        res.add(midres);
                         break;
                     default:
                         throw new DBAppException("inavalid operator only and, or , xor are allowed");
@@ -272,36 +310,23 @@ public class DBApp {
         return res.remove(0).iterator();
     }
 
-
     public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
-//
+
         DBApp dbApp = new DBApp();
         dbApp.init();
-//
-        String strTableName = "Test";
-//		Hashtable htblColNameType = new Hashtable();
-//        htblColNameType.put("int", "java.lang.Integer");
-//        htblColNameType.put("clusteringKey", "java.lang.String");
-//        htblColNameType.put("double", "java.lang.double");
-//        dbApp.createTable(strTableName, "clusteringKey", htblColNameType);
-//
-        Hashtable htblColNameValue = new Hashtable();
-		htblColNameValue.put("int", "1");
-        htblColNameValue.put("clusteringKey", "1");
-        htblColNameValue.put("double", new Double(0.7));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
 
-//        String strTableName = "Student";
+
+        String strTableName = "Student";
+
+        // Table Creation
+        Hashtable htblColNameType = new Hashtable();
+        htblColNameType.put("id", "java.lang.Integer");
+        htblColNameType.put("name", "java.lang.String");
+        htblColNameType.put("gpa", "java.lang.double");
+        htblColNameType.put("numCourses", "java.lang.Integer");
+        dbApp.createTable(strTableName, "id", htblColNameType);
 //
-//        // Table Creation
-//        Hashtable htblColNameType = new Hashtable();
-//        htblColNameType.put("id", "java.lang.Integer");
-//        htblColNameType.put("name", "java.lang.String");
-//        htblColNameType.put("gpa", "java.lang.double");
-//        htblColNameType.put("numCourses", "java.lang.Integer");
-//        dbApp.createTable(strTableName, "id", htblColNameType);
-////
-////
+//
 //        Hashtable htblColNameValue = new Hashtable();
 //
 //        // inserting 78452, zaky noor, 0.88
@@ -370,36 +395,32 @@ public class DBApp {
 //        htblColNameValue.put("gpa", new Double(0.95));
 //        htblColNameValue.put("numCourses", Integer.valueOf(50));
 //        dbApp.insertIntoTable(strTableName, htblColNameValue);
-//
-//
-//        dbApp.createIndex(strTableName, "gpa", "gpaIndex");
-//        dbApp.createIndex(strTableName, "name", "nameIndex");
-//
-////			 Attempting to re-create the same table -> should throw an exception yay
-////			Hashtable htblColNameType = new Hashtable();
-////            htblColNameType.put("id", "java.lang.Integer");
-////            htblColNameType.put("name", "java.lang.String");
-////            htblColNameType.put("gpa", "java.lang.double");
-////            dbApp.createTable(strTableName, "id", htblColNameType);
-//
-////			 Attempting to insert a tuple with the same clustering key -> should throw an exception yay
-////			htblColNameValue.clear( );
-////            htblColNameValue.put("id", Integer.valueOf(25));
-////            htblColNameValue.put("name", "Ahmed Noor");
-////            htblColNameValue.put("gpa", new Double(0.95));
-////            dbApp.insertIntoTable(strTableName, htblColNameValue);
-//
-//
+
+//			 Attempting to re-create the same table -> should throw an exception yay
+//			Hashtable htblColNameType = new Hashtable();
+//            htblColNameType.put("id", "java.lang.Integer");
+//            htblColNameType.put("name", "java.lang.String");
+//            htblColNameType.put("gpa", "java.lang.double");
+//            dbApp.createTable(strTableName, "id", htblColNameType);
+
+//			 Attempting to insert a tuple with the same clustering key -> should throw an exception yay
+//			htblColNameValue.clear( );
+//            htblColNameValue.put("id", Integer.valueOf(25));
+//            htblColNameValue.put("name", "Ahmed Noor");
+//            htblColNameValue.put("gpa", new Double(0.95));
+//            dbApp.insertIntoTable(strTableName, htblColNameValue);
+
+
 //        Table currentTable = Table.deserialize("Student");
 //        System.out.println("Before: " + currentTable);
-//
-////      // Tests calling updateTable on a Double, String Col
-////        Hashtable<String, Object> ht = new Hashtable<>();
-////        ht.put("name", "Zeyaddd");
-////        ht.put("gpa", 0.8);
-////        dbApp.updateTable(strTableName, "25", ht);
-//
-//        // Tests calling updateTable on a Double, Integer, String Cols
+
+//      // Tests calling updateTable on a Double, String Col
+//        Hashtable<String, Object> ht = new Hashtable<>();
+//        ht.put("name", "Zeyaddd");
+//        ht.put("gpa", 0.8);
+//        dbApp.updateTable(strTableName, "25", ht);
+
+        // Tests calling updateTable on a Double, Integer, String Cols
 //        Hashtable<String, Object> ht = new Hashtable<>();
 //        ht.put("name", "Amir Eidd");
 //        ht.put("gpa", 0.8);
@@ -428,27 +449,40 @@ public class DBApp {
 //        dbApp.updateTable(strTableName, "7", ht);
 //
 //        System.out.println("After: " + currentTable);
+
+
+//			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+
 //
+//			SQLTerm[] arrSQLTerms;
+//			arrSQLTerms = new SQLTerm[1];
+//			arrSQLTerms[0] = new SQLTerm("Student", "name", "<=", "Dalia Noor");
+////			arrSQLTerms[1] = new SQLTerm();
+////			arrSQLTerms[1]._strTableName =  "Student";
+////			arrSQLTerms[1]._strColumnName=  "gpa";
+////			arrSQLTerms[1]._strOperator  =  "=";
+////			arrSQLTerms[1]._objValue     =  new Double( 7 );
 //
-////			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
-//
-////
-////			SQLTerm[] arrSQLTerms;
-////			arrSQLTerms = new SQLTerm[1];
-////			arrSQLTerms[0] = new SQLTerm("Student", "name", "<=", "Dalia Noor");
-//////			arrSQLTerms[1] = new SQLTerm();
-//////			arrSQLTerms[1]._strTableName =  "Student";
-//////			arrSQLTerms[1]._strColumnName=  "gpa";
-//////			arrSQLTerms[1]._strOperator  =  "=";
-//////			arrSQLTerms[1]._objValue     =  new Double( 7 );
-////
-////			String[]strarrOperators = new String[0];
-//////			strarrOperators[0] = "OR";
-////			// select * from Student where name = "John Noor" or gpa = 1.5;
-////			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
-////			while(resultSet.hasNext())
-////				System.out.println(resultSet.next());
-//
+//			String[]strarrOperators = new String[0];
+////			strarrOperators[0] = "OR";
+//			// select * from Student where name = "John Noor" or gpa = 1.5;
+//			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
+//			while(resultSet.hasNext())
+//				System.out.println(resultSet.next());
+
+
+
+//        // Table doesn't exist
+//        dbApp.createIndex("fake table", "gpa", "gpaIndex");
+//        // Column doesn't exist
+//        dbApp.createIndex(strTableName, "fake col", "gpaIndex");
+//        // nameIndex already exists
+//        dbApp.createIndex(strTableName, "name", "nameIndex");
+//        dbApp.createIndex(strTableName, "gpa", "nameIndex");
+//        // name already has an index
+//        dbApp.createIndex(strTableName, "name", "nameIndex");
+//        dbApp.createIndex(strTableName, "name", "otherName");
+
     }
 
 

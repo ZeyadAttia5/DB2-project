@@ -74,17 +74,6 @@ public class Table implements Serializable {
 
     public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
-        for(String key : tuple.values.keySet())
-        {
-            Object para = tuple.values.get(key);
-            String paraType = para.getClass().getName();
-            String requiredType = csvConverter.getDataType(this.name,key);
-            if(!paraType.equals(requiredType))
-            {
-                throw new DBAppException("invalid tuple datatype");
-            }
-        }
-
         // Inserting a tuple into an empty page
         if (this.tablePages.size() == 0) {
             Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
@@ -432,19 +421,28 @@ public class Table implements Serializable {
         return false;
     }
 
+//    public boolean compatibleTypes(Object value, String columnType) {
+//        switch (columnType.toLowerCase()) {
+//            case "java.lang.integer":
+//                return value instanceof Integer;
+//            case "java.lang.double":
+//                return value instanceof Double;
+//            case "java.lang.string":
+//                return value instanceof String;
+//        }
+//        return false;
+//    }
+
     public ArrayList<Tuple> searchTable(String columnName, String operator, Object value) throws DBAppException {
         ArrayList<Tuple> results = new ArrayList<>();
         ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
         String columnType = csvConverter.getColumnType(this.name, columnName);
         boolean clustering=csvConverter.isClusteringKey(this.name,columnName);
-        if (columnType == null) {
-            throw new DBAppException("Column " + columnName + " not found");
-        }
         if (!compatibleTypes(value, columnType)) {
             throw new DBAppException("Datatype of value doesn't match the column datatype: ");
         }
         // Linear searching
-        if (!clustering) {
+        if (!clustering||!csvConverter.getIndexName(this.name, columnName).equals("null")) {
             for (String pagename : tablePages) {
                 try {
                     Page page = Page.deserialize(pagename);
@@ -507,7 +505,7 @@ public class Table implements Serializable {
                             page.serialize();
                             results.addAll(pageResults);
                         } else {
-                            return results;
+                            break;
                         }
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
@@ -525,7 +523,7 @@ public class Table implements Serializable {
                             page.serialize();
                             results.addAll(pageResults);
                         } else {
-                            return results;
+                            break;
                         }
                     } catch (IOException | ClassNotFoundException e) {
                         e.printStackTrace();
