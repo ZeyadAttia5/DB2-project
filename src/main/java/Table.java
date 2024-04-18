@@ -438,9 +438,6 @@ public class Table implements Serializable {
         ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
         String columnType = csvConverter.getColumnType(this.name, columnName);
         boolean clustering=csvConverter.isClusteringKey(this.name,columnName);
-        if (columnType == null) {
-            throw new DBAppException("Column " + columnName + " not found");
-        }
         if (!compatibleTypes(value, columnType)) {
             throw new DBAppException("Datatype of value doesn't match the column datatype: ");
         }
