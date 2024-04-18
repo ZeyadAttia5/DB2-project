@@ -74,6 +74,17 @@ public class Table implements Serializable {
 
     public void insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
+        for(String key : tuple.values.keySet())
+        {
+            Object para = tuple.values.get(key);
+            String paraType = para.getClass().getName();
+            String requiredType = csvConverter.getDataType(this.name,key);
+            if(!paraType.equals(requiredType))
+            {
+                throw new DBAppException("invalid tuple datatype");
+            }
+        }
+
         // Inserting a tuple into an empty page
         if (this.tablePages.size() == 0) {
             Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
@@ -407,18 +418,6 @@ public class Table implements Serializable {
         }
 
         return result;
-    }
-
-    public boolean compatibleTypes(Object value, String columnType) {
-        switch (columnType.toLowerCase()) {
-            case "java.lang.integer":
-                return value instanceof Integer;
-            case "java.lang.double":
-                return value instanceof Double;
-            case "java.lang.string":
-                return value instanceof String;
-        }
-        return false;
     }
 
     public boolean compatibleTypes(Object value, String columnType) {

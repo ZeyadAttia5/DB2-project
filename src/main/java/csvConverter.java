@@ -23,6 +23,17 @@ public class csvConverter {
     }
 
     public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
+
+        for(String key : hashtable.keySet())
+        {
+            String dataType = hashtable.get(key);
+            String[] separatedDataType = dataType.split("\\.");
+            separatedDataType[0] = separatedDataType[0].toLowerCase();
+            separatedDataType[1] = separatedDataType[1].toLowerCase();
+            separatedDataType[2] = Character.toUpperCase(separatedDataType[2].charAt(0)) + separatedDataType[2].substring(1);
+            hashtable.put(key,String.join(".",separatedDataType));
+        }
+
         try (FileReader fileReader = new FileReader(METADATA_FILE);
              BufferedReader bufferedReader = new BufferedReader(fileReader);
              FileWriter writer = new FileWriter(METADATA_FILE, true)) {

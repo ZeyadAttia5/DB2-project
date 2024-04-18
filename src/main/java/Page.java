@@ -133,10 +133,13 @@ public class Page implements Serializable {
 
     public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
+
         String[] arr = this.name.split("_");
         Table currTable = Table.deserialize(arr[0]);
         String clust = csvConverter.getClusteringKey(arr[0]);
         Ref result = null;
+
+
 
         if (this.tuples.size() == 0) {
             this.tuples.add(tuple);
@@ -198,12 +201,8 @@ public class Page implements Serializable {
                 }
             }
 
-            Object[] temp;
             Tuple extra = this.tuples.lastElement();
             this.tuples.remove(extra);
-            this.max = (this.tuples.get(this.maxSize - 1)).values.get(clusteringKey);
-            this.min = (this.tuples.get(0)).values.get(clusteringKey);
-
 
             for (File file : files) {
                 if (extra != null) {
@@ -232,6 +231,9 @@ public class Page implements Serializable {
                 currTable.tablePages.add(newPage.name);
             }
         }
+
+        this.max = (this.tuples.lastElement()).values.get(clusteringKey);
+        this.min = (this.tuples.get(0)).values.get(clusteringKey);
         currTable.pageInfo.put(this.name, new Object[]{this.max, this.min, this.tuples.size()});
         this.serialize();
         currTable.serialize();
