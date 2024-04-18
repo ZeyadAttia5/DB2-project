@@ -246,22 +246,64 @@ public class DBApp {
                     throw new DBAppException("Engine is not supporting joins");
                 }
                 prev =tableName;
-                ArrayList<Tuple> l1 = res.remove(0);//check valid datatype
+                ArrayList<Tuple> l1 = res.remove(0);
                 ArrayList<Tuple> l2 = res.remove(0);
-                ArrayList<Tuple> anding = new ArrayList<>(l1);
-                anding.retainAll(l2);
-                ArrayList<Tuple> oring = new ArrayList<>(l1);
-                oring.addAll(l2);
+                ArrayList<Tuple> midres = new ArrayList<>();
                 switch (strarrOperators[j].toUpperCase()) {
                     case "AND":
-                        res.add(anding);
+                        for (Tuple tuple: l1) {
+                            for(Tuple tuple2 :l2){
+                                if(tuple2.getValues().equals(tuple.getValues())){
+                                    midres.add(tuple);
+                                }
+                            }
+                        }
+                        res.add(midres);
                         break;
                     case "OR":
-                        res.add(oring);
+                        for (Tuple tuple: l1) {
+                            midres.add(tuple);
+                        }
+                        int mid=midres.size();
+                        for(Tuple t2 :l2) {
+                            boolean flag = false;
+                            for(int i=0;i<mid;i++){
+                                if (midres.get(i).getValues().equals(t2.getValues())){
+                                    flag=true;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t2);
+                            }
+                        }
+                        res.add(midres);
                         break;
                     case "XOR":
-                        oring.removeAll(anding);
-                        res.add(oring);
+                        for(Tuple t1:l1){
+                            boolean flag=false;
+                            for(Tuple t2:l2){
+                                if(t1.getValues().equals(t2.getValues())){
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t1);
+                            }
+                        }
+                        for(Tuple t1:l2){
+                            boolean flag=false;
+                            for(Tuple t2:l1){
+                                if(t1.getValues().equals(t2.getValues())){
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t1);
+                            }
+                        }
+                        res.add(midres);
                         break;
                     default:
                         throw new DBAppException("inavalid operator only and, or , xor are allowed");
@@ -271,7 +313,6 @@ public class DBApp {
         }
         return res.remove(0).iterator();
     }
-
 
     public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
 
