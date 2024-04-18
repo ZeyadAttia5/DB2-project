@@ -53,19 +53,16 @@ public class DBApp {
         csvConverter.addIndexToMetadata(strTableName, strColName, strIndexName);
 
         // Retrieving data type for desired column
-        String tmp = csvConverter.getDataType(strTableName, strColName);
+        String dataType = csvConverter.getDataType(strTableName, strColName);
 
         // Initialising b+tree
         BPTree tree = null;
-        if (tmp.equalsIgnoreCase("java.lang.Integer")) {
-            tree = new BPTree<Integer>(10);
-        } else if (tmp.equalsIgnoreCase("java.lang.String")) {
-            tree = new BPTree<String>(10);
-        } else if (tmp.equalsIgnoreCase("java.lang.Double")) {
-            tree = new BPTree<Double>(10);
-        } else {
-            DBAppException e = new DBAppException("Not found");
-            throw e;
+        if (dataType.equalsIgnoreCase("java.lang.Integer")) {
+            tree = new BPTree<Integer>(3);
+        } else if (dataType.equalsIgnoreCase("java.lang.String")) {
+            tree = new BPTree<String>(3);
+        } else  {
+            tree = new BPTree<Double>(3);
         }
 
         // Populating tree if table is not empty
@@ -163,7 +160,7 @@ public class DBApp {
             String operator = sqlTerm._strOperator.toUpperCase();
 
             // If operator is invalid
-            if (sqlTerm.invalidOperator()) {
+            if (!sqlTerm.validOperator()) {
                 throw new DBAppException("Invalid operator");
             }
             try {
