@@ -242,7 +242,7 @@ public class DBApp {
                 throw new DBAppException("Table " + tableName + " not found.");
             }
             if (res.size() > 1) {
-                if(!prev.equals(tableName) && prev !=null){
+                if(prev!=null&&!prev.equals(tableName)){
                     throw new DBAppException("Engine is not supporting joins");
                 }
                 prev =tableName;
