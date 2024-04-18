@@ -435,7 +435,6 @@ public class Table implements Serializable {
                 }
                 results.addAll(pageResults);
             }
-            return results;
         } else {
             if (operator.equals("=")) {
                 //Comparable<Object> comparableValue = (Comparable<Object>) value;
@@ -444,7 +443,6 @@ public class Table implements Serializable {
                     if (page != null)
                         pageResults = page.binarysearchPage(columnName, value, operator);
                     results.addAll(pageResults);
-                    return results;
                     } catch(IOException | ClassNotFoundException e){
                         e.printStackTrace();
                     }
