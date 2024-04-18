@@ -424,7 +424,7 @@ public class Table implements Serializable {
         }
 
         // Linear searching
-        if (isclusteringkey.equals("False") || operator.equals("!=")) {
+        if (isclusteringkey.equals("False")) {
             for (String pagename : tablePages) {
                 try {
                     Page page = Page.deserialize(pagename);
@@ -448,6 +448,35 @@ public class Table implements Serializable {
                     } catch(IOException | ClassNotFoundException e){
                         e.printStackTrace();
                     }
+            }
+            if(operator.equals("!=")){
+                for (String pagename : tablePages) {
+                    try {
+                        Page page = Page.deserialize(pagename);
+                        pageResults = new ArrayList<Tuple>();
+                        for(int i=0;i<page.tuples.size();i++){
+                            pageResults.add(page.tuples.get(i));
+                        }
+                    } catch (IOException | ClassNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                    results.addAll(pageResults);
+                }
+                int left = 0;
+                int right = results.size() - 1;
+                while (left <= right) {
+                    int mid = left + (right - left) / 2;
+                    Tuple tuple = results.get(mid);
+                    Comparable tupleValue = (Comparable) tuple.getValues().get(columnName);
+                    int cmp = tupleValue.compareTo(value);
+                    if (cmp == 0) {
+                        results.remove(mid);
+                    } else if (cmp < 0) {
+                        left = mid + 1;
+                    } else {
+                        right = mid - 1;
+                    }
+                }
             }
             if (operator.equals(">") || operator.equals(">=")) {
                 for (int i = tablePages.size() - 1; i >= 0; i--) {
@@ -476,6 +505,7 @@ public class Table implements Serializable {
                             pageResults = new ArrayList<Tuple>();
                             pageResults = page.binarysearchPage(columnName, value, operator);
                             page.serialize();
+
                             results.addAll(pageResults);
                         } else {
                             return results;
@@ -488,7 +518,6 @@ public class Table implements Serializable {
         }
         return results;
     }
-
     public Hashtable<String, Object[]> getPageInfo() {
         return this.pageInfo;
     }

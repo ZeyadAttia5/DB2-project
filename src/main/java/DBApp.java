@@ -378,8 +378,8 @@ public class DBApp {
 //            dbApp.insertIntoTable(strTableName, htblColNameValue);
 
 
-        Table currentTable = Table.deserialize("Student");
-        System.out.println("Before: " + currentTable);
+//        Table currentTable = Table.deserialize("Student");
+//        System.out.println("Before: " + currentTable);
 
 //      // Tests calling updateTable on a Double, String Col
 //        Hashtable<String, Object> ht = new Hashtable<>();
@@ -423,7 +423,7 @@ public class DBApp {
 
 			SQLTerm[] arrSQLTerms;
 			arrSQLTerms = new SQLTerm[1];
-			arrSQLTerms[0] = new SQLTerm("Student", "id", ">=", 6);
+			arrSQLTerms[0] = new SQLTerm("Student", "id", "!=", 24);
 //			arrSQLTerms[1] = new SQLTerm();
 //			arrSQLTerms[1]._strTableName =  "Student";
 //			arrSQLTerms[1]._strColumnName=  "gpa";
@@ -436,7 +436,7 @@ public class DBApp {
         Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
         System.out.println("select output");
         while(resultSet.hasNext())
-            System.out.println(resultSet.next());
+            System.out.print(resultSet.next());
 
     }
 
