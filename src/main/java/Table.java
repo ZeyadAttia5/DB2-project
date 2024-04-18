@@ -129,7 +129,12 @@ public class Table implements Serializable {
 //        System.out.println(this);
 
         // Find the page where the row with the clustering key value is located
-        Page page = findPage(clusteringKeyValue);
+//        Page page = findPage(clusteringKeyValue);
+
+
+
+        // Find the Page
+        Page page = this.binarySearch(clusteringKeyValue.toString());
 
         if (page == null) {
             // Handle case where row is not found
@@ -280,7 +285,7 @@ public class Table implements Serializable {
         String clusteringDataType = csvConverter.getDataType(this.name, clusteringColName);
 
         // Find the Page
-        Page page = this.binarySearch(clusteringKeyValue.toString(), clusteringDataType);
+        Page page = this.binarySearch(clusteringKeyValue.toString());
 
 
         if (page == null) {
@@ -335,7 +340,13 @@ public class Table implements Serializable {
     }
 
 
-    public Page binarySearch(String clusteringKeyValue, String dataType) throws IOException, ClassNotFoundException {
+    public Page binarySearch(String clusteringKeyValue) throws IOException, ClassNotFoundException {
+
+        // Find clustering col name
+        String clusteringColName = csvConverter.getClusteringKey(this.name);
+
+        // Find the clustering data type
+        String dataType = csvConverter.getDataType(this.name, clusteringColName);
 
         Object newValue = null;
         if (dataType.equalsIgnoreCase("java.lang.integer")) {
