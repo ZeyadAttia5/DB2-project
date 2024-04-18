@@ -260,7 +260,7 @@ public class DBApp {
                         res.add(oring);
                         break;
                     case "XOR":
-                        oring.retainAll(anding);
+                        oring.removeAll(anding);
                         res.add(oring);
                         break;
                     default:
