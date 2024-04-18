@@ -8,7 +8,7 @@ This project implements a small database engine with support for a B+ tree index
 - [Tools Used](#tools-used)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Contributing](#contributing)
+- [Meet the Team](#Team)
 - [License](#license)
 
 ## Features
