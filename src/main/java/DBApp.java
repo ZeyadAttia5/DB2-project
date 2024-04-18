@@ -156,6 +156,7 @@ public class DBApp {
         if (strarrOperators != null && strarrOperators.length + 1 != arrSQLTerms.length)
             throw new DBAppException("Number of operators doesn't match the SQL terms count");
 
+
         ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
         int j = 0;
         String prev=null;
