@@ -158,7 +158,7 @@ public class DBApp {
 
         ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
         int j = 0;
-
+        String prev=null;
         for (SQLTerm sqlTerm : arrSQLTerms) {
 
             String columnName = sqlTerm._strColumnName;
@@ -185,11 +185,11 @@ public class DBApp {
                     switch (operator) {
                         case "=":
                             references = ind.search((Comparable) value);
+                            for (int i = 0; i < references.size(); i++) {
                             pagename = references.get(0).getPage();
                             pagenow = Page.deserialize(pagename);
-                            for (int i = 0; i < references.size(); i++) {
-                                indexInPage = references.get(i).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            indexInPage = references.get(i).getIndexInPage();
+                            helper.add(pagenow.tuples.get(indexInPage));
                             }
                             res.add(helper);
                             break;
@@ -242,6 +242,10 @@ public class DBApp {
                 throw new DBAppException("Table " + tableName + " not found.");
             }
             if (res.size() > 1) {
+                if(prev!=null&&!prev.equals(tableName)){
+                    throw new DBAppException("Engine is not supporting joins");
+                }
+                prev =tableName;
                 ArrayList<Tuple> l1 = res.remove(0);//check valid datatype
                 ArrayList<Tuple> l2 = res.remove(0);
                 ArrayList<Tuple> anding = new ArrayList<>(l1);
@@ -256,7 +260,7 @@ public class DBApp {
                         res.add(oring);
                         break;
                     case "XOR":
-                        oring.retainAll(anding);
+                        oring.removeAll(anding);
                         res.add(oring);
                         break;
                     default:
