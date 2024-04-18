@@ -5,7 +5,6 @@ import java.util.Hashtable;
 import java.util.Vector;
 
 
-
 public class Table implements Serializable {
     // Map to store the number of pages for each table
     public Vector<String> tablePages;
@@ -40,8 +39,7 @@ public class Table implements Serializable {
 
     public static Table deserialize(String filename) {
         Table table = null;
-        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class");
-             ObjectInputStream in = new ObjectInputStream(fis)) {
+        try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class"); ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
             System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename + "/" + filename + ".class");
         } catch (IOException | ClassNotFoundException e) {
@@ -88,42 +86,35 @@ public class Table implements Serializable {
 
         File pageFolder = new File("src/main/resources/tables/" + this.name);
         File[] files = Page.sortFiles(pageFolder.listFiles());
-        files = Arrays.copyOfRange(files, files.length-this.tablePages.size(),  files.length);
+        files = Arrays.copyOfRange(files, files.length - this.tablePages.size(), files.length);
         String clusteringKey = csvConverter.getClusteringKey(this.name);
         Object targetKey = tuple.values.get(clusteringKey);
         int maxSize = Page.readConfigFile();
         int result = 1;
         Page currPage = null;
 
-        for(File file : files)
-        {
+        for (File file : files) {
             String fileName = file.getName();
-            Object[] info = this.pageInfo.get(fileName.substring(0, fileName.length()-6)); //remove .class from the string
+            Object[] info = this.pageInfo.get(fileName.substring(0, fileName.length() - 6)); //remove .class from the string
             result = ((Comparable) targetKey).compareTo(info[0]);
 
-            if(result==0)
-            {
+            if (result == 0) {
                 System.out.println("Can't insert duplicate clustering key");
                 return;
             }
-            if((int) info[2] < maxSize || result < 0)
-            {
-                currPage = Page.deserialize(fileName.substring(0, fileName.length()-6));
+            if ((int) info[2] < maxSize || result < 0) {
+                currPage = Page.deserialize(fileName.substring(0, fileName.length() - 6));
                 break;
             }
         }
 
-        if(currPage != null)
-        {
+        if (currPage != null) {
             currPage.insert(tuple);
-        }
-        else
-        {
+        } else {
             Page newPage = new Page(this.name, this.tablePages.size(), csvConverter.getClusteringKey(this.name));
             newPage.insert(tuple);
             pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
         }
-
 
 
     }
@@ -170,37 +161,44 @@ public class Table implements Serializable {
 
         if (clusteringKeyType.equalsIgnoreCase("java.lang.double")) {
 
-            for (String pageName: this.pageInfo.keySet()) {
+            for (String pageName : this.pageInfo.keySet()) {
                 Double pageMax = Double.parseDouble((String) this.getPageMax(pageName));
+                Double pageMin = Double.parseDouble((String) this.getPageMin(pageName));
                 Double clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
-                result = Double.compare(pageMax, clusteringKeyValueCasted);
+//                result = Double.compare(pageMax, clusteringKeyValueCasted);
 
-                // if the pageMax is greater than the clusteringKeyValue then the page is found
-                if (result > 0){
+                // if the clusteringKeyValue is between pageMax and pageMin or equal to either, then page is found
+                if ((clusteringKeyValueCasted < pageMax && clusteringKeyValueCasted > pageMin)
+                        || clusteringKeyValueCasted == pageMin || clusteringKeyValueCasted == pageMax) {
                     currPage = Page.deserialize(pageName);
                     break;
                 }
             }
         } else if (clusteringKeyType.equalsIgnoreCase("java.lang.string")) {
-            for (String pageName: this.pageInfo.keySet()) {
+            for (String pageName : this.pageInfo.keySet()) {
                 String pageMax = (String) this.getPageMax(pageName);
+                String pageMin = (String) this.getPageMin(pageName);
                 String clusteringKeyValueCasted = (String) clusteringKeyValue;
-                result = pageMax.compareTo(clusteringKeyValueCasted);
+                int isMaxGreater = clusteringKeyValueCasted.compareTo(pageMax);
+                int isMinGreater = clusteringKeyValueCasted.compareTo(pageMin);
 
-                // if the pageMax is greater than the clusteringKeyValue then the page is found
-                if (result > 0){
+                // case 1: the clusteringKeyValue is between both min and max
+                // case 2: the clusteringKeyValue is equal to the maximum
+                // case 3: the clusteringKeyValue is equal to the minimum
+                if ((isMinGreater > 0 && isMaxGreater < 0) || isMinGreater == 0 || isMaxGreater == 0) {
                     currPage = Page.deserialize(pageName);
                     break;
                 }
             }
         } else if (clusteringKeyType.equalsIgnoreCase("java.lang.Integer")) {
-            for (String pageName: this.pageInfo.keySet()) {
-                Integer pageMax = Integer.parseInt( this.getPageMax(pageName).toString());
+            for (String pageName : this.pageInfo.keySet()) {
+                Integer pageMax = Integer.parseInt(this.getPageMax(pageName).toString());
+                Integer pageMin = Integer.parseInt(this.getPageMin(pageName).toString());
                 Integer clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
-                result = Integer.compare(pageMax, clusteringKeyValueCasted);
 
-                // if the pageMax is greater than the clusteringKeyValue then the page is found
-                if (result > 0){
+                // if the clusteringKeyValue is between pageMax and pageMin or equal to either, then page is found
+                if ((clusteringKeyValueCasted < pageMax && clusteringKeyValueCasted > pageMin)
+                        || clusteringKeyValueCasted == pageMin || clusteringKeyValueCasted == pageMax) {
                     currPage = Page.deserialize(pageName);
                     break;
                 }
@@ -291,7 +289,7 @@ public class Table implements Serializable {
         // Find the Page
         Page page = this.binarySearch(clusteringKeyValue.toString(), clusteringDataType);
 
-        if(page == null){
+        if (page == null) {
             throw new DBAppException("tuple not found :)");
         }
 
@@ -326,7 +324,7 @@ public class Table implements Serializable {
         if (dataType.equalsIgnoreCase("java.lang.integer")) {
             newValue = Integer.parseInt(clusteringKeyValue);
         } else if (dataType.equalsIgnoreCase("java.lang.string")) {
-            newValue = (String) clusteringKeyValue;
+            newValue = clusteringKeyValue;
         } else if (dataType.equalsIgnoreCase("java.lang.double")) {
             newValue = Double.parseDouble(clusteringKeyValue);
         }
@@ -366,22 +364,23 @@ public class Table implements Serializable {
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         String result = "";
-            for (String page_name: this.tablePages){
-                Page page = null;
-                try {
-                    page = Page.deserialize(page_name);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } catch (ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
-                result += page.toString();
+        for (String page_name : this.tablePages) {
+            Page page = null;
+            try {
+                page = Page.deserialize(page_name);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
             }
+            result += page.toString();
+        }
 
         return result;
     }
+
     public boolean compatibleTypes(Object value, String columnType) {
         switch (columnType.toLowerCase()) {
             case "java.lang.integer":
@@ -399,20 +398,20 @@ public class Table implements Serializable {
         Vector<String[]> columnstuff = Page.readCSV(this.name);
         ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
         String isclusteringkey = "False";
-        String columnType= csvConverter.getColumnType(this.name, columnName);
+        String columnType = csvConverter.getColumnType(this.name, columnName);
 
         if (columnType == null) {
-            throw new DBAppException("Column "+ columnName +" not found");
+            throw new DBAppException("Column " + columnName + " not found");
         }
         if (!compatibleTypes(value, columnType)) {
             throw new DBAppException("Datatype of value doesn't match the column datatype: ");
         }
 
         // Linear searching
-        if (isclusteringkey.equals("False") || operator.equals("!=") ) {
+        if (isclusteringkey.equals("False") || operator.equals("!=")) {
             for (String pagename : tablePages) {
                 try {
-                    Page page = Page.deserialize(pagename );
+                    Page page = Page.deserialize(pagename);
                     pageResults = new ArrayList<Tuple>();
                     pageResults = page.searchlinearPage(columnName, value, operator);
                 } catch (IOException | ClassNotFoundException e) {
@@ -422,7 +421,7 @@ public class Table implements Serializable {
             }
             return results;
         } else {
-            if(operator.equals("=")){
+            if (operator.equals("=")) {
                 Comparable<Object> comparableValue = (Comparable<Object>) value;
                 int low = 0;
                 int high = tablePages.size() - 1;
@@ -445,17 +444,17 @@ public class Table implements Serializable {
                     }
                 }
             }
-            if(operator.equals(">")||operator.equals(">=")) {
+            if (operator.equals(">") || operator.equals(">=")) {
                 for (int i = tablePages.size() - 1; i >= 0; i--) {
                     try {
-                        Page page = Page.deserialize(this.tablePages.get(i)+".class");
-                        Object maximum =page.max;
-                        if (((Comparable) maximum).compareTo((Comparable) value) > 0) {
+                        Page page = Page.deserialize(this.tablePages.get(i) + ".class");
+                        Object maximum = page.max;
+                        if (((Comparable) maximum).compareTo(value) > 0) {
                             ArrayList<Tuple> tempp = new ArrayList<>();
                             tempp = page.binarysearchPage(columnName, value, operator);
                             page.serialize();
                             pageResults.addAll(tempp);
-                        }else{
+                        } else {
 //                            for(int j= pageResults.size()-1;j>=0;j--){
 //                                results.add(pageResults.get(i));
 //                            }
@@ -466,19 +465,18 @@ public class Table implements Serializable {
                     }
                 }
             }
-            if (operator.equals("<")||operator.equals("<=")) {
-                for (int i=0;i< tablePages.size();i++){
+            if (operator.equals("<") || operator.equals("<=")) {
+                for (int i = 0; i < tablePages.size(); i++) {
                     try {
-                        Page page = Page.deserialize(this.tablePages.get(i)+".class");
-                        Object minimum =page.min;
-                        if (((Comparable) minimum).compareTo((Comparable) value) < 0) {
+                        Page page = Page.deserialize(this.tablePages.get(i) + ".class");
+                        Object minimum = page.min;
+                        if (((Comparable) minimum).compareTo(value) < 0) {
                             pageResults = new ArrayList<Tuple>();
                             pageResults = page.binarysearchPage(columnName, value, operator);
                             page.serialize();
 
                             results.addAll(pageResults);
-                        }
-                        else{
+                        } else {
                             return results;
                         }
                     } catch (IOException | ClassNotFoundException e) {
@@ -490,18 +488,19 @@ public class Table implements Serializable {
         return results;
     }
 
-    public Hashtable<String, Object[]> getPageInfo(){
+    public Hashtable<String, Object[]> getPageInfo() {
         return this.pageInfo;
     }
-    public Object getPageMax(String pageName){
+
+    public Object getPageMax(String pageName) {
         return this.pageInfo.get(pageName)[0];
     }
 
-    public Object getPageMin(String pageName){
+    public Object getPageMin(String pageName) {
         return this.pageInfo.get(pageName)[1];
     }
 
-    public Object getPageSize(String pageName){
+    public Object getPageSize(String pageName) {
         return this.pageInfo.get(pageName)[2];
     }
 }
