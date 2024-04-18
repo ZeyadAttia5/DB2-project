@@ -3,7 +3,6 @@
  */
 
 import java.io.IOException;
-import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -33,9 +32,8 @@ public class DBApp {
     // type as value
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
 
-		// Check if the table already exists
-		if(csvConverter.tablePresent(strTableName))
-			throw new DBAppException("This page is already present.");
+        // Check if the table already exists
+        if (csvConverter.tablePresent(strTableName)) throw new DBAppException("This page is already present.");
         try {
             // Initialize a new table object
             Table newTable = new Table(strTableName);
@@ -74,16 +72,16 @@ public class DBApp {
             throw e;
         }
 
-		// Populating tree if table is not empty
-		Table currentTable = Table.deserialize(strTableName);
-		for(String page: currentTable.tablePages){
-			Page currentPage = Page.deserialize(page);
-			for(int i =0; i< currentPage.getTuples().size(); i++){
-				Tuple currentTuple = currentPage.getTuples().get(i);
-				Object value = currentTuple.getValues().get(strColName);
-				tree.insert((Comparable) value, new Ref(page, i));
-			}
-		}
+        // Populating tree if table is not empty
+        Table currentTable = Table.deserialize(strTableName);
+        for (String page : currentTable.tablePages) {
+            Page currentPage = Page.deserialize(page);
+            for (int i = 0; i < currentPage.getTuples().size(); i++) {
+                Tuple currentTuple = currentPage.getTuples().get(i);
+                Object value = currentTuple.getValues().get(strColName);
+                tree.insert((Comparable) value, new Ref(page, i));
+            }
+        }
 
         tree.serialize(strTableName, strIndexName);
 
@@ -98,8 +96,7 @@ public class DBApp {
         target.insert(newTuple);
         System.out.println(Page.deserialize(target.tablePages.get(0)));
         target = Table.deserialize(strTableName);
-        for(String pageName : target.tablePages)
-        {
+        for (String pageName : target.tablePages) {
             System.out.println("Page name: " + pageName);
             System.out.println("The page: " + Page.deserialize(pageName));
         }
@@ -131,11 +128,10 @@ public class DBApp {
             }
 
         } catch (IOException e) {
-            System.out.println("Table not found\n" + e.getMessage());
+            throw  new DBAppException("Table not found\n" + e.getMessage());
         } catch (ClassNotFoundException e) {
-            System.out.println("Table not found\n" + e.getMessage());
+            throw  new DBAppException("Table not found\n" + e.getMessage());
         }
-
         //save changes
         currTable.serialize();
     }
@@ -149,148 +145,150 @@ public class DBApp {
         throw new DBAppException("not implemented yet");
     }
 
-	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[]  strarrOperators) throws DBAppException {
+    public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
 
-		if (arrSQLTerms.length == 0)
-			throw new DBAppException("No SQL terms");
+        if (arrSQLTerms.length == 0) throw new DBAppException("No SQL terms");
 
-		if (strarrOperators != null && strarrOperators.length + 1 != arrSQLTerms.length)
-			throw new DBAppException("Number of operators doesn't match the SQL terms count");
+        if (strarrOperators != null && strarrOperators.length + 1 != arrSQLTerms.length)
+            throw new DBAppException("Number of operators doesn't match the SQL terms count");
 
-		ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
-		int j = 0;
+        ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
+        int j = 0;
 
-		for (SQLTerm sqlTerm : arrSQLTerms) {
+        for (SQLTerm sqlTerm : arrSQLTerms) {
 
-			String columnName = sqlTerm._strColumnName;
-			Object value = sqlTerm._objValue;
-			String tableName = sqlTerm._strTableName;
-			String operator = sqlTerm._strOperator.toUpperCase();
+            String columnName = sqlTerm._strColumnName;
+            Object value = sqlTerm._objValue;
+            String tableName = sqlTerm._strTableName;
+            String operator = sqlTerm._strOperator.toUpperCase();
 
-			// If operator is invalid
-			if(sqlTerm.invalidOperator()){
-				throw new DBAppException("Invalid operator");
-			}
-			try {
-				Table tableitself = Table.deserialize(tableName);
+            // If operator is invalid
+            if (sqlTerm.invalidOperator()) {
+                throw new DBAppException("Invalid operator");
+            }
+            try {
+                Table tableitself = Table.deserialize(tableName);
 
-				// If column has an index and operator is not "!="
-				if (!csvConverter.getIndexName(tableName, columnName).equals("null") && !operator.equals("!=")) {
+                // If column has an index and operator is not "!="
+                if (!csvConverter.getIndexName(tableName, columnName).equals("null") && !operator.equals("!=")) {
 
-					ArrayList<Tuple> helper=new ArrayList<>();
-					BPTree ind = BPTree.deserialize(tableName, columnName);
-					ArrayList<Ref> references = new ArrayList<>();
-					int indexInPage=0;
-					String pagename="";
-					Page pagenow;
-					switch (operator){
-						case "=":
-							references = ind.search((Comparable) value);
-							pagename = references.get(0).getPage();
-							pagenow = Page.deserialize(pagename );
-							for(int i=0; i< references.size();i++){
-								indexInPage=references.get(i).getIndexInPage();
-								helper.add(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-						case ">=":
-							references = ind.getRefsGreaterEqual((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize( pagename );
-								indexInPage=references.get(k).getIndexInPage();
-								helper.add(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-						case ">":
-							references = ind.getRefsGreaterThan((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(pagename  );
-								indexInPage=references.get(k).getIndexInPage();
-								helper.add(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-						case "<=":
-							references = ind.getRefsLessEqual((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(pagename );
-								indexInPage=references.get(k).getIndexInPage();
-								helper.add(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-						case "<":
-							references = ind.getRefsLessThan((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(pagename );
-								indexInPage=references.get(k).getIndexInPage();
-								helper.add(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-					}
-				}
-				else{
-					res.add(tableitself.searchTable(columnName, operator, value));}
+                    ArrayList<Tuple> helper = new ArrayList<>();
+                    BPTree ind = BPTree.deserialize(tableName, columnName);
+                    ArrayList<Ref> references = new ArrayList<>();
+                    int indexInPage = 0;
+                    String pagename = "";
+                    Page pagenow;
+                    switch (operator) {
+                        case "=":
+                            references = ind.search((Comparable) value);
+                            pagename = references.get(0).getPage();
+                            pagenow = Page.deserialize(pagename);
+                            for (int i = 0; i < references.size(); i++) {
+                                indexInPage = references.get(i).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case ">=":
+                            references = ind.getRefsGreaterEqual((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case ">":
+                            references = ind.getRefsGreaterThan((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case "<=":
+                            references = ind.getRefsLessEqual((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case "<":
+                            references = ind.getRefsLessThan((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                    }
+                } else {
+                    res.add(tableitself.searchTable(columnName, operator, value));
+                }
 
-			} catch (Exception e) {
-				throw new DBAppException("Table " + tableName + " not found.");
-			}
-			if (res.size() > 1) {
-				ArrayList<Tuple> l1 = (ArrayList<Tuple>) res.remove(0);//check valid datatype
-				ArrayList<Tuple> l2 = (ArrayList<Tuple>) res.remove(0);
-				ArrayList<Tuple> anding = new ArrayList<>(l1);
-				anding.retainAll(l2);
-				ArrayList<Tuple> oring = new ArrayList<>(l1);
-				oring.addAll(l2);
-				switch (strarrOperators[j].toUpperCase()) {
-					case "AND":
-						res.add(anding);
-						break;
-					case "OR":
-						res.add(oring);
-						break;
-					case "XOR":
-						oring.retainAll(anding);
-						res.add(oring);
-						break;
-					default: throw new DBAppException("inavalid operator only and, or , xor are allowed");
-				}
-				j++;
-			}
-		}
-		return res.remove(0).iterator();
-	}
+            } catch (Exception e) {
+                throw new DBAppException("Table " + tableName + " not found.");
+            }
+            if (res.size() > 1) {
+                ArrayList<Tuple> l1 = res.remove(0);//check valid datatype
+                ArrayList<Tuple> l2 = res.remove(0);
+                ArrayList<Tuple> anding = new ArrayList<>(l1);
+                anding.retainAll(l2);
+                ArrayList<Tuple> oring = new ArrayList<>(l1);
+                oring.addAll(l2);
+                switch (strarrOperators[j].toUpperCase()) {
+                    case "AND":
+                        res.add(anding);
+                        break;
+                    case "OR":
+                        res.add(oring);
+                        break;
+                    case "XOR":
+                        oring.retainAll(anding);
+                        res.add(oring);
+                        break;
+                    default:
+                        throw new DBAppException("inavalid operator only and, or , xor are allowed");
+                }
+                j++;
+            }
+        }
+        return res.remove(0).iterator();
+    }
 
 
     public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
 
-            DBApp dbApp = new DBApp();
-            dbApp.init();
+        DBApp dbApp = new DBApp();
+        dbApp.init();
 
 
-			String strTableName = "Student";
+        String strTableName = "Student";
 
-//			// Table Creation
-//            Hashtable htblColNameType = new Hashtable();
-//            htblColNameType.put("id", "java.lang.Integer");
-//            htblColNameType.put("name", "java.lang.String");
-//            htblColNameType.put("gpa", "java.lang.double");
-//            dbApp.createTable(strTableName, "id", htblColNameType);
+        // Table Creation
+        Hashtable htblColNameType = new Hashtable();
+        htblColNameType.put("id", "java.lang.Integer");
+        htblColNameType.put("name", "java.lang.String");
+        htblColNameType.put("gpa", "java.lang.double");
+        htblColNameType.put("numCourses", "java.lang.Integer");
+        dbApp.createTable(strTableName, "id", htblColNameType);
 //
 //
-//			// inserting: 25, ahmed noor, 0.95
-//            Hashtable htblColNameValue = new Hashtable();
-//            htblColNameValue.put("id", Integer.valueOf(25));
-//            htblColNameValue.put("name", "Ahmed Noor");
-//            htblColNameValue.put("gpa", new Double(0.95));
-//            dbApp.insertIntoTable(strTableName, htblColNameValue);
+        // inserting: 25, ahmed noor, 0.95
+        Hashtable htblColNameValue = new Hashtable();
+        htblColNameValue.put("id", Integer.valueOf(25));
+        htblColNameValue.put("name", "Ahmed Noor");
+        htblColNameValue.put("gpa", new Double(0.95));
+        htblColNameValue.put("numCourses", new Integer(50));
+        dbApp.insertIntoTable(strTableName, htblColNameValue);
 //
 //
 //			// inserting: 453455, ahmed noor, 0.95
@@ -301,28 +299,31 @@ public class DBApp {
 //			dbApp.insertIntoTable( strTableName , htblColNameValue );
 //
 //
-//			// inserting: 5674567, dalia noor, 1.25
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 5674567 ));
-//			htblColNameValue.put("name", new String("Dalia Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 1.25 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
+        // inserting: 5674567, dalia noor, 1.25
+        htblColNameValue.clear();
+        htblColNameValue.put("id", Integer.valueOf(5674567));
+        htblColNameValue.put("name", "Dalia Noor");
+        htblColNameValue.put("gpa", new Double(1.25));
+        htblColNameValue.put("numCourses", new Integer(60));
+        dbApp.insertIntoTable(strTableName, htblColNameValue);
 //
 //
-//			// inserting 23498, john noor, 1.5
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 23498 ));
-//			htblColNameValue.put("name", new String("John Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 1.5 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
+        // inserting 23498, john noor, 1.5
+        htblColNameValue.clear();
+        htblColNameValue.put("id", Integer.valueOf(23498));
+        htblColNameValue.put("name", "John Noor");
+        htblColNameValue.put("gpa", new Double(1.5));
+        htblColNameValue.put("numCourses", new Integer(90));
+        dbApp.insertIntoTable(strTableName, htblColNameValue);
 //
-//			// inserting 78452, zaky noor, 0.88
-//			htblColNameValue.clear( );
-//			htblColNameValue.put("id", new Integer( 78452 ));
-//			htblColNameValue.put("name", new String("Zaky Noor" ) );
-//			htblColNameValue.put("gpa", new Double( 0.88 ) );
-//			dbApp.insertIntoTable( strTableName , htblColNameValue );
-//
+        // inserting 78452, zaky noor, 0.88
+        htblColNameValue.clear();
+        htblColNameValue.put("id", Integer.valueOf(78452));
+        htblColNameValue.put("name", "Zaky Noor");
+        htblColNameValue.put("gpa", new Double(0.88));
+        htblColNameValue.put("numCourses", new Integer(300));
+        dbApp.insertIntoTable(strTableName, htblColNameValue);
+
 //			dbApp.createIndex(strTableName, "name", "nameIndex");
 
 //			 Attempting to re-create the same table -> should throw an exception yay
@@ -340,34 +341,61 @@ public class DBApp {
 //            dbApp.insertIntoTable(strTableName, htblColNameValue);
 
 
-			Table currentTable = Table.deserialize("Student");
-			System.out.println(currentTable);
-//			Hashtable<String, Object> ht = new Hashtable<>();
-//			ht.put("name", "Zeyaddd");
-//			ht.put("gpa", 0.8);
-//			dbApp.updateTable(strTableName, "0", ht);
-//
+        Table currentTable = Table.deserialize("Student");
+        System.out.println("Before: " + currentTable);
+
+//      // Tests calling updateTable on a Double, String Col
+//        Hashtable<String, Object> ht = new Hashtable<>();
+//        ht.put("name", "Zeyaddd");
+//        ht.put("gpa", 0.8);
+//        dbApp.updateTable(strTableName, "25", ht);
+
+      // Tests calling updateTable on a Double, Integer, String Cols
+        Hashtable<String, Object> ht = new Hashtable<>();
+        ht.put("name", "Zeyaddd");
+        ht.put("gpa", 0.8);
+        ht.put("numCourses", 13);
+        dbApp.updateTable(strTableName, "25", ht);
+
+      // Tests calling updateTable on a String Col
+        Hashtable<String, Object> ht1 = new Hashtable<>();
+        ht1.put("name", "Zeyaddd");
+        dbApp.updateTable(strTableName, "23498", ht1);
+
+      // Tests calling updateTable on a DOUBLE Col
+        Hashtable<String, Object> ht2 = new Hashtable<>();
+        ht2.put("gpa", 2.8);
+        dbApp.updateTable(strTableName, "78452", ht2);
+
+      // Tests calling updateTable on an empty htbl
+        Hashtable<String, Object> ht3 = new Hashtable<>();
+        dbApp.updateTable(strTableName, "78452", ht3);
+        ht3.put("gpa", 2.8);
+        dbApp.updateTable(strTableName, "78452", ht3);
+
+        System.out.println("After: " + currentTable);
+
+
 //			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 
 //
-			SQLTerm[] arrSQLTerms;
-			arrSQLTerms = new SQLTerm[1];
-			arrSQLTerms[0] = new SQLTerm("Student", "name", "<=", "Dalia Noor");
-//			arrSQLTerms[1] = new SQLTerm();
-//			arrSQLTerms[1]._strTableName =  "Student";
-//			arrSQLTerms[1]._strColumnName=  "gpa";
-//			arrSQLTerms[1]._strOperator  =  "=";
-//			arrSQLTerms[1]._objValue     =  new Double( 7 );
-
-			String[]strarrOperators = new String[0];
-//			strarrOperators[0] = "OR";
-			// select * from Student where name = "John Noor" or gpa = 1.5;
-			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
-			while(resultSet.hasNext())
-				System.out.println(resultSet.next());
+//			SQLTerm[] arrSQLTerms;
+//			arrSQLTerms = new SQLTerm[1];
+//			arrSQLTerms[0] = new SQLTerm("Student", "name", "<=", "Dalia Noor");
+////			arrSQLTerms[1] = new SQLTerm();
+////			arrSQLTerms[1]._strTableName =  "Student";
+////			arrSQLTerms[1]._strColumnName=  "gpa";
+////			arrSQLTerms[1]._strOperator  =  "=";
+////			arrSQLTerms[1]._objValue     =  new Double( 7 );
+//
+//			String[]strarrOperators = new String[0];
+////			strarrOperators[0] = "OR";
+//			// select * from Student where name = "John Noor" or gpa = 1.5;
+//			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
+//			while(resultSet.hasNext())
+//				System.out.println(resultSet.next());
 
     }
-
 
 
 }

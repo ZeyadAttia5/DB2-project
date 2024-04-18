@@ -134,7 +134,7 @@ public class Table implements Serializable {
      * @throws IOException
      * @throws ClassNotFoundException
      */
-    public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException {
+    public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException, DBAppException {
         System.out.println(this);
 
         // Find the page where the row with the clustering key value is located
@@ -142,8 +142,7 @@ public class Table implements Serializable {
 
         if (page == null) {
             // Handle case where row is not found
-            System.out.println("Row with clustering key value not found.");
-            return;
+            throw new DBAppException("Row with clustering key value of " + clusteringKeyValue.toString() + " was not found.");
         }
 
         // Locate and update the row within the page
@@ -151,7 +150,7 @@ public class Table implements Serializable {
 
         if (!rowUpdated) {
             // Handle case where row is not found in the page
-            System.out.println("Row not found in the specified page.");
+            throw new DBAppException("Row with clustering key value of " + clusteringKeyValue.toString() + " was not updated.");
         }
     }
 
@@ -167,27 +166,44 @@ public class Table implements Serializable {
 
 
         String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
-//        System.out.println("clusteringKeyColName: "+ clusteringKeyColName);
         String clusteringKeyType = csvConverter.getDataType(this.name, clusteringKeyColName);
-//        System.out.println("clusteringKeyType: "+ clusteringKeyType);
+
         if (clusteringKeyType.equalsIgnoreCase("java.lang.double")) {
 
-            for (int i = 0; i < tablePages.size() && result != -1 && result != 0; i++) {
+            for (String pageName: this.pageInfo.keySet()) {
+                Double pageMax = Double.parseDouble((String) this.getPageMax(pageName));
+                Double clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
+                result = Double.compare(pageMax, clusteringKeyValueCasted);
 
-                currPage = Page.deserialize(this.name + "_" + i);
-                result = Double.compare(Double.parseDouble((String) clusteringKeyValue), (Double) currPage.max);
+                // if the pageMax is greater than the clusteringKeyValue then the page is found
+                if (result > 0){
+                    currPage = Page.deserialize(pageName);
+                    break;
+                }
             }
         } else if (clusteringKeyType.equalsIgnoreCase("java.lang.string")) {
-            //this means that we have a string at hand
-            for (int i = 0; i < tablePages.size() - 1 && result != -1 && result != 0; i++) {
-                currPage = Page.deserialize(this.name + "_" + i);
-                result = ((String) clusteringKeyValue).compareTo((String) currPage.max);
+            for (String pageName: this.pageInfo.keySet()) {
+                String pageMax = (String) this.getPageMax(pageName);
+                String clusteringKeyValueCasted = (String) clusteringKeyValue;
+                result = pageMax.compareTo(clusteringKeyValueCasted);
+
+                // if the pageMax is greater than the clusteringKeyValue then the page is found
+                if (result > 0){
+                    currPage = Page.deserialize(pageName);
+                    break;
+                }
             }
-        } else {
-//            System.out.println("Entered Integer :D");
-            for (int i = 0; i < tablePages.size() && result != -1 && result != 0; i++) {
-                currPage = Page.deserialize(this.name + "_" + i);
-                result = Integer.compare(Integer.parseInt((String) clusteringKeyValue), (Integer) currPage.max);
+        } else if (clusteringKeyType.equalsIgnoreCase("java.lang.Integer")) {
+            for (String pageName: this.pageInfo.keySet()) {
+                Integer pageMax = Integer.parseInt( this.getPageMax(pageName).toString());
+                Integer clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
+                result = Integer.compare(pageMax, clusteringKeyValueCasted);
+
+                // if the pageMax is greater than the clusteringKeyValue then the page is found
+                if (result > 0){
+                    currPage = Page.deserialize(pageName);
+                    break;
+                }
             }
         }
         return currPage;
@@ -324,16 +340,18 @@ public class Table implements Serializable {
         while (low <= high) {
             int mid = (low + high) / 2;
             String midPageName = tablePages.get(mid);
-            Page midPage = Page.deserialize(midPageName);
+//            Page midPage = Page.deserialize(midPageName);
+            Object midPage = this.getPageMax(midPageName);
 
             // Compare clustering key value in midPage with clusteringKeyValue
-            Comparable<Object> midClusteringKey = (Comparable<Object>) midPage.max;
+            Comparable<Object> midClusteringKey = (Comparable<Object>) midPage;
 
             int compareResult = midClusteringKey.compareTo(newValue);
 
             if (compareResult == 0) {
                 // Found exact match, return midPage
-                return midPage;
+
+                return Page.deserialize(midPageName);
             } else if (compareResult < 0) {
                 // If midPage's clustering key is less than clusteringKeyValue, search right half
                 low = mid + 1;
@@ -472,5 +490,18 @@ public class Table implements Serializable {
         return results;
     }
 
+    public Hashtable<String, Object[]> getPageInfo(){
+        return this.pageInfo;
+    }
+    public Object getPageMax(String pageName){
+        return this.pageInfo.get(pageName)[0];
+    }
 
+    public Object getPageMin(String pageName){
+        return this.pageInfo.get(pageName)[1];
+    }
+
+    public Object getPageSize(String pageName){
+        return this.pageInfo.get(pageName)[2];
+    }
 }
