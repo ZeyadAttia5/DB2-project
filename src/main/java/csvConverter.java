@@ -178,56 +178,88 @@ public class csvConverter {
     }
 
 
-    // Adjusting the metadata file
-    public static boolean addIndexToCSV(String strTableName, String strColName, String strIndexName) {
+    // Adding index to metadata
+    public static void addIndexToMetadata(String strTableName, String strColName, String strIndexName) throws DBAppException {
 
-        // Getting names of all indices for table of interest
-        HashSet<String> existingIndex = new HashSet<>();
-        try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader1.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(strTableName)) existingIndex.add(fields[4]);
-                if (!fields[0].equals(strTableName) && !existingIndex.isEmpty()) break;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Validates table, column and index name
+        ValidateTableColumnIndex(strTableName, strColName, strIndexName);
 
+        // Updating metadata
+        boolean updated = updateIndexCSV(strTableName, strColName, strIndexName);
 
-        // Updating csv file
-        List<String> lines = new ArrayList<>();
-        boolean found = false;
+        // Handles case where column already has an index, hence cannot create a new one
+        if(!updated)
+            throw new DBAppException("There already exists an index for this column in this table.");
+    }
+
+    private static boolean updateIndexCSV(String strTableName, String strColName, String strIndexName) {
+        List<String> lines = new ArrayList<>(); // List to hold modified lines
+        boolean updated = false; // Flag to track if metadata was updated
         try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
-
+            // Read each line from the metadata file
             while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
-                if (fields[0].equals(strTableName) && fields[1].equals(strColName) && !existingIndex.contains(strIndexName)) {
-                    found = true;
-                    fields[4] = strIndexName;
+                // Check if the current line matches the specified table name, column name, and has no index
+                if (fields[0].equals(strTableName) && fields[1].equals(strColName) && fields[4].equals("null")) {
+                    updated = true; // Set the flag to indicate metadata was updated
+                    fields[4] = strIndexName; // Update the index name
                     fields[5] = "B+Tree";
-                    line = String.join(",", fields);
+                    line = String.join(",", fields); // Reconstruct the line with updated fields
                 }
-
-                lines.add(line);
+                lines.add(line); // Add the modified line to the list
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+
+        // Write the modified metadata back to the file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(METADATA_FILE))) {
             for (String modifiedLine : lines) {
                 writer.write(modifiedLine);
                 writer.newLine();
             }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return updated;
+    }
 
-            System.out.println(found ? "Index added." : "This index name already exists in this table.");
+    private static void ValidateTableColumnIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
+        HashSet<String> existingIndices = new HashSet<>(); // Names of all indices for table of interest
+        HashSet<String> existingColumns = new HashSet<>(); // Names of all columns for table of interest
+
+        // Reading metadata file
+        try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader1.readLine()) != null) {
+                String[] fields = line.split(",");
+                // Accumulating all index names for table of interest
+                if (fields[0].equals(strTableName))
+                    existingIndices.add(fields[4]);
+                // Accumulating all column names for table of interest
+                if(fields[0].equals(strTableName))
+                    existingColumns.add(fields[1]);
+                // Breaking once we accessed all values for table of interest
+                if (!fields[0].equals(strTableName) && !existingIndices.isEmpty())
+                    break;
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        return found;
+        // Throwing exception if table doesn't exist
+        if(existingIndices.isEmpty())
+            throw new DBAppException("Table " + strTableName + " does not exist.");
+
+        // Throwing exception if column doesn't exist
+        if(!existingColumns.contains(strColName))
+            throw new DBAppException("Column " + strColName + " does not exist.");
+
+        // Throwing exception if index name already exists
+        if(existingIndices.contains(strIndexName))
+            throw new DBAppException("Index " + strIndexName + " already exists in " + strTableName);
     }
 
     public static void main(String[] args) {

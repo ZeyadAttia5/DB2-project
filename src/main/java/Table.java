@@ -421,17 +421,17 @@ public class Table implements Serializable {
         return false;
     }
 
-    public boolean compatibleTypes(Object value, String columnType) {
-        switch (columnType.toLowerCase()) {
-            case "java.lang.integer":
-                return value instanceof Integer;
-            case "java.lang.double":
-                return value instanceof Double;
-            case "java.lang.string":
-                return value instanceof String;
-        }
-        return false;
-    }
+//    public boolean compatibleTypes(Object value, String columnType) {
+//        switch (columnType.toLowerCase()) {
+//            case "java.lang.integer":
+//                return value instanceof Integer;
+//            case "java.lang.double":
+//                return value instanceof Double;
+//            case "java.lang.string":
+//                return value instanceof String;
+//        }
+//        return false;
+//    }
 
     public ArrayList<Tuple> searchTable(String columnName, String operator, Object value) throws DBAppException {
         ArrayList<Tuple> results = new ArrayList<>();

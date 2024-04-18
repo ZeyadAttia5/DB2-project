@@ -50,11 +50,7 @@ public class DBApp {
     public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException, IOException, ClassNotFoundException {
 
         // Adjusting metadata file with new index
-        boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
-        if (!found) {
-            DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName);
-            throw e;
-        }
+        csvConverter.addIndexToMetadata(strTableName, strColName, strIndexName);
 
         // Retrieving data type for desired column
         String tmp = csvConverter.getDataType(strTableName, strColName);
@@ -331,78 +327,74 @@ public class DBApp {
         dbApp.createTable(strTableName, "id", htblColNameType);
 //
 //
-        Hashtable htblColNameValue = new Hashtable();
-
-        // inserting 78452, zaky noor, 0.88
-        htblColNameValue.put("id", Integer.valueOf(1));
-        htblColNameValue.put("name", "Amir Eid");
-        htblColNameValue.put("gpa", new Double(0.7));
-        htblColNameValue.put("numCourses", Integer.valueOf(300050));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-
-        // inserting: 5674567, dalia noor, 1.25
-        htblColNameValue.clear();
-        htblColNameValue.put("id", Integer.valueOf(2));
-        htblColNameValue.put("name", "Dalia Noor");
-        htblColNameValue.put("gpa", new Double(1.25));
-        htblColNameValue.put("numCourses", Integer.valueOf(60));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
+//        Hashtable htblColNameValue = new Hashtable();
+//
+//        // inserting 78452, zaky noor, 0.88
+//        htblColNameValue.put("id", Integer.valueOf(1));
+//        htblColNameValue.put("name", "Amir Eid");
+//        htblColNameValue.put("gpa", new Double(0.7));
+//        htblColNameValue.put("numCourses", Integer.valueOf(300050));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
 //
 //
-        // inserting 23498, john noor, 1.5
-        htblColNameValue.clear();
-        htblColNameValue.put("id", Integer.valueOf(3));
-        htblColNameValue.put("name", "John Noor");
-        htblColNameValue.put("gpa", new Double(1.5));
-        htblColNameValue.put("numCourses", Integer.valueOf(90));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
+//        // inserting: 5674567, dalia noor, 1.25
+//        htblColNameValue.clear();
+//        htblColNameValue.put("id", Integer.valueOf(2));
+//        htblColNameValue.put("name", "Dalia Noor");
+//        htblColNameValue.put("gpa", new Double(1.25));
+//        htblColNameValue.put("numCourses", Integer.valueOf(60));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
+////
+////
+//        // inserting 23498, john noor, 1.5
+//        htblColNameValue.clear();
+//        htblColNameValue.put("id", Integer.valueOf(3));
+//        htblColNameValue.put("name", "John Noor");
+//        htblColNameValue.put("gpa", new Double(1.5));
+//        htblColNameValue.put("numCourses", Integer.valueOf(90));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
+////
+//        // inserting 78452, zaky noor, 0.88
+//        htblColNameValue.clear();
+//        htblColNameValue.put("id", Integer.valueOf(4));
+//        htblColNameValue.put("name", "Zaky Noor");
+//        htblColNameValue.put("gpa", new Double(0.88));
+//        htblColNameValue.put("numCourses", Integer.valueOf(300));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
 //
-        // inserting 78452, zaky noor, 0.88
-        htblColNameValue.clear();
-        htblColNameValue.put("id", Integer.valueOf(4));
-        htblColNameValue.put("name", "Zaky Noor");
-        htblColNameValue.put("gpa", new Double(0.88));
-        htblColNameValue.put("numCourses", Integer.valueOf(300));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-        // inserting 78452, zaky noor, 0.88
-        htblColNameValue.clear();
-        htblColNameValue.put("id", Integer.valueOf(5));
-        htblColNameValue.put("name", "Zaky Noor");
-        htblColNameValue.put("gpa", new Double(0.88));
-        htblColNameValue.put("numCourses", Integer.valueOf(300));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-
-        // inserting 78452, zaky noor, 0.88
-        htblColNameValue.clear();
-        htblColNameValue.put("id", Integer.valueOf(6));
-        htblColNameValue.put("name", "Ahmed Zaky");
-        htblColNameValue.put("gpa", new Double(0.88));
-        htblColNameValue.put("numCourses", Integer.valueOf(300));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-
-        // inserting 78452, zaky noor, 0.88
-        htblColNameValue.clear();
-        htblColNameValue.put("id", Integer.valueOf(7));
-        htblColNameValue.put("name", "Fathy Sroor");
-        htblColNameValue.put("gpa", new Double(0.88));
-        htblColNameValue.put("numCourses", Integer.valueOf(300));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-        // inserting: 25, ahmed noor, 0.95
-        htblColNameValue.clear();
-        htblColNameValue.put("id", Integer.valueOf(25));
-        htblColNameValue.put("name", "Ahmed Noor");
-        htblColNameValue.put("gpa", new Double(0.95));
-        htblColNameValue.put("numCourses", Integer.valueOf(50));
-        dbApp.insertIntoTable(strTableName, htblColNameValue);
-
-
-        dbApp.createIndex(strTableName, "gpa", "gpaIndex");
-        dbApp.createIndex(strTableName, "name", "nameIndex");
+//        // inserting 78452, zaky noor, 0.88
+//        htblColNameValue.clear();
+//        htblColNameValue.put("id", Integer.valueOf(5));
+//        htblColNameValue.put("name", "Zaky Noor");
+//        htblColNameValue.put("gpa", new Double(0.88));
+//        htblColNameValue.put("numCourses", Integer.valueOf(300));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
+//
+//
+//        // inserting 78452, zaky noor, 0.88
+//        htblColNameValue.clear();
+//        htblColNameValue.put("id", Integer.valueOf(6));
+//        htblColNameValue.put("name", "Ahmed Zaky");
+//        htblColNameValue.put("gpa", new Double(0.88));
+//        htblColNameValue.put("numCourses", Integer.valueOf(300));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
+//
+//
+//        // inserting 78452, zaky noor, 0.88
+//        htblColNameValue.clear();
+//        htblColNameValue.put("id", Integer.valueOf(7));
+//        htblColNameValue.put("name", "Fathy Sroor");
+//        htblColNameValue.put("gpa", new Double(0.88));
+//        htblColNameValue.put("numCourses", Integer.valueOf(300));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
+//
+//        // inserting: 25, ahmed noor, 0.95
+//        htblColNameValue.clear();
+//        htblColNameValue.put("id", Integer.valueOf(25));
+//        htblColNameValue.put("name", "Ahmed Noor");
+//        htblColNameValue.put("gpa", new Double(0.95));
+//        htblColNameValue.put("numCourses", Integer.valueOf(50));
+//        dbApp.insertIntoTable(strTableName, htblColNameValue);
 
 //			 Attempting to re-create the same table -> should throw an exception yay
 //			Hashtable htblColNameType = new Hashtable();
@@ -419,8 +411,8 @@ public class DBApp {
 //            dbApp.insertIntoTable(strTableName, htblColNameValue);
 
 
-        Table currentTable = Table.deserialize("Student");
-        System.out.println("Before: " + currentTable);
+//        Table currentTable = Table.deserialize("Student");
+//        System.out.println("Before: " + currentTable);
 
 //      // Tests calling updateTable on a Double, String Col
 //        Hashtable<String, Object> ht = new Hashtable<>();
@@ -429,34 +421,34 @@ public class DBApp {
 //        dbApp.updateTable(strTableName, "25", ht);
 
         // Tests calling updateTable on a Double, Integer, String Cols
-        Hashtable<String, Object> ht = new Hashtable<>();
-        ht.put("name", "Amir Eidd");
-        ht.put("gpa", 0.8);
-        ht.put("numCourses", 1300);
-        dbApp.updateTable(strTableName, "1", ht);
-
-        // Tests calling updateTable on a String Col
-        ht.clear();
-        ht.put("name", "Zeyaddd");
-        dbApp.updateTable(strTableName, "2", ht);
-
-        // Tests calling updateTable on a DOUBLE Col
-        ht.clear();
-        ht.put("gpa", 2.8);
-        dbApp.updateTable(strTableName, "4", ht);
-
-        // Tests calling updateTable on many pages
-        ht.clear();
-        ht.put("numCourses", 2);
-        dbApp.updateTable(strTableName, "5", ht);
-
-        // Tests calling updateTable on an empty htbl
-        ht.clear();
-        dbApp.updateTable(strTableName, "7", ht);
-        ht.put("numCourses", 2);
-        dbApp.updateTable(strTableName, "7", ht);
-
-        System.out.println("After: " + currentTable);
+//        Hashtable<String, Object> ht = new Hashtable<>();
+//        ht.put("name", "Amir Eidd");
+//        ht.put("gpa", 0.8);
+//        ht.put("numCourses", 1300);
+//        dbApp.updateTable(strTableName, "1", ht);
+//
+//        // Tests calling updateTable on a String Col
+//        ht.clear();
+//        ht.put("name", "Zeyaddd");
+//        dbApp.updateTable(strTableName, "2", ht);
+//
+//        // Tests calling updateTable on a DOUBLE Col
+//        ht.clear();
+//        ht.put("gpa", 2.8);
+//        dbApp.updateTable(strTableName, "4", ht);
+//
+//        // Tests calling updateTable on many pages
+//        ht.clear();
+//        ht.put("numCourses", 2);
+//        dbApp.updateTable(strTableName, "5", ht);
+//
+//        // Tests calling updateTable on an empty htbl
+//        ht.clear();
+//        dbApp.updateTable(strTableName, "7", ht);
+//        ht.put("numCourses", 2);
+//        dbApp.updateTable(strTableName, "7", ht);
+//
+//        System.out.println("After: " + currentTable);
 
 
 //			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
@@ -477,6 +469,19 @@ public class DBApp {
 //			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
 //			while(resultSet.hasNext())
 //				System.out.println(resultSet.next());
+
+
+
+//        // Table doesn't exist
+//        dbApp.createIndex("fake table", "gpa", "gpaIndex");
+//        // Column doesn't exist
+//        dbApp.createIndex(strTableName, "fake col", "gpaIndex");
+//        // nameIndex already exists
+//        dbApp.createIndex(strTableName, "name", "nameIndex");
+//        dbApp.createIndex(strTableName, "gpa", "nameIndex");
+//        // name already has an index
+//        dbApp.createIndex(strTableName, "name", "nameIndex");
+//        dbApp.createIndex(strTableName, "name", "otherName");
 
     }
 
