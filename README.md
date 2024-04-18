@@ -30,7 +30,7 @@ This project implements a small database engine with support for a B+ tree index
 
 1. Clone the repository:
    ```shell
-   https://github.com/ZeyadAttia5/DB2-project.git
+   git clone https://github.com/ZeyadAttia5/DB2-project.git
    ```
 2. Clone the repository:
    ```shell
