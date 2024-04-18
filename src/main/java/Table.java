@@ -445,7 +445,7 @@ public class Table implements Serializable {
             throw new DBAppException("Datatype of value doesn't match the column datatype: ");
         }
         // Linear searching
-        if (!clustering) {
+        if (!clustering||!csvConverter.getIndexName(this.name, columnName).equals("null")) {
             for (String pagename : tablePages) {
                 try {
                     Page page = Page.deserialize(pagename);
