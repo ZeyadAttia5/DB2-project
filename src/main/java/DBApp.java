@@ -158,7 +158,10 @@ public class DBApp {
             Object value = sqlTerm._objValue;
             String tableName = sqlTerm._strTableName;
             String operator = sqlTerm._strOperator.toUpperCase();
-
+            String columnType = csvConverter.getColumnType(tableName, columnName);
+            if (columnType == null) {
+                throw new DBAppException("Column " + columnName + " not found");
+            }
             // If operator is invalid
             if (!sqlTerm.validOperator()) {
                 throw new DBAppException("Invalid operator");
