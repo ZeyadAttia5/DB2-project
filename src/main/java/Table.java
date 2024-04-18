@@ -151,61 +151,48 @@ public class Table implements Serializable {
      * @throws IOException
      * @throws ClassNotFoundException
      */
+
     private Page findPage(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
-        int result = 1;
         Page currPage = null;
-
-
         String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
         String clusteringKeyType = csvConverter.getDataType(this.name, clusteringKeyColName);
 
-        if (clusteringKeyType.equalsIgnoreCase("java.lang.double")) {
+        for (String pageName : this.pageInfo.keySet()) {
+            Object pageMax = this.getPageMax(pageName);
+            Object pageMin = this.getPageMin(pageName);
+            Object clusteringKeyValueCasted = clusteringKeyValue;
 
-            for (String pageName : this.pageInfo.keySet()) {
-                Double pageMax = Double.parseDouble((String) this.getPageMax(pageName));
-                Double pageMin = Double.parseDouble((String) this.getPageMin(pageName));
-                Double clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
-//                result = Double.compare(pageMax, clusteringKeyValueCasted);
-
-                // if the clusteringKeyValue is between pageMax and pageMin or equal to either, then page is found
-                if ((clusteringKeyValueCasted < pageMax && clusteringKeyValueCasted > pageMin)
-                        || clusteringKeyValueCasted == pageMin || clusteringKeyValueCasted == pageMax) {
-                    currPage = Page.deserialize(pageName);
-                    break;
-                }
+            if (compareValues(clusteringKeyValueCasted, pageMax, pageMin, clusteringKeyType)) {
+                currPage = Page.deserialize(pageName);
+                break;
             }
-        } else if (clusteringKeyType.equalsIgnoreCase("java.lang.string")) {
-            for (String pageName : this.pageInfo.keySet()) {
-                String pageMax = (String) this.getPageMax(pageName);
-                String pageMin = (String) this.getPageMin(pageName);
-                String clusteringKeyValueCasted = (String) clusteringKeyValue;
-                int isMaxGreater = clusteringKeyValueCasted.compareTo(pageMax);
-                int isMinGreater = clusteringKeyValueCasted.compareTo(pageMin);
 
-                // case 1: the clusteringKeyValue is between both min and max
-                // case 2: the clusteringKeyValue is equal to the maximum
-                // case 3: the clusteringKeyValue is equal to the minimum
-                if ((isMinGreater > 0 && isMaxGreater < 0) || isMinGreater == 0 || isMaxGreater == 0) {
-                    currPage = Page.deserialize(pageName);
-                    break;
-                }
-            }
-        } else if (clusteringKeyType.equalsIgnoreCase("java.lang.Integer")) {
-            for (String pageName : this.pageInfo.keySet()) {
-                Integer pageMax = Integer.parseInt(this.getPageMax(pageName).toString());
-                Integer pageMin = Integer.parseInt(this.getPageMin(pageName).toString());
-                Integer clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
-
-                // if the clusteringKeyValue is between pageMax and pageMin or equal to either, then page is found
-                if ((clusteringKeyValueCasted < pageMax && clusteringKeyValueCasted > pageMin)
-                        || clusteringKeyValueCasted == pageMin || clusteringKeyValueCasted == pageMax) {
-                    currPage = Page.deserialize(pageName);
-                    break;
-                }
-            }
         }
-        return currPage;
 
+        return currPage;
+    }
+
+    private boolean compareValues(Object keyValue, Object maxValue, Object minValue, String dataType) {
+        if (dataType.equalsIgnoreCase("java.lang.double")) {
+            return compareDouble(Double.parseDouble(keyValue.toString()), Double.parseDouble(maxValue.toString()), Double.parseDouble(minValue.toString()));
+        } else if (dataType.equalsIgnoreCase("java.lang.String")) {
+            return compareString((String) keyValue, (String) maxValue, (String) minValue);
+        } else if (dataType.equalsIgnoreCase("java.lang.Integer")) {
+            return compareInteger(Integer.parseInt(keyValue.toString()), Integer.parseInt(maxValue.toString()), Integer.parseInt(minValue.toString()));
+        }
+        return false;
+    }
+
+    private boolean compareDouble(Double keyValue, Double maxValue, Double minValue) {
+        return (keyValue < maxValue && keyValue > minValue) || keyValue.equals(minValue) || keyValue.equals(maxValue);
+    }
+
+    private boolean compareString(String keyValue, String maxValue, String minValue) {
+        return (keyValue.compareTo(maxValue) < 0 && keyValue.compareTo(minValue) > 0) || keyValue.equals(minValue) || keyValue.equals(maxValue);
+    }
+
+    private boolean compareInteger(Integer keyValue, Integer maxValue, Integer minValue) {
+        return (keyValue < maxValue && keyValue > minValue) || keyValue.equals(minValue) || keyValue.equals(maxValue);
     }
 
 
@@ -286,8 +273,22 @@ public class Table implements Serializable {
         // Find the clustering data type
         String clusteringDataType = csvConverter.getDataType(this.name, clusteringColName);
 
-        // Find the Page
-        Page page = this.binarySearch(clusteringKeyValue.toString(), clusteringDataType);
+        Object clusteringKeyValueCasted = null;
+        ArrayList<Ref> searchSet = new ArrayList<Ref>();
+        if (clusteringDataType.equalsIgnoreCase("java.lang.integer")) {
+            clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
+            searchSet = tree.search((Integer) clusteringKeyValueCasted);
+        } else if (clusteringDataType.equalsIgnoreCase("java.lang.string")) {
+            clusteringKeyValueCasted = clusteringKeyValue.toString();
+            searchSet = tree.search((String) clusteringKeyValueCasted);
+        } else if (clusteringDataType.equalsIgnoreCase("java.lang.double")) {
+            clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
+            searchSet = tree.search((Double) clusteringKeyValueCasted);
+        }
+
+
+        // find the tuple from the set of pages
+        Page page = this.findPageIndexed(searchSet, clusteringKeyValue, clusteringDataType);
 
         if (page == null) {
             throw new DBAppException("tuple not found :)");
@@ -317,6 +318,24 @@ public class Table implements Serializable {
 
     }
 
+    private Page findPageIndexed(ArrayList<Ref> searchSet, Object clusteringKeyValue, String clusteringDataType) {
+
+        Object clusteringKeyValueCasted = null;
+        if (clusteringDataType.equalsIgnoreCase("java.lang.integer")) {
+            clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
+        } else if (clusteringDataType.equalsIgnoreCase("java.lang.string")) {
+            clusteringKeyValueCasted = clusteringKeyValue.toString();
+        } else if (clusteringDataType.equalsIgnoreCase("java.lang.double")) {
+            clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
+        }
+
+        Page page = null;
+        for (Ref ref : searchSet) {
+
+        }
+        return page;
+    }
+
 
     public Page binarySearch(String clusteringKeyValue, String dataType) throws IOException, ClassNotFoundException {
 
@@ -338,23 +357,22 @@ public class Table implements Serializable {
         while (low <= high) {
             int mid = (low + high) / 2;
             String midPageName = tablePages.get(mid);
-//            Page midPage = Page.deserialize(midPageName);
-            Object midPage = this.getPageMax(midPageName);
+            Object midPageMax = this.getPageMax(midPageName);
 
-            // Compare clustering key value in midPage with clusteringKeyValue
-            Comparable<Object> midClusteringKey = (Comparable<Object>) midPage;
+            // Compare clustering key value in midPageMax with clusteringKeyValue
+            Comparable<Object> midClusteringKey = (Comparable<Object>) midPageMax;
 
             int compareResult = midClusteringKey.compareTo(newValue);
 
             if (compareResult == 0) {
-                // Found exact match, return midPage
-
+                // Found exact match, return midPageMax
                 return Page.deserialize(midPageName);
+
             } else if (compareResult < 0) {
-                // If midPage's clustering key is less than clusteringKeyValue, search right half
+                // If midPageMax's clustering key is less than clusteringKeyValue, search right half
                 low = mid + 1;
             } else {
-                // If midPage's clustering key is greater than clusteringKeyValue, search left half
+                // If midPageMax's clustering key is greater than clusteringKeyValue, search left half
                 high = mid - 1;
             }
         }
@@ -504,3 +522,60 @@ public class Table implements Serializable {
         return this.pageInfo.get(pageName)[2];
     }
 }
+
+
+//    Old findPage... Keep it just in case we need it
+//    private Page findPage(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
+//        int result = 1;
+//        Page currPage = null;
+//
+//
+//        String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
+//        String clusteringKeyType = csvConverter.getDataType(this.name, clusteringKeyColName);
+//
+//        if (clusteringKeyType.equalsIgnoreCase("java.lang.double")) {
+//
+//            for (String pageName : this.pageInfo.keySet()) {
+//                Double pageMax = Double.parseDouble((String) this.getPageMax(pageName));
+//                Double pageMin = Double.parseDouble((String) this.getPageMin(pageName));
+//                Double clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
+////                result = Double.compare(pageMax, clusteringKeyValueCasted);
+//
+//                // if the clusteringKeyValue is between pageMax and pageMin or equal to either, then page is found
+//                if ((clusteringKeyValueCasted < pageMax && clusteringKeyValueCasted > pageMin) || clusteringKeyValueCasted == pageMin || clusteringKeyValueCasted == pageMax) {
+//                    currPage = Page.deserialize(pageName);
+//                    break;
+//                }
+//            }
+//        } else if (clusteringKeyType.equalsIgnoreCase("java.lang.string")) {
+//            for (String pageName : this.pageInfo.keySet()) {
+//                String pageMax = (String) this.getPageMax(pageName);
+//                String pageMin = (String) this.getPageMin(pageName);
+//                String clusteringKeyValueCasted = (String) clusteringKeyValue;
+//                int isMaxGreater = clusteringKeyValueCasted.compareTo(pageMax);
+//                int isMinGreater = clusteringKeyValueCasted.compareTo(pageMin);
+//
+//                // case 1: the clusteringKeyValue is between both min and max
+//                // case 2: the clusteringKeyValue is equal to the maximum
+//                // case 3: the clusteringKeyValue is equal to the minimum
+//                if ((isMinGreater > 0 && isMaxGreater < 0) || isMinGreater == 0 || isMaxGreater == 0) {
+//                    currPage = Page.deserialize(pageName);
+//                    break;
+//                }
+//            }
+//        } else if (clusteringKeyType.equalsIgnoreCase("java.lang.Integer")) {
+//            for (String pageName : this.pageInfo.keySet()) {
+//                Integer pageMax = Integer.parseInt(this.getPageMax(pageName).toString());
+//                Integer pageMin = Integer.parseInt(this.getPageMin(pageName).toString());
+//                Integer clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
+//
+//                // if the clusteringKeyValue is between pageMax and pageMin or equal to either, then page is found
+//                if ((clusteringKeyValueCasted < pageMax && clusteringKeyValueCasted > pageMin) || clusteringKeyValueCasted == pageMin || clusteringKeyValueCasted == pageMax) {
+//                    currPage = Page.deserialize(pageName);
+//                    break;
+//                }
+//            }
+//        }
+//        return currPage;
+//
+//    }
