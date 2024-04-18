@@ -423,7 +423,7 @@ public class DBApp {
 
 			SQLTerm[] arrSQLTerms;
 			arrSQLTerms = new SQLTerm[1];
-			arrSQLTerms[0] = new SQLTerm("Student", "name", "<=", "Dalia Noor");
+			arrSQLTerms[0] = new SQLTerm("Student", "id", ">=", 6);
 //			arrSQLTerms[1] = new SQLTerm();
 //			arrSQLTerms[1]._strTableName =  "Student";
 //			arrSQLTerms[1]._strColumnName=  "gpa";

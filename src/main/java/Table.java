@@ -416,7 +416,6 @@ public class Table implements Serializable {
         ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
         String isclusteringkey = "False";
         String columnType = csvConverter.getColumnType(this.name, columnName);
-
         if (columnType == null) {
             throw new DBAppException("Column " + columnName + " not found");
         }
@@ -439,27 +438,16 @@ public class Table implements Serializable {
             return results;
         } else {
             if (operator.equals("=")) {
-                Comparable<Object> comparableValue = (Comparable<Object>) value;
-                int low = 0;
-                int high = tablePages.size() - 1;
-                while (low <= high) {
-                    int mid = (low + high) / 2;
-                    String pagename = tablePages.get(mid);
-                    try {//getters and setterssss!
-                        Page page = Page.deserialize(pagename + ".class");
-                        if (comparableValue.compareTo(page.min) < 0) {
-                            high = mid - 1; // Search in the lower half
-                        } else if (comparableValue.compareTo(page.max) > 0) {
-                            low = mid + 1; // Search in the upper half
-                        } else {
-                            pageResults = page.binarysearchPage(columnName, value, operator);
-                            results.addAll(pageResults);
-                            return results;
-                        }
-                    } catch (IOException | ClassNotFoundException e) {
+                //Comparable<Object> comparableValue = (Comparable<Object>) value;
+                try {
+                    Page page = binarySearch(value.toString(), columnType);
+                    if (page != null)
+                        pageResults = page.binarysearchPage(columnName, value, operator);
+                    results.addAll(pageResults);
+                    return results;
+                    } catch(IOException | ClassNotFoundException e){
                         e.printStackTrace();
                     }
-                }
             }
             if (operator.equals(">") || operator.equals(">=")) {
                 for (int i = tablePages.size() - 1; i >= 0; i--) {
@@ -467,14 +455,11 @@ public class Table implements Serializable {
                         Page page = Page.deserialize(this.tablePages.get(i) + ".class");
                         Object maximum = page.max;
                         if (((Comparable) maximum).compareTo(value) > 0) {
-                            ArrayList<Tuple> tempp = new ArrayList<>();
-                            tempp = page.binarysearchPage(columnName, value, operator);
+                            pageResults = new ArrayList<Tuple>();
+                            pageResults = page.binarysearchPage(columnName, value, operator);
                             page.serialize();
-                            pageResults.addAll(tempp);
+                            results.addAll(pageResults);
                         } else {
-//                            for(int j= pageResults.size()-1;j>=0;j--){
-//                                results.add(pageResults.get(i));
-//                            }
                             return results;
                         }
                     } catch (IOException | ClassNotFoundException e) {
@@ -491,7 +476,6 @@ public class Table implements Serializable {
                             pageResults = new ArrayList<Tuple>();
                             pageResults = page.binarysearchPage(columnName, value, operator);
                             page.serialize();
-
                             results.addAll(pageResults);
                         } else {
                             return results;
