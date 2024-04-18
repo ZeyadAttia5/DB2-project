@@ -41,7 +41,7 @@ public class Table implements Serializable {
         Table table = null;
         try (FileInputStream fis = new FileInputStream("src/main/resources/tables/" + filename + "/" + filename + ".class"); ObjectInputStream in = new ObjectInputStream(fis)) {
             table = (Table) in.readObject();
-            System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename + "/" + filename + ".class");
+//            System.out.println("Table deserialized from " + "src/main/resources/tables/" + filename + "/" + filename + ".class");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -126,7 +126,7 @@ public class Table implements Serializable {
      * @throws ClassNotFoundException
      */
     public void updateTable(Object clusteringKeyValue, Hashtable<String, Object> ColNameType) throws IOException, ClassNotFoundException, DBAppException {
-        System.out.println(this);
+//        System.out.println(this);
 
         // Find the page where the row with the clustering key value is located
         Page page = findPage(clusteringKeyValue);
@@ -154,15 +154,13 @@ public class Table implements Serializable {
 
     private Page findPage(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
         Page currPage = null;
-        String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
-        String clusteringKeyType = csvConverter.getDataType(this.name, clusteringKeyColName);
 
         for (String pageName : this.pageInfo.keySet()) {
             Object pageMax = this.getPageMax(pageName);
             Object pageMin = this.getPageMin(pageName);
             Object clusteringKeyValueCasted = clusteringKeyValue;
 
-            if (compareValues(clusteringKeyValueCasted, pageMax, pageMin, clusteringKeyType)) {
+            if (compareValues(clusteringKeyValueCasted, pageMax, pageMin)) {
                 currPage = Page.deserialize(pageName);
                 break;
             }
@@ -172,7 +170,10 @@ public class Table implements Serializable {
         return currPage;
     }
 
-    private boolean compareValues(Object keyValue, Object maxValue, Object minValue, String dataType) {
+    private boolean compareValues(Object keyValue, Object maxValue, Object minValue) {
+        String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
+        String dataType = csvConverter.getDataType(this.name, clusteringKeyColName);
+
         if (dataType.equalsIgnoreCase("java.lang.double")) {
             return compareDouble(Double.parseDouble(keyValue.toString()), Double.parseDouble(maxValue.toString()), Double.parseDouble(minValue.toString()));
         } else if (dataType.equalsIgnoreCase("java.lang.String")) {
@@ -243,7 +244,7 @@ public class Table implements Serializable {
         String tableName = name;
         try (FileOutputStream fos = new FileOutputStream("src/main/resources/tables/" + tableName + "/" + name + ".class"); ObjectOutputStream out = new ObjectOutputStream(fos)) {
             out.writeObject(this);
-            System.out.println("saved table successfully at " + "src/main/resources/tables/" + tableName + "/" + name + ".class");
+//            System.out.println("saved table successfully at " + "src/main/resources/tables/" + tableName + "/" + name + ".class");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -260,6 +261,11 @@ public class Table implements Serializable {
      */
     public void updateIndexedTable(String indexedColName, Object clusteringKeyValue, Hashtable<String, Object> htblColNameType) throws IOException, ClassNotFoundException, DBAppException {
         /*
+            Use the B+Tree to get the set of pages to search in
+
+            Q: how can I search for the tuple using the B+ tree if I dont have the value of the indexedColName?!
+            A: I probably cannot do it using the B+ tree, so just do it using binary search.
+
             update can be done in-place since the clustering key value is NEVER updated;
             therefore, there is no need to insert then update
          */
@@ -273,38 +279,34 @@ public class Table implements Serializable {
         // Find the clustering data type
         String clusteringDataType = csvConverter.getDataType(this.name, clusteringColName);
 
-        Object clusteringKeyValueCasted = null;
-        ArrayList<Ref> searchSet = new ArrayList<Ref>();
-        if (clusteringDataType.equalsIgnoreCase("java.lang.integer")) {
-            clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
-            searchSet = tree.search((Integer) clusteringKeyValueCasted);
-        } else if (clusteringDataType.equalsIgnoreCase("java.lang.string")) {
-            clusteringKeyValueCasted = clusteringKeyValue.toString();
-            searchSet = tree.search((String) clusteringKeyValueCasted);
-        } else if (clusteringDataType.equalsIgnoreCase("java.lang.double")) {
-            clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
-            searchSet = tree.search((Double) clusteringKeyValueCasted);
-        }
+        // Find the Page
+        Page page = this.binarySearch(clusteringKeyValue.toString(), clusteringDataType);
 
-
-        // find the tuple from the set of pages
-        Page page = this.findPageIndexed(searchSet, clusteringKeyValue, clusteringDataType);
 
         if (page == null) {
-            throw new DBAppException("tuple not found :)");
+            throw new DBAppException("Page not found :)");
         }
 
         // initialize old Ref
-        int indexInPage = page.binarySearchPage(clusteringKeyValue.toString(), clusteringDataType);
-        if (indexInPage == -1) {
+        Hashtable htblIdxTuple = page.binarySearchPage(clusteringKeyValue.toString(), clusteringDataType);
+        if (htblIdxTuple.size() == 0) {
             // entry not found
             System.out.println(clusteringKeyValue + " was not found in " + this.name);
             return;
         }
+        int indexInPage = (Integer) htblIdxTuple.keySet().iterator().next();
+
+        // get the old value of the indexed column
+        Tuple tupleToUpdate = (Tuple) htblIdxTuple.get(indexInPage);
+        Object oldValue = tupleToUpdate.getValues().get(indexedColName);
+        Object newValue = htblColNameType.get(indexedColName);
 
         // Initializes refs
         Ref oldRef = new Ref(page.name, indexInPage);
         Ref newRef = new Ref(page.name, indexInPage);
+
+        // update B+ tree
+        tree.update((Comparable) oldValue, (Comparable) newValue, oldRef, newRef);
 
         // update in place
         boolean isUpdated = page.updateTuple(oldRef, htblColNameType);
@@ -312,25 +314,21 @@ public class Table implements Serializable {
             System.out.println("updateIndexedTable failed");
         }
 
-        // update B+ tree
-        tree.update((Comparable) clusteringKeyValue, (Comparable) clusteringKeyValue, oldRef, newRef);
         tree.serialize(this.name, "B+ Tree");
-
     }
 
-    private Page findPageIndexed(ArrayList<Ref> searchSet, Object clusteringKeyValue, String clusteringDataType) {
-
-        Object clusteringKeyValueCasted = null;
-        if (clusteringDataType.equalsIgnoreCase("java.lang.integer")) {
-            clusteringKeyValueCasted = Integer.parseInt((String) clusteringKeyValue);
-        } else if (clusteringDataType.equalsIgnoreCase("java.lang.string")) {
-            clusteringKeyValueCasted = clusteringKeyValue.toString();
-        } else if (clusteringDataType.equalsIgnoreCase("java.lang.double")) {
-            clusteringKeyValueCasted = Double.parseDouble((String) clusteringKeyValue);
-        }
-
+    private Page findPageIndexed(ArrayList<Ref> searchSet, Object clusteringKeyValue) throws IOException, ClassNotFoundException {
         Page page = null;
         for (Ref ref : searchSet) {
+            String pageName = ref.getPage();
+            Object pageMax = this.getPageMax(pageName);
+            Object pageMin = this.getPageMin(pageName);
+            Object clusteringKeyValueCasted = clusteringKeyValue;
+
+            if (compareValues(clusteringKeyValueCasted, pageMax, pageMin)) {
+                page = Page.deserialize(pageName);
+                break;
+            }
 
         }
         return page;
@@ -358,13 +356,14 @@ public class Table implements Serializable {
             int mid = (low + high) / 2;
             String midPageName = tablePages.get(mid);
             Object midPageMax = this.getPageMax(midPageName);
+            Object midPageMin = this.getPageMin(midPageName);
 
             // Compare clustering key value in midPageMax with clusteringKeyValue
             Comparable<Object> midClusteringKey = (Comparable<Object>) midPageMax;
 
             int compareResult = midClusteringKey.compareTo(newValue);
 
-            if (compareResult == 0) {
+            if (this.compareValues(newValue, midPageMax, midPageMin)) {
                 // Found exact match, return midPageMax
                 return Page.deserialize(midPageName);
 

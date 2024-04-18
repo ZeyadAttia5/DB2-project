@@ -27,7 +27,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         try (FileOutputStream fileOut = new FileOutputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
              ObjectOutputStream objectOut = new ObjectOutputStream(fileOut)) {
             objectOut.writeObject(this);
-            System.out.println("B+ tree serialized successfully.");
+//            System.out.println("B+ tree serialized successfully.");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,7 +39,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         try (FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
              ObjectInputStream objectIn = new ObjectInputStream(fileIn)) {
             bTree = (BPTree) objectIn.readObject();
-            System.out.println("B+ tree deserialized successfully.");
+//            System.out.println("B+ tree deserialized successfully.");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }

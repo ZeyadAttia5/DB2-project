@@ -161,6 +161,7 @@ public class csvConverter {
         return false;
     }
 
+    //returns the data type of the column
     public static String getColumnType(String tableName, String columnName){
 
         try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {

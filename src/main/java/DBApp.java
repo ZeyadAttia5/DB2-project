@@ -120,10 +120,14 @@ public class DBApp {
         try {
             for (String column : htblColNameValue.keySet()) {
                 String indexName = csvConverter.getIndexName(strTableName, column);
+                Hashtable ht = new Hashtable<String, Object>();
+                ht.put(column, htblColNameValue.get(column));
+
                 if (!indexName.equalsIgnoreCase("null")) {
-                    currTable.updateIndexedTable(column, strClusteringKeyValue, htblColNameValue);
+                    currTable.updateIndexedTable(column, strClusteringKeyValue, ht);
                 } else {
-                    currTable.updateTable(strClusteringKeyValue, htblColNameValue);
+
+                    currTable.updateTable(strClusteringKeyValue, ht);
                 }
             }
 
@@ -352,7 +356,8 @@ public class DBApp {
         dbApp.insertIntoTable(strTableName, htblColNameValue);
 
 
-//			dbApp.createIndex(strTableName, "name", "nameIndex");
+        dbApp.createIndex(strTableName, "gpa", "gpaIndex");
+        dbApp.createIndex(strTableName, "name", "nameIndex");
 
 //			 Attempting to re-create the same table -> should throw an exception yay
 //			Hashtable htblColNameType = new Hashtable();
@@ -393,7 +398,7 @@ public class DBApp {
         // Tests calling updateTable on a DOUBLE Col
         ht.clear();
         ht.put("gpa", 2.8);
-        dbApp.updateTable(strTableName, "3", ht);
+        dbApp.updateTable(strTableName, "4", ht);
 
         // Tests calling updateTable on many pages
         ht.clear();
