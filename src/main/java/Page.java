@@ -378,7 +378,7 @@ public class Page implements Serializable {
             int right = tuples.size() - 1;
             while (left <= right) {
                 int mid = left + (right - left) / 2;
-                if (tuples.get(mid).values.get(columnName) == value) {
+                if (tuples.get(mid).values.get(columnName).equals(value)) {
                     results.add(tuples.get(mid));
                     return results;
                 }
