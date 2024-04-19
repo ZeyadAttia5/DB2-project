@@ -507,6 +507,41 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 
     }
 
+    public void deletingWithShifting(T key, Ref recordReference){
+
+        int deletedIndex = recordReference.getIndexInPage();
+        String deletedPage = recordReference.getPage();
+        BPTreeLeafNode currLeaf = this.searchMinNode();
+
+        while(currLeaf!=null ){
+
+            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+
+                // Shifting keys' references without considering duplicates
+                if(currLeaf.records[i].getPage().compareToIgnoreCase(deletedPage) == 0 && currLeaf.records[i].getIndexInPage()>deletedIndex ){
+                    currLeaf.records[i].setIndexInPage(currLeaf.records[i].getIndexInPage()-1);
+                }
+
+                // Handling duplicates (if present)
+                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+                    int size = currLeaf.getOverflow(i).size();
+                    // Traverse the duplicates and check if they should be changed or not
+                    for(int j =0; j< size; j++){
+                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+                        if( currentPage.compareToIgnoreCase(deletedPage) == 0 && currentIndex> deletedIndex){
+                                currLeaf.getOverflow(i).remove(j);
+                                currLeaf.getOverflow(i).add(j, new Ref(currentPage, currentIndex-1));
+                        }
+                    }
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+        this.delete( key, recordReference);
+
+    }
+
     public static ArrayList<Ref> getRefs(BPTreeLeafNode bnode){
         ArrayList<Ref> allRefs = new ArrayList<>();
         BPTreeLeafNode currLeaf = bnode;
@@ -668,53 +703,36 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 
 
         int insertedIndex = 4;
-        String insertedPage = "p_1";
+        String insertedPage = "p_2";
         //inserting something in the middle requiring shifting
-        treename.insertingWithShifting("naya", new Ref(insertedPage,insertedIndex), 5);
-
-
-
-//        BPTreeLeafNode firstLeaf = treename.searchMinNode();
-//        BPTreeLeafNode currLeaf = firstLeaf;
-
-//        Object searchingWith = "mai";
-//        BPTreeLeafNode currLeaf = treename.searchGreaterEqual("mai");
-//        currLeaf = treename.searchGreaterEqual("mai");
-//        System.out.println(currLeaf.findIndex((Comparable) searchingWith));
-//
-//        boolean firstLeaf = true;
-//        while(currLeaf!=null) {
-//            System.out.println(currLeaf);
-//            if(firstLeaf){
-//                for (int i = currLeaf.findIndex((Comparable) searchingWith); i < currLeaf.numberOfKeys; i++) {
-//                    System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
-//                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
-//                        int size = currLeaf.getOverflow(i).size();
-//                        for (int j = 0; j < size; j++)
-//                            System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
-//                    }
-//                }
-//                firstLeaf =false;
-//            }
-//            else{
-//                for (int i = 0; i < currLeaf.numberOfKeys; i++) {
-//                    System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
-//                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
-//                        int size = currLeaf.getOverflow(i).size();
-//                        for (int j = 0; j < size; j++)
-//                            System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
-//                    }
-//                }
-//
-//            }
-//
-//            currLeaf = currLeaf.getNext();
-//        }
-
-
+        treename.deletingWithShifting("farida", new Ref(insertedPage,insertedIndex));
         System.out.println(treename);
-        System.out.println(treename.getRefsGreaterThan("mai"));
-        System.out.println(treename.getRefsGreaterEqual("mai"));
+
+
+
+        BPTreeLeafNode firstLeaf = treename.searchMinNode();
+        BPTreeLeafNode currLeaf = firstLeaf;
+
+        while(currLeaf!=null ){
+            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+                System.out.println(currLeaf);
+                System.out.println(currLeaf.records[i].getPage());
+                System.out.println(currLeaf.records[i].getIndexInPage());
+                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+                    int size = currLeaf.getOverflow(i).size();
+                    // Traverse the duplicates and check if they should be changed or not
+                    for(int j =0; j< size; j++){
+                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+                        System.out.println(currentPage);
+                        System.out.println(currentIndex);
+                    }
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+
+
 
 
 
