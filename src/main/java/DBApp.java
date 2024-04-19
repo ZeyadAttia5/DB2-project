@@ -429,19 +429,15 @@ public class DBApp {
 //			htblColNameValue10.put("city", "Cairo");
 //			htblColNameValue10.put("uni", "ES");
 //			htblColNameValue10.put("birth", 5);
-        DBApp dbApp = new DBApp();
-        dbApp.init();
 
 
-        String strTableName = "Student";
-
-        // Table Creation
-        Hashtable htblColNameType = new Hashtable();
-        htblColNameType.put("id", "java.lang.Integer");
-        htblColNameType.put("name", "java.lang.String");
-        htblColNameType.put("gpa", "java.lang.double");
-        htblColNameType.put("numCourses", "java.lang.Integer");
-        dbApp.createTable(strTableName, "id", htblColNameType);
+            // Table Creation
+            Hashtable htblColNameType = new Hashtable();
+            htblColNameType.put("id", "java.lang.Integer");
+            htblColNameType.put("name", "java.lang.String");
+            htblColNameType.put("gpa", "java.lang.double");
+            htblColNameType.put("numCourses", "java.lang.Integer");
+            dbApp.createTable(strTableName, "id", htblColNameType);
 //
 //			Hashtable htblColNameValue11 = new Hashtable();
 //			htblColNameValue11.put("id", Integer.valueOf(11));
@@ -476,15 +472,15 @@ public class DBApp {
 
             Hashtable<String, Object> ht = new Hashtable<>();
 //            ht.put("id", 7);
-            ht.put("name","Ahmed");
-            ht.put("age",23);
+            ht.put("name", "Ahmed");
+            ht.put("age", 23);
 //			  ht.put("gpa",2.2);
 
 //			ht.put("city","Cairo");
 //			ht.put("uni","GUC");
 //			ht.put("birth",8);
 
-            dbApp.deleteFromTable(strTableName,ht);
+            dbApp.deleteFromTable(strTableName, ht);
             System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 
 //          dbApp.updateTable(strTableName, "3", ht);
@@ -507,7 +503,6 @@ public class DBApp {
 //				System.out.println(resultSet.next());
 
 
-
 //        // Table doesn't exist
 //        dbApp.createIndex("fake table", "gpa", "gpaIndex");
 //        // Column doesn't exist
@@ -519,7 +514,8 @@ public class DBApp {
 //        dbApp.createIndex(strTableName, "name", "nameIndex");
 //        dbApp.createIndex(strTableName, "name", "otherName");
 
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-
-
 }

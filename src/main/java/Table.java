@@ -275,57 +275,6 @@ public class Table implements Serializable {
         return intersectionList;
     }
 
-    public Page binarySearch(String clusteringKeyValue) throws IOException, ClassNotFoundException {
-
-        // Find clustering col name
-        String clusteringColName = csvConverter.getClusteringKey(this.name);
-
-        // Find the clustering data type
-        String dataType = csvConverter.getDataType(this.name, clusteringColName);
-
-        Object newValue = null;
-        if (dataType.equalsIgnoreCase("java.lang.integer")) {
-            newValue = Integer.parseInt(clusteringKeyValue);
-        } else if (dataType.equalsIgnoreCase("java.lang.string")) {
-            newValue = clusteringKeyValue;
-        } else if (dataType.equalsIgnoreCase("java.lang.double")) {
-            newValue = Double.parseDouble(clusteringKeyValue);
-        }
-
-
-        // Initialize variables for binary search
-        int low = 0;
-        int high = tablePages.size() - 1;
-
-        // Binary search loop
-        while (low <= high) {
-            int mid = (low + high) / 2;
-            String midPageName = tablePages.get(mid);
-            Object midPageMax = this.getPageMax(midPageName);
-            Object midPageMin = this.getPageMin(midPageName);
-
-            // Compare clustering key value in midPageMax with clusteringKeyValue
-            Comparable<Object> midClusteringKey = (Comparable<Object>) midPageMax;
-
-            int compareResult = midClusteringKey.compareTo(newValue);
-
-            if (this.compareValues(newValue, midPageMax, midPageMin)) {
-                // Found exact match, return midPageMax
-                return Page.deserialize(midPageName);
-
-            } else if (compareResult < 0) {
-                // If midPageMax's clustering key is less than clusteringKeyValue, search right half
-                low = mid + 1;
-            } else {
-                // If midPageMax's clustering key is greater than clusteringKeyValue, search left half
-                high = mid - 1;
-            }
-        }
-
-        // If not found, return null
-        return null;
-    }
-
     /**
      * @param clusteringKeyValue
      * @param ColNameType
