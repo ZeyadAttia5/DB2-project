@@ -123,32 +123,32 @@ public class DBApp {
     // strClusteringKeyValue is the value to look for to find the row to update.
     public void updateTable(String strTableName, String strClusteringKeyValue, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 
-
         // Check if the table exists
         if (!csvConverter.tablePresent(strTableName))
             throw new DBAppException("Table " +strTableName+" doesn't exist.");
 
         // Checking if clustering key data type is correct
 
-
-        List <String[]> tableMetadata = csvConverter.getTableMetadata(strTableName); // Metadata of the table
-        // Get all columns in table
-        HashSet <String> availableColumns = new HashSet<>();
-        for(String[] column : tableMetadata){
-            availableColumns.add(column[1]);
+        // Find clustering col name
+        String clusteringColName = csvConverter.getClusteringKey(strTableName);
+        // Find the clustering data type
+        String dataType = csvConverter.getDataType(strTableName, clusteringColName);
+        Object newValue = null;
+        try{
+            if (dataType.equalsIgnoreCase("java.lang.integer")) {
+                newValue = Integer.parseInt(strClusteringKeyValue);
+            } else if (dataType.equalsIgnoreCase("java.lang.string")) {
+                newValue = strClusteringKeyValue;
+            } else if (dataType.equalsIgnoreCase("java.lang.double")) {
+                newValue = Double.parseDouble(strClusteringKeyValue);
+            }
+        }
+        catch (Exception e){
+            throw new DBAppException("Incorrect clustering key data type.");
         }
 
-        // Handling invalid input
-        for (Map.Entry<String, Object> entry : htblColNameValue.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            // Trying to update a column that doesn't exist
-            if(!availableColumns.contains(key))
-                throw new DBAppException("Cannot update attribute " + key + " because it doesn't exist.");
-            // Trying to update a column with an invalid data type
-            if( !compatibleTypes(value, csvConverter.getDataType(strTableName, key)))
-                throw new DBAppException("Invalid value: " + value +". Check data type.");
-        }
+
+        validHashTableInput(strTableName, htblColNameValue);
 
         // Get the table
         Table currTable = Table.deserialize(strTableName);
@@ -175,6 +175,27 @@ public class DBApp {
         currTable.serialize();
     }
 
+    private static void validHashTableInput(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
+        List <String[]> tableMetadata = csvConverter.getTableMetadata(strTableName); // Metadata of the table
+        // Get all columns in table
+        HashSet <String> availableColumns = new HashSet<>();
+        for(String[] column : tableMetadata){
+            availableColumns.add(column[1]);
+        }
+
+        // Handling invalid input
+        for (Map.Entry<String, Object> entry : htblColNameValue.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            // Trying to update a column that doesn't exist
+            if(!availableColumns.contains(key))
+                throw new DBAppException("Cannot update attribute " + key + " because it doesn't exist.");
+            // Trying to update a column with an invalid data type
+            if( !compatibleTypes(value, csvConverter.getDataType(strTableName, key)))
+                throw new DBAppException("Invalid value: " + value +". Check data type.");
+        }
+    }
+
     // following method could be used to delete one or more rows.
     // htblColNameValue holds the key and value. This will be used in search
     // to identify which rows/tuples to delete.
@@ -184,20 +205,31 @@ public class DBApp {
         if (!csvConverter.tablePresent(strTableName))
             throw new DBAppException("Table " +strTableName+" doesn't exist.");
 
+        validHashTableInput(strTableName, htblColNameValue);
 
-        throw new DBAppException("not implemented yet");
+
     }
 
     public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
 
-        if (arrSQLTerms.length == 0) throw new DBAppException("No SQL terms");
 
+        // There are no sql terms
+        if (arrSQLTerms.length == 0)
+            throw new DBAppException("No SQL terms");
+
+        // Number of operators doesn't match the SQL terms count
         if (strarrOperators != null && strarrOperators.length + 1 != arrSQLTerms.length)
             throw new DBAppException("Number of operators doesn't match the SQL terms count");
 
+        String prev=arrSQLTerms[0]._strTableName;
+        for(SQLTerm currentTerm: arrSQLTerms){
+            if(!currentTerm._strTableName.equals(prev))
+                throw new DBAppException("Engine does not support joins");
+        }
+
         ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
         int j = 0;
-        String prev=null;
+
         for (SQLTerm sqlTerm : arrSQLTerms) {
 
             String columnName = sqlTerm._strColumnName;
@@ -210,6 +242,7 @@ public class DBApp {
             if (!csvConverter.tablePresent(tableName))
                 throw new DBAppException("Table "+ tableName+" doesn't exist.");
 
+            // Column doesn't exist
             if (columnType == null) {
                 throw new DBAppException("Column " + columnName + " not found");
             }
@@ -217,6 +250,11 @@ public class DBApp {
             // If operator is invalid
             if (!sqlTerm.validOperator()) {
                 throw new DBAppException("Invalid operator");
+            }
+
+            // If types are not compatible
+            if (!compatibleTypes(value, columnType)) {
+                throw new DBAppException("Datatype of value doesn't match the column datatype: ");
             }
             try {
                 Table tableitself = Table.deserialize(tableName);
@@ -290,10 +328,6 @@ public class DBApp {
                 throw new DBAppException("Table " + tableName + " not found.");
             }
             if (res.size() > 1) {
-                if(prev!=null&&!prev.equals(tableName)){
-                    throw new DBAppException("Engine is not supporting joins");
-                }
-                prev =tableName;
                 ArrayList<Tuple> l1 = res.remove(0);
                 ArrayList<Tuple> l2 = res.remove(0);
                 ArrayList<Tuple> midres = new ArrayList<>();
@@ -481,7 +515,7 @@ public class DBApp {
         Hashtable<String, Object> ht = new Hashtable<>();
         ht.put("name", "Zeyad");
         ht.put("gpa", 0.8);
-        dbApp.updateTable(strTableName, "25", ht);
+        dbApp.deleteFromTable(strTableName, ht);
 
         // Tests calling updateTable on a Double, Integer, String Cols
 //        Hashtable<String, Object> ht = new Hashtable<>();
@@ -511,7 +545,7 @@ public class DBApp {
 //        ht.put("numCourses", 2);
 //        dbApp.updateTable(strTableName, "7", ht);
 //
-        System.out.println("After: " + currentTable);
+//        System.out.println("After: " + currentTable);
 
 
 //			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));

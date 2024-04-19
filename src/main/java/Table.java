@@ -435,11 +435,7 @@ public class Table implements Serializable {
     public ArrayList<Tuple> searchTable(String columnName, String operator, Object value) throws DBAppException {
         ArrayList<Tuple> results = new ArrayList<>();
         ArrayList<Tuple> pageResults = new ArrayList<Tuple>();
-        String columnType = csvConverter.getColumnType(this.name, columnName);
         boolean clustering=csvConverter.isClusteringKey(this.name,columnName);
-        if (!compatibleTypes(value, columnType)) {
-            throw new DBAppException("Datatype of value doesn't match the column datatype: ");
-        }
         // Linear searching
         if (!clustering||!csvConverter.getIndexName(this.name, columnName).equals("null")) {
             for (String pagename : tablePages) {
