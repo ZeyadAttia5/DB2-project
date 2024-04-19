@@ -260,43 +260,67 @@ public class Page implements Serializable {
         return -1;
     }
 
-    public void deleteTuples(Hashtable<String, Object> htblColNameValue) {
-        //check if there's a clustering key in the conditions
+    public void deleteTuples(Hashtable<String, Object> htblColNameValue) throws DBAppException {
+        // Check if there's a clustering key in the conditions
+        // If there is no clustering key; loop through the tuples
         if (!htblColNameValue.containsKey(clusteringKey)) {
-            //if it's not; we loop through the tuples & for each we check if all the conditions are met
             for (int i = 0; i<=tuples.size() - 1; i++) {
                 Tuple tuple = tuples.get(i);
+                // Check if all the conditions are met in the tuple
                 if (tupleMatchesConditions(tuple, htblColNameValue)) {
                     tuple.setValuesToNull();
                 }
             }
-        } else {
-            //if there's a clustering key we perform binary search to find the tuples then see if they match
+        }
+        // If there's a clustering key we perform binary search to find the corresponding tuple then see if it matches other conditions in the hashtable if present
+        else {
             Object clusteringKeyValue = htblColNameValue.get(clusteringKey);
             int index = binarySearchDelete(clusteringKeyValue);
+            // If the tuple corresponding to the clustering key value was found; the rest of the conditions are checked
             if (index != -1) {
-                //if we found the tuple corresponding to the clustering key, we check the rest of the conditions
                 Tuple matchingTuple = tuples.get(index);
                 htblColNameValue.remove(clusteringKey);
-                if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
+                // Check if there are remaining conditions to check
+                if(!htblColNameValue.isEmpty()){
+                    if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
+                        matchingTuple.setValuesToNull();
+                    }
+                    else{
+                        throw new DBAppException("Clustering key value doesn't match the rest of the conditions");
+                    }
+                }
+                else{
                     matchingTuple.setValuesToNull();
+//                    tuples.remove(matchingTuple);
                 }
             }
+            else{
+                throw new DBAppException("Clustering value not found");
+            }
         }
-        if (tuples.isEmpty()) {
+        // If all the tuples were deleted from the page then the whole page will get deleted
+        if (tuples.isEmpty()) { // fix the idea of deletion
             File file = new File(this.name + ".class");
             file.delete();
         }
     }
 
     public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
-        //we take a tuple reference to check whether it matches the rest of the conditions without indices
+        // Take a reference to check whether it matches the rest of the conditions
+        // Get the index of the reference in the page & its corresponding tuple
         int refIndex = ref.getIndexInPage();
-        System.out.println(refIndex);
         Tuple tuple = tuples.get(refIndex);
-        System.out.println(tuple.values);
+        // Stores whether the reference matches all the conditions in the hashtable
         boolean result = false;
-        if (tupleMatchesConditions(tuple, conditions)) {
+        // Check if there are remaining conditions to see if the tuple matches them
+        if(!conditions.isEmpty()) {
+            if (tupleMatchesConditions(tuple, conditions)) {
+                tuple.setValuesToNull();
+                result = true;
+            }
+        }
+        // If there are no remaining conditions the tuple is removed
+        else{
             tuple.setValuesToNull();
             result = true;
         }
@@ -308,6 +332,7 @@ public class Page implements Serializable {
     }
 
     private boolean tupleMatchesConditions(Tuple tuple, Hashtable<String, Object> conditions) {
+        // Looping over the conditions hashtable to
         for (String column : conditions.keySet()) {
             Object expectedValue = conditions.get(column);
             Object actualValue = tuple.values.get(column);
@@ -318,34 +343,35 @@ public class Page implements Serializable {
         return true;
     }
 
-    public void deleteClusteringIndex(Ref ref, Hashtable<String, Object> conditions) {
-        //if there's a clustering key we perform binary search to find the tuple with the specified clustering key value
+    public Boolean deleteClusteringIndex(Ref ref, Hashtable<String, Object> conditions) throws DBAppException {
+        //A flag to check whether the reference has been deleted or not to add it to the toDelete arrayList in the Table class to delete it from the BP tree
         boolean deleted = false;
+        //Get the index of the reference that's being checked if it should be deleted
         int refIndex = ref.getIndexInPage();
-        System.out.println("refIndex in page:" + refIndex);
+        //Get the tuple representing that reference
         Tuple tuple = tuples.get(refIndex);
-        System.out.println(tuple.values);
-        Object clusteringKeyValue = conditions.get(clusteringKey);
-        int clusteringIndex = binarySearchDelete(clusteringKeyValue);
-        System.out.println("clusteringIndex:" + clusteringIndex);
-        if (clusteringIndex == refIndex) {
-            //if we found that the tuple corresponding to the clustering key value is the same as the tuple we are checking we check that they match the rest of the conditions if they exist minus the clustering key column
-            conditions.remove(clusteringKey);
-            if (!conditions.isEmpty()) {
-                if (tupleMatchesConditions(tuple, conditions)) {
-                    System.out.println("matches");
-                    tuple.setValuesToNull();
-                }
-                else {
-                    System.out.println("clustering indexed tuple doesn't match the rest of the conditions");
-                }
-            } else {
+        conditions.remove(clusteringKey);
+        //Check if there are other conditions to be matched from the hashtable to the tuple's values
+        if (!conditions.isEmpty()) {
+            //If there are remaining conditions the tupleMatchesConditions method is called to check if it matches them
+            if (tupleMatchesConditions(tuple, conditions)) {
+                //Null-ify the tuple
                 tuple.setValuesToNull();
+                deleted = true;
+            }
+            else {
+                throw new DBAppException("Clustering indexed tuple doesn't match the rest of the conditions");
             }
         }
+        else {
+            //There are no other conditions so the tuple will be deleted
+            tuple.setValuesToNull();
+            deleted = true;
+        }
+        return deleted;
     }
 
-    private int binarySearchDelete(Object clusteringKeyValue) {
+    public int binarySearchDelete(Object clusteringKeyValue) {
         int low = 0;
         int high = tuples.size() - 1;
 
@@ -368,6 +394,23 @@ public class Page implements Serializable {
         }
         return -1;
     }
+
+    private Comparable convertToComparable(Object value) {
+        if (value instanceof Comparable) {
+            // If the value is already comparable, return it
+            return (Comparable) value;
+        } else {
+            // If the value is not comparable, convert it to a string and return
+            return String.valueOf(value);
+        }
+    }
+
+    private int compareValues(Comparable value1, Comparable value2) {
+        // Compare the values
+        return value1.compareTo(value2);
+    }
+
+
 
     /**
      * Updates a tuple in place

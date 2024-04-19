@@ -411,13 +411,11 @@ public class DBApp {
 //			dbApp.insertIntoTable(strTableName, htblColNameValue10);
 //			dbApp.insertIntoTable(strTableName, htblColNameValue11);
 //			dbApp.insertIntoTable(strTableName, htblColNameValue12);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue13);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue14);
 
             Hashtable<String, Object> ht = new Hashtable<>();
-            ht.put("id", 8);
-            ht.put("name","Farida");
-//            ht.put("age",23);
+//            ht.put("id", 7);
+            ht.put("name","Ahmed");
+            ht.put("age",23);
 //			  ht.put("gpa",2.2);
 
 //			ht.put("city","Cairo");

@@ -45,25 +45,6 @@ public class Table implements Serializable {
         return table;
     }
 
-    // Method to print all serialized pages for the specified table name
-    public static void printTable(String tableName) throws IOException, ClassNotFoundException {
-        File directory = new File(tableName); // Use provided table name as directory name
-        FilenameFilter filter = (dir, name) -> name.endsWith(".class");
-        File[] serializedPages = directory.listFiles(filter);
-        System.out.println(Arrays.toString(serializedPages));
-
-        if (serializedPages != null && serializedPages.length > 0) {
-            System.out.println("pages for table " + tableName + ":");
-            for (File pageFile : serializedPages) {
-                System.out.println("File name: " + pageFile.getName());
-                Page page = Page.deserialize(tableName + "/" + pageFile.getName());
-                System.out.println(page);
-            }
-        } else {
-            System.out.println("No serialized pages found for table " + tableName);
-        }
-    }
-
     // Method to get page count for a table
     public int getPageCount() {
         return tablePages.size();
@@ -126,126 +107,138 @@ public class Table implements Serializable {
         Hashtable<String, Object> conditionsTemp = new Hashtable<>();
         Enumeration<String> keys = htblColNameValue.keys();
 
-        // Storing a temporary version of the conditions (ht)
+        //Storing a temporary version of the hashtable of conditions
         while (keys.hasMoreElements()) {
             String key = keys.nextElement();
             Object value = htblColNameValue.get(key);
             conditionsTemp.put(key, value);
         }
 
-        // Deleting one row in the case of a clustering indexed key being present
+        //Storing references to be deleted from the BP tree
+        ArrayList<Ref> toDelete = new ArrayList<>();
+
+        // Looping over the conditions to check if there exists a clustering indexed column or clustering column in the conditions
         for(String column:htblColNameValue.keySet()){
             if(csvConverter.isClusteringKey(name,column)){
+                //If the column is the clustering key; binary search is used to find the page it's present in
+                Object clusteringKeyValue = htblColNameValue.get(column);
+                Page clusteringPage = this.binarySearch(clusteringKeyValue.toString());
+                if(clusteringPage==null) {
+                    throw new DBAppException("Clustering key value not found in the table");
+                }
+                else{
+                    System.out.println(clusteringPage.name);
+                }
+                //The clustering key value we are searching for is found in the clusteringPage
+                //Check if there's an index on the clustering column to get its reference
                 String indexName = csvConverter.getIndexName(name, column);
                 if(!indexName.equals("null")){
-                    System.out.println("clustering index column");
+                    //The clustering column has an index on it; we get the BPTree on that column
                     BPTree b = BPTree.deserialize (name, column);
-                    System.out.println(htblColNameValue.get(column));
+                    //Get the reference in the BPTree that matches the value in the conditions
                     ArrayList<Ref> reference = b.search((Comparable) htblColNameValue.get(column));
-                    if (reference != null && !reference.isEmpty()) {
-                        System.out.println(reference.get(0));
+                    if(!reference.isEmpty()) {
+                        //There is a matching reference in the BPTree; we will search it to get the corresponding page
                         String pageToGoTo = reference.get(0).getPage();
-                        System.out.println(pageToGoTo);
-                        Page page = Page.deserialize(pageToGoTo);
-                        page.deleteClusteringIndex(reference.get(0),htblColNameValue);
-                        page.serialize();
-                        b.serialize(name, csvConverter.getIndexName(name, column));
-                        return;
-                    } else {
-                        System.out.println("no matching tuple in index");
-                        b = BPTree.deserialize (name, column);
-                        b.delete((Comparable) conditionsTemp.get(column), reference.get(0));
-                        b.serialize(name, column);
-                        break;
+                        //Check if the reference's page is the same as the clusteringKeyValue's page
+                        if (pageToGoTo.equals(clusteringPage.name)) {
+                            Page page = Page.deserialize(pageToGoTo);
+                            //Go to that page & perform the delete method on it that checks whether to remove it if there are additional conditions in the hashtable
+                            Boolean deleted = page.deleteClusteringIndex(reference.get(0), htblColNameValue);
+                            page.serialize();
+                            b.serialize(name, csvConverter.getIndexName(name, column));
+                            //If the reference got deleted it will be added to the ArrayList of references to delete from the tree
+                            if (deleted){
+                                toDelete.add(reference.get(0)); //but also return so??
+                            }
+                        }
                     }
+                }
+                // If the clustering key has no index on it, the deleteTuples method will be called on the conditions hashtable
+                else {
+                    clusteringPage.deleteTuples(htblColNameValue);
+                    clusteringPage.serialize();
+                    return; //go to delete from tree
                 }
             }
         }
 
-        ArrayList<Ref> toDelete = new ArrayList<>();
+        // Stores the pages that contain references that should be deleted from the BP tree if they match all conditions in the hashtable
         HashSet<String> uniquePages = new HashSet<>();
 
-        // We will iterate through the columns to check if there's an index on them
+        // Iterating through the columns to check if there's an index on them
         for (Iterator<String> iterator = htblColNameValue.keySet().iterator(); iterator.hasNext();) {
             String column = iterator.next();
             String indexName = csvConverter.getIndexName(this.name, column);
-            System.out.println(indexName);
-            // If an index was found on a column it should be added to the array of references to delete
+            // An index was found on a column
             if (!indexName.equals("null")) {
                 BPTree b = BPTree.deserialize (this.name, column);
-//                System.out.println(htblColNameValue.get(column));
+                // Perform a search on the BP tree that gives the corresponding references with a value matching the conditions hashtable
                 ArrayList<Ref> references = b.search((Comparable) htblColNameValue.get(column));
+                // If there were no previous indices the toDelete gets filled for the first time
                 if (toDelete.isEmpty()) {
-                    System.out.println("toDelete is empty im entering for the first time");
                     for (Ref ref : references) {
                         toDelete.add(ref);
                     }
                 }
+                // The toDelete had previous references from previous indices in the conditions so an intersection is being done over the toDelete's previous indices' references & the new index's references
                 else{
-                    System.out.println("toDelete has other references");
                     intersection(toDelete,references);
                 }
-//                System.out.println(htblColNameValue.size());
-                //remove the indexed column from the conditions
+                // The checked indexed column is removed from the conditions hashtable
                 iterator.remove();
-//                System.out.println(htblColNameValue.size());
-            }
-            else{
-                System.out.println("i didnt find an index");
             }
         }
-//        System.out.println(toDelete.size());
+
+        // Looping over the references in the toDelete to get their corresponding unique pages
         for(Ref ref:toDelete){
             if(!uniquePages.contains(ref.getPage()))
                 uniquePages.add(ref.getPage());
         }
-//        System.out.println(uniquePages.size());
 
-//        System.out.println(htblColNameValue.isEmpty());
 
+        // Stores the references that will be deleted from the toDelete in case they don't match the rest of the conditions in the hashtable
         ArrayList<Ref> toRemoveFromtoDelete = new ArrayList<>();
-        // Checking if there are columns in the conditions hashtable where an index doesn't exist
-        //if (!htblColNameValue.isEmpty()) {
-            //checking if there are previously indexed references to check
-            if (!uniquePages.isEmpty()) {
-                for (String fileName : uniquePages) {
-                    try {
-                        Page page = Page.deserialize(fileName);
-                        //we will iterate through the references that should be deleted if they exist
-                        for (Ref ref : toDelete) {
-                            if (ref.getPage().equals(fileName))
-                            {
-                                //call the page checkIndexedTuples method to check if the tuple matches the rest of the conditions by accessing the number of the tuple specified in the reference
-                                boolean removed = page.checkReference(ref, htblColNameValue);
-//                                System.out.println(removed);
+         // Checking if there are previously indexed references to check whether they match the rest of the conditions in the hashtable
+        if (!uniquePages.isEmpty()) {
+            // Looping over the uniquePages of the references
+            for (String fileName : uniquePages) {
+                try {
+                    Page page = Page.deserialize(fileName);
+                    // Iterating through the references that are in that page to check if they should be deleted
+                    for (Ref ref : toDelete) {
+                        if (ref.getPage().equals(fileName)) {
+                            // Calling the checkReference method to check if the tuple matches the rest of the conditions to remove it
+                            boolean removed = page.checkReference(ref, htblColNameValue);
+                            // Checking if the reference didn't match the rest of the conditions to remove it from the toDelete
+                            if (!removed) {
                                 toRemoveFromtoDelete.add(ref);
                             }
                         }
-                        page.serialize();
-                        toDelete.removeAll(toRemoveFromtoDelete);
-//                        for(Ref ref : toDelete){
-//                            if(ref.getPage().equals(fileName)){
-//                                deleteReferencedTuples(ref,htblColNameValue);
-//                            }
-//                        }
-                    } catch (IOException | ClassNotFoundException e) {
-                        e.printStackTrace();
                     }
-                }
-            //there are no indexed columns
-            } else {
-                for (String fileName : tablePages) {
-                    try {
-                        Page page = Page.deserialize(fileName);
-                        page.deleteTuples(htblColNameValue);
-                        page.serialize();
-                    } catch (IOException | ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
+                    page.serialize();
+                    // Removing all the references that weren't removed as they didn't match all conditions in the hashtable from the toDelete
+                    toDelete.removeAll(toRemoveFromtoDelete);
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
             }
+        }
+        // There were no indexed columns in the conditions hashtable; handling all the non-indexed columns
+        else {
+            for (String fileName : tablePages) {
+                try {
+                    Page page = Page.deserialize(fileName);
+                    // Call the deleteTuples on each page by passing the conditions hashtable to it
+                    page.deleteTuples(htblColNameValue);
+                    page.serialize();
+                } catch (IOException | ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
 
-        //delete from the tree
+        //Delete the references that were deleted from the table from the BP tree itself
         for(String column:conditionsTemp.keySet()){
             String indexName = csvConverter.getIndexName(name, column);
             if(!Objects.equals(indexName, "null")){
@@ -253,28 +246,80 @@ public class Table implements Serializable {
                     BPTree b = BPTree.deserialize (name, column);
                     b.delete((Comparable) conditionsTemp.get(column), ref);
                     b.serialize(name, column);
+                    System.out.println("i am deleted from tree");
                 }
             }
         }
     }
 
     public static <T> ArrayList<T> intersection(ArrayList<T> list1, ArrayList<T> list2) {
-        // Create a HashSet to store unique elements from list1
+        // Store unique elements from list1
         HashSet<T> set = new HashSet<>(list1);
 
-        // Create a result ArrayList to store the intersection
+        // Stores the intersection
         ArrayList<T> intersectionList = new ArrayList<>();
 
-        // Iterate through list2 and check if each element is present in the HashSet
+        // Iterating through list2 & checking if each element is present in the HashSet
         for (T element : list2) {
             if (set.contains(element)) {
                 intersectionList.add(element);
-                // Remove the element from the HashSet to avoid duplicates in the intersection
+                // Removing the element from the HashSet to avoid duplicates in the intersection
                 set.remove(element);
             }
         }
 
         return intersectionList;
+    }
+
+    public Page binarySearch(String clusteringKeyValue) throws IOException, ClassNotFoundException {
+
+        // Find clustering col name
+        String clusteringColName = csvConverter.getClusteringKey(this.name);
+
+        // Find the clustering data type
+        String dataType = csvConverter.getDataType(this.name, clusteringColName);
+
+        Object newValue = null;
+        if (dataType.equalsIgnoreCase("java.lang.integer")) {
+            newValue = Integer.parseInt(clusteringKeyValue);
+        } else if (dataType.equalsIgnoreCase("java.lang.string")) {
+            newValue = clusteringKeyValue;
+        } else if (dataType.equalsIgnoreCase("java.lang.double")) {
+            newValue = Double.parseDouble(clusteringKeyValue);
+        }
+
+
+        // Initialize variables for binary search
+        int low = 0;
+        int high = tablePages.size() - 1;
+
+        // Binary search loop
+        while (low <= high) {
+            int mid = (low + high) / 2;
+            String midPageName = tablePages.get(mid);
+            Object midPageMax = this.getPageMax(midPageName);
+            Object midPageMin = this.getPageMin(midPageName);
+
+            // Compare clustering key value in midPageMax with clusteringKeyValue
+            Comparable<Object> midClusteringKey = (Comparable<Object>) midPageMax;
+
+            int compareResult = midClusteringKey.compareTo(newValue);
+
+            if (this.compareValues(newValue, midPageMax, midPageMin)) {
+                // Found exact match, return midPageMax
+                return Page.deserialize(midPageName);
+
+            } else if (compareResult < 0) {
+                // If midPageMax's clustering key is less than clusteringKeyValue, search right half
+                low = mid + 1;
+            } else {
+                // If midPageMax's clustering key is greater than clusteringKeyValue, search left half
+                high = mid - 1;
+            }
+        }
+
+        // If not found, return null
+        return null;
     }
 
     /**
@@ -311,37 +356,49 @@ public class Table implements Serializable {
      * @throws ClassNotFoundException
      */
     private Page findPage(Object clusteringKeyValue) throws IOException, ClassNotFoundException {
-        int result = 1;
         Page currPage = null;
 
+        for (String pageName : this.pageInfo.keySet()) {
+            Object pageMax = this.getPageMax(pageName);
+            Object pageMin = this.getPageMin(pageName);
+            Object clusteringKeyValueCasted = clusteringKeyValue;
 
-        String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
-//        System.out.println("clusteringKeyColName: "+ clusteringKeyColName);
-        String clusteringKeyType = csvConverter.getDataType(this.name, clusteringKeyColName);
-//        System.out.println("clusteringKeyType: "+ clusteringKeyType);
-        if (clusteringKeyType.equalsIgnoreCase("java.lang.double")) {
+            if (compareValues(clusteringKeyValueCasted, pageMax, pageMin)) {
+                currPage = Page.deserialize(pageName);
+                break;
+            }
 
-            for (int i = 0; i < tablePages.size() && result != -1 && result != 0; i++) {
-
-                currPage = Page.deserialize(this.name + "_" + i);
-                result = Double.compare(Double.parseDouble((String) clusteringKeyValue), (Double) currPage.max);
-            }
-        } else if (clusteringKeyType.equalsIgnoreCase("java.lang.string")) {
-            //this means that we have a string at hand
-            for (int i = 0; i < tablePages.size() - 1 && result != -1 && result != 0; i++) {
-                currPage = Page.deserialize(this.name + "_" + i);
-                result = ((String) clusteringKeyValue).compareTo((String) currPage.max);
-            }
-        } else {
-//            System.out.println("Entered Integer :D");
-            for (int i = 0; i < tablePages.size() && result != -1 && result != 0; i++) {
-                currPage = Page.deserialize(this.name + "_" + i);
-                result = Integer.compare(Integer.parseInt((String) clusteringKeyValue), (Integer) currPage.max);
-            }
         }
-        return currPage;
 
+        return currPage;
     }
+
+    private boolean compareValues(Object keyValue, Object maxValue, Object minValue) {
+        String clusteringKeyColName = csvConverter.getClusteringKey(this.name);
+        String dataType = csvConverter.getDataType(this.name, clusteringKeyColName);
+
+        if (dataType.equalsIgnoreCase("java.lang.double")) {
+            return compareDouble(Double.parseDouble(keyValue.toString()), Double.parseDouble(maxValue.toString()), Double.parseDouble(minValue.toString()));
+        } else if (dataType.equalsIgnoreCase("java.lang.String")) {
+            return compareString((String) keyValue, (String) maxValue, (String) minValue);
+        } else if (dataType.equalsIgnoreCase("java.lang.Integer")) {
+            return compareInteger(Integer.parseInt(keyValue.toString()), Integer.parseInt(maxValue.toString()), Integer.parseInt(minValue.toString()));
+        }
+        return false;
+    }
+
+    private boolean compareDouble(Double keyValue, Double maxValue, Double minValue) {
+        return (keyValue < maxValue && keyValue > minValue) || keyValue.equals(minValue) || keyValue.equals(maxValue);
+    }
+
+    private boolean compareString(String keyValue, String maxValue, String minValue) {
+        return (keyValue.compareTo(maxValue) < 0 && keyValue.compareTo(minValue) > 0) || keyValue.equals(minValue) || keyValue.equals(maxValue);
+    }
+
+    private boolean compareInteger(Integer keyValue, Integer maxValue, Integer minValue) {
+        return (keyValue < maxValue && keyValue > minValue) || keyValue.equals(minValue) || keyValue.equals(maxValue);
+    }
+
 
 
     /**
@@ -459,11 +516,10 @@ public class Table implements Serializable {
         if (dataType.equalsIgnoreCase("java.lang.integer")) {
             newValue = Integer.parseInt(clusteringKeyValue);
         } else if (dataType.equalsIgnoreCase("java.lang.string")) {
-            newValue = (String) clusteringKeyValue;
+            newValue = clusteringKeyValue;
         } else if (dataType.equalsIgnoreCase("java.lang.double")) {
             newValue = Double.parseDouble(clusteringKeyValue);
         }
-
 
         // Initialize variables for binary search
         int low = 0;
@@ -478,6 +534,7 @@ public class Table implements Serializable {
             // Compare clustering key value in midPage with clusteringKeyValue
             Comparable<Object> midClusteringKey = (Comparable<Object>) midPage.max;
 
+            // Compare midClusteringKey with newValue
             int compareResult = midClusteringKey.compareTo(newValue);
 
             if (compareResult == 0) {
@@ -495,6 +552,7 @@ public class Table implements Serializable {
         // If not found, return null
         return null;
     }
+
 
     @Override
     public String toString(){
@@ -623,6 +681,21 @@ public class Table implements Serializable {
             }
         }
         return results;
+    }
+    public Hashtable<String, Object[]> getPageInfo() {
+        return this.pageInfo;
+    }
+
+    public Object getPageMax(String pageName) {
+        return this.pageInfo.get(pageName)[0];
+    }
+
+    public Object getPageMin(String pageName) {
+        return this.pageInfo.get(pageName)[1];
+    }
+
+    public Object getPageSize(String pageName) {
+        return this.pageInfo.get(pageName)[2];
     }
 
 }
