@@ -3,10 +3,7 @@
  */
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
+import java.util.*;
 
 
 public class DBApp {
@@ -101,6 +98,7 @@ public class DBApp {
         if (!csvConverter.tablePresent(strTableName))
             throw new DBAppException("Cannot insert into a table that doesn't exist.");
 
+        // Making sure clusteringKey exists in table
         String clusteringKey = csvConverter.getClusteringKey(strTableName);
         if(!htblColNameValue.containsKey(clusteringKey))
             throw new DBAppException("You must insert a value for the primary key: " + clusteringKey + ".");
@@ -130,9 +128,30 @@ public class DBApp {
         if (!csvConverter.tablePresent(strTableName))
             throw new DBAppException("Table " +strTableName+" doesn't exist.");
 
-        // Get the metadata of the table
-        Table currTable = Table.deserialize(strTableName);
+        // Checking if clustering key data type is correct
 
+
+        List <String[]> tableMetadata = csvConverter.getTableMetadata(strTableName); // Metadata of the table
+        // Get all columns in table
+        HashSet <String> availableColumns = new HashSet<>();
+        for(String[] column : tableMetadata){
+            availableColumns.add(column[1]);
+        }
+
+        // Handling invalid input
+        for (Map.Entry<String, Object> entry : htblColNameValue.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            // Trying to update a column that doesn't exist
+            if(!availableColumns.contains(key))
+                throw new DBAppException("Cannot update attribute " + key + " because it doesn't exist.");
+            // Trying to update a column with an invalid data type
+            if( !compatibleTypes(value, csvConverter.getDataType(strTableName, key)))
+                throw new DBAppException("Invalid value: " + value +". Check data type.");
+        }
+
+        // Get the table
+        Table currTable = Table.deserialize(strTableName);
 
         try {
             for (String column : htblColNameValue.keySet()) {
@@ -143,7 +162,6 @@ public class DBApp {
                 if (!indexName.equalsIgnoreCase("null")) {
                     currTable.updateIndexedTable(column, strClusteringKeyValue, ht);
                 } else {
-
                     currTable.updateTable(strClusteringKeyValue, ht);
                 }
             }
@@ -344,6 +362,18 @@ public class DBApp {
         return res.remove(0).iterator();
     }
 
+    public static boolean compatibleTypes(Object value, String columnType) {
+        switch (columnType.toLowerCase()) {
+            case "java.lang.integer":
+                return value instanceof Integer;
+            case "java.lang.double":
+                return value instanceof Double;
+            case "java.lang.string":
+                return value instanceof String;
+        }
+        return false;
+    }
+
     public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
 
         DBApp dbApp = new DBApp();
@@ -449,9 +479,9 @@ public class DBApp {
 
       // Tests calling updateTable on a Double, String Col
         Hashtable<String, Object> ht = new Hashtable<>();
-        ht.put("name", "Zeyaddd");
+        ht.put("name", "Zeyad");
         ht.put("gpa", 0.8);
-        dbApp.updateTable(strTableName, "19", ht);
+        dbApp.updateTable(strTableName, "25", ht);
 
         // Tests calling updateTable on a Double, Integer, String Cols
 //        Hashtable<String, Object> ht = new Hashtable<>();
