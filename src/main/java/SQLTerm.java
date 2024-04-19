@@ -27,17 +27,4 @@ public class SQLTerm {
 		return true;
 	}
 
-	public ArrayList<Tuple> searchEqualToWithIndex(BPTree ind, String pagename, int indexInPage) throws IOException, ClassNotFoundException {
-		ArrayList<Tuple> tuples = new ArrayList<>();
-		ArrayList<Ref> references = ind.search((Comparable) this._objValue);
-		pagename = references.get(0).getPage();
-		Page pagenow = Page.deserialize(pagename );
-		for(int i=0; i< references.size();i++){
-			indexInPage=references.get(i).getIndexInPage();
-			tuples.add(pagenow.tuples.get(indexInPage));
-		}
-		return tuples;
-	}
-
-
 }
