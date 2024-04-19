@@ -204,40 +204,6 @@ public class csvConverter {
             throw new DBAppException("There already exists an index for this column in this table.");
     }
 
-    private static boolean updateIndexCSV(String strTableName, String strColName, String strIndexName) {
-        List<String> lines = new ArrayList<>(); // List to hold modified lines
-        boolean updated = false; // Flag to track if metadata was updated
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            // Read each line from the metadata file
-            while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(",");
-                // Check if the current line matches the specified table name, column name, and has no index
-                if (fields[0].equals(strTableName) && fields[1].equals(strColName) && fields[4].equals("null")) {
-                    updated = true; // Set the flag to indicate metadata was updated
-                    fields[4] = strIndexName; // Update the index name
-                    fields[5] = "B+Tree";
-                    line = String.join(",", fields); // Reconstruct the line with updated fields
-                }
-                lines.add(line); // Add the modified line to the list
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-
-        // Write the modified metadata back to the file
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(METADATA_FILE))) {
-            for (String modifiedLine : lines) {
-                writer.write(modifiedLine);
-                writer.newLine();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return updated;
-    }
-
     private static void ValidateTableColumnIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
         HashSet<String> existingIndices = new HashSet<>(); // Names of all indices for table of interest
         HashSet<String> existingColumns = new HashSet<>(); // Names of all columns for table of interest
@@ -273,6 +239,42 @@ public class csvConverter {
         if(existingIndices.contains(strIndexName))
             throw new DBAppException("Index " + strIndexName + " already exists in " + strTableName);
     }
+
+    private static boolean updateIndexCSV(String strTableName, String strColName, String strIndexName) {
+        List<String> lines = new ArrayList<>(); // List to hold modified lines
+        boolean updated = false; // Flag to track if metadata was updated
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            // Read each line from the metadata file
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                // Check if the current line matches the specified table name, column name, and has no index
+                if (fields[0].equals(strTableName) && fields[1].equals(strColName) && fields[4].equals("null")) {
+                    updated = true; // Set the flag to indicate metadata was updated
+                    fields[4] = strIndexName; // Update the index name
+                    fields[5] = "B+Tree";
+                    line = String.join(",", fields); // Reconstruct the line with updated fields
+                }
+                lines.add(line); // Add the modified line to the list
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+        // Write the modified metadata back to the file
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(METADATA_FILE))) {
+            for (String modifiedLine : lines) {
+                writer.write(modifiedLine);
+                writer.newLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return updated;
+    }
+
+
 
     public static void main(String[] args) {
 //        Hashtable htblColNameType = new Hashtable( );

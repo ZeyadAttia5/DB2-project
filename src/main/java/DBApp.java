@@ -34,7 +34,7 @@ public class DBApp {
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
             // Check if the table already exists
             if (csvConverter.tablePresent(strTableName))
-                throw new DBAppException("This page is already present.");
+                throw new DBAppException("This table is already present.");
 
             // Traverse column data to check validity of data
             HashSet<String> availableColumns = new HashSet<>();
@@ -96,6 +96,14 @@ public class DBApp {
     // following method inserts one row only.
     // htblColNameValue must include a value for the primary key
     public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
+
+        // Inserting into a table that doesn't exist
+        if (!csvConverter.tablePresent(strTableName))
+            throw new DBAppException("Cannot insert into a table that doesn't exist.");
+
+        String clusteringKey = csvConverter.getClusteringKey(strTableName);
+        if(!htblColNameValue.containsKey(clusteringKey))
+            throw new DBAppException("You must insert a value for the primary key: " + clusteringKey + ".");
 
         Table target = Table.deserialize(strTableName);
         Tuple newTuple = new Tuple(htblColNameValue);
