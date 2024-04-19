@@ -332,7 +332,7 @@ public class Page implements Serializable {
     }
 
     private boolean tupleMatchesConditions(Tuple tuple, Hashtable<String, Object> conditions) {
-        // Looping over the conditions hashtable to
+        // Looping over the conditions hashtable to make sure the tuple matches them
         for (String column : conditions.keySet()) {
             Object expectedValue = conditions.get(column);
             Object actualValue = tuple.values.get(column);
