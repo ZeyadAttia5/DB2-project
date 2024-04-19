@@ -125,12 +125,15 @@ public class DBApp {
     // strClusteringKeyValue is the value to look for to find the row to update.
     public void updateTable(String strTableName, String strClusteringKeyValue, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 
+
+        // Check if the table exists
+        if (!csvConverter.tablePresent(strTableName))
+            throw new DBAppException("Table " +strTableName+" doesn't exist.");
+
         // Get the metadata of the table
         Table currTable = Table.deserialize(strTableName);
-        // Check if the table exists
-        if (currTable == null) {
-            throw new DBAppException("Table not found: " + strTableName);
-        }
+
+
         try {
             for (String column : htblColNameValue.keySet()) {
                 String indexName = csvConverter.getIndexName(strTableName, column);
@@ -159,6 +162,10 @@ public class DBApp {
     // to identify which rows/tuples to delete.
     // htblColNameValue enteries are ANDED together
     public void deleteFromTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
+        // Check if the table exists
+        if (!csvConverter.tablePresent(strTableName))
+            throw new DBAppException("Table " +strTableName+" doesn't exist.");
+
 
         throw new DBAppException("not implemented yet");
     }
@@ -180,9 +187,15 @@ public class DBApp {
             String tableName = sqlTerm._strTableName;
             String operator = sqlTerm._strOperator;
             String columnType = csvConverter.getColumnType(tableName, columnName);
+
+            // Selecting from a table that doesn't exist
+            if (!csvConverter.tablePresent(tableName))
+                throw new DBAppException("Table "+ tableName+" doesn't exist.");
+
             if (columnType == null) {
                 throw new DBAppException("Column " + columnName + " not found");
             }
+
             // If operator is invalid
             if (!sqlTerm.validOperator()) {
                 throw new DBAppException("Invalid operator");
@@ -338,15 +351,15 @@ public class DBApp {
 
 
         String strTableName = "Student";
-
-        // Table Creation
-        Hashtable htblColNameType = new Hashtable();
-        htblColNameType.put("id", "java.lang.Integer");
-        htblColNameType.put("name", "java.lang.String");
-        htblColNameType.put("gpa", "java.lang.double");
-        htblColNameType.put("numCourses", "java.lang.Integer");
-        dbApp.createTable(strTableName, "id", htblColNameType);
-
+//
+//        // Table Creation
+//        Hashtable htblColNameType = new Hashtable();
+//        htblColNameType.put("id", "java.lang.Integer");
+//        htblColNameType.put("name", "java.lang.String");
+//        htblColNameType.put("gpa", "java.lang.double");
+//        htblColNameType.put("numCourses", "java.lang.Integer");
+//        dbApp.createTable(strTableName, "id", htblColNameType);
+//
 //        Hashtable htblColNameValue = new Hashtable();
 //
 //        // inserting 78452, zaky noor, 0.88
@@ -431,14 +444,14 @@ public class DBApp {
 //            dbApp.insertIntoTable(strTableName, htblColNameValue);
 
 
-//        Table currentTable = Table.deserialize("Student");
-//        System.out.println("Before: " + currentTable);
+        Table currentTable = Table.deserialize("Student");
+        System.out.println("Before: " + currentTable);
 
-//      // Tests calling updateTable on a Double, String Col
-//        Hashtable<String, Object> ht = new Hashtable<>();
-//        ht.put("name", "Zeyaddd");
-//        ht.put("gpa", 0.8);
-//        dbApp.updateTable(strTableName, "25", ht);
+      // Tests calling updateTable on a Double, String Col
+        Hashtable<String, Object> ht = new Hashtable<>();
+        ht.put("name", "Zeyaddd");
+        ht.put("gpa", 0.8);
+        dbApp.updateTable(strTableName, "19", ht);
 
         // Tests calling updateTable on a Double, Integer, String Cols
 //        Hashtable<String, Object> ht = new Hashtable<>();
@@ -468,7 +481,7 @@ public class DBApp {
 //        ht.put("numCourses", 2);
 //        dbApp.updateTable(strTableName, "7", ht);
 //
-//        System.out.println("After: " + currentTable);
+        System.out.println("After: " + currentTable);
 
 
 //			System.out.println("After Update: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
