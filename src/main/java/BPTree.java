@@ -678,59 +678,59 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 
 
     public static void main(String[] args) {
-
-        BPTree<String> treename= new BPTree<>(2);
-
-        //first page inserts
-        treename.insert("salma", new Ref("p_1", 1));
-        treename.insert("ahmed", new Ref("p_1", 2));
-        treename.insert("farida", new Ref("p_1", 3));
-        treename.insert("alia", new Ref("p_1", 4));
-        treename.insert("karma", new Ref("p_1", 5));
-
-        // second page inserts
-        treename.insert("fady", new Ref("p_2", 1));
-        treename.insert("mai", new Ref("p_2", 2));
-        treename.insert("razan", new Ref("p_2", 3));
-        treename.insert("tala", new Ref("p_2", 4));
-        treename.insert("alia", new Ref("p_2", 5));
-
-        //third page inserts
-        treename.insert("alia", new Ref("p_3", 1));
-        treename.insert("alia", new Ref("p_3", 2));
-        treename.insert("alia", new Ref("p_3", 3));
-        System.out.println(treename);
-
-
-        int insertedIndex = 4;
-        String insertedPage = "p_2";
-        //inserting something in the middle requiring shifting
-        treename.deletingWithShifting("farida", new Ref(insertedPage,insertedIndex));
-        System.out.println(treename);
-
-
-
-        BPTreeLeafNode firstLeaf = treename.searchMinNode();
-        BPTreeLeafNode currLeaf = firstLeaf;
-
-        while(currLeaf!=null ){
-            for(int i = 0;i< currLeaf.numberOfKeys; i++){
-                System.out.println(currLeaf);
-                System.out.println(currLeaf.records[i].getPage());
-                System.out.println(currLeaf.records[i].getIndexInPage());
-                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
-                    int size = currLeaf.getOverflow(i).size();
-                    // Traverse the duplicates and check if they should be changed or not
-                    for(int j =0; j< size; j++){
-                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
-                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
-                        System.out.println(currentPage);
-                        System.out.println(currentIndex);
-                    }
-                }
-            }
-            currLeaf = currLeaf.getNext();
-        }
+//
+//        BPTree<String> treename= new BPTree<>(2);
+//
+//        //first page inserts
+//        treename.insert("salma", new Ref("p_1", 1));
+//        treename.insert("ahmed", new Ref("p_1", 2));
+//        treename.insert("farida", new Ref("p_1", 3));
+//        treename.insert("alia", new Ref("p_1", 4));
+//        treename.insert("karma", new Ref("p_1", 5));
+//
+//        // second page inserts
+//        treename.insert("fady", new Ref("p_2", 1));
+//        treename.insert("mai", new Ref("p_2", 2));
+//        treename.insert("razan", new Ref("p_2", 3));
+//        treename.insert("tala", new Ref("p_2", 4));
+//        treename.insert("alia", new Ref("p_2", 5));
+//
+//        //third page inserts
+//        treename.insert("alia", new Ref("p_3", 1));
+//        treename.insert("alia", new Ref("p_3", 2));
+//        treename.insert("alia", new Ref("p_3", 3));
+//        System.out.println(treename);
+//
+//
+//        int insertedIndex = 3;
+//        String insertedPage = "p_2";
+//        //inserting something in the middle requiring shifting
+//        treename.deletingWithShifting("razan", new Ref(insertedPage,insertedIndex));
+//        System.out.println(treename);
+//
+//
+//
+//        BPTreeLeafNode firstLeaf = treename.searchMinNode();
+//        BPTreeLeafNode currLeaf = firstLeaf;
+//
+//        while(currLeaf!=null ){
+//            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+//                System.out.println(currLeaf);
+//                System.out.println(currLeaf.records[i].getPage());
+//                System.out.println(currLeaf.records[i].getIndexInPage());
+//                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+//                    int size = currLeaf.getOverflow(i).size();
+//                    // Traverse the duplicates and check if they should be changed or not
+//                    for(int j =0; j< size; j++){
+//                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+//                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+//                        System.out.println(currentPage);
+//                        System.out.println(currentIndex);
+//                    }
+//                }
+//            }
+//            currLeaf = currLeaf.getNext();
+//        }
 
 
 
