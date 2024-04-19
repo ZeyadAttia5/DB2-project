@@ -291,8 +291,10 @@ public class Page implements Serializable {
             for (int i = 0; i<=tuples.size() - 1; i++) {
                 Tuple tuple = tuples.get(i);
                 // Check if all the conditions are met in the tuple
+
                 if (tupleMatchesConditions(tuple, htblColNameValue)) {
                     tuple.setValuesToNull();
+//                    tuples.set(i,null);
                 }
             }
         }
@@ -330,6 +332,7 @@ public class Page implements Serializable {
     }
 
     public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
+//    public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
         // Take a reference to check whether it matches the rest of the conditions
         // Get the index of the reference in the page & its corresponding tuple
         int refIndex = ref.getIndexInPage();
@@ -339,7 +342,7 @@ public class Page implements Serializable {
         // Check if there are remaining conditions to see if the tuple matches them
         if(!conditions.isEmpty()) {
             if (tupleMatchesConditions(tuple, conditions)) {
-                tuple.setValuesToNull();
+                tuples.remove(tuple);
                 result = true;
             }
         }
@@ -583,8 +586,14 @@ public class Page implements Serializable {
     @Override
     public String toString() {
         String result = "";
-        for (Tuple tuple : this.tuples)
-            result += tuple.toString();
+        for (Tuple tuple : this.tuples) {
+            if (tuple == null) {
+                result += "null";
+            }
+            else {
+                result += tuple.toString();
+            }
+        }
         return result;
     }
 }

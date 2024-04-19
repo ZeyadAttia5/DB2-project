@@ -422,18 +422,16 @@ public class DBApp {
             DBApp dbApp = new DBApp();
             dbApp.init();
 
-//
-//          	Hashtable htblColNameType = new Hashtable();
-//          	htblColNameType.put("id", "java.lang.Integer");
-//          	htblColNameType.put("name", "java.lang.String");
-//			htblColNameType.put("age", "java.lang.Integer");
+            // Table Creation
+//            Hashtable htblColNameType = new Hashtable();
+//            htblColNameType.put("id", "java.lang.Integer");
+//            htblColNameType.put("name", "java.lang.String");
+//            htblColNameType.put("age", "java.lang.Integer");
 //			htblColNameType.put("gpa", "java.lang.double");
 //			htblColNameType.put("city", "java.lang.String");
 //			htblColNameType.put("uni", "java.lang.String");
 //			htblColNameType.put("birth", "java.lang.Integer");
-//
-//
-//			dbApp.createTable(strTableName, "id", htblColNameType);
+//            dbApp.createTable(strTableName, "id", htblColNameType);
 //
 //          	dbApp.createIndex(strTableName, "gpa", "gpaIndex");
 //          	dbApp.createIndex(strTableName,"id","idIndex");
@@ -528,16 +526,6 @@ public class DBApp {
 //			htblColNameValue10.put("city", "Cairo");
 //			htblColNameValue10.put("uni", "ES");
 //			htblColNameValue10.put("birth", 5);
-
-
-            // Table Creation
-            Hashtable htblColNameType = new Hashtable();
-            htblColNameType.put("id", "java.lang.Integer");
-            htblColNameType.put("name", "java.lang.String");
-            htblColNameType.put("gpa", "java.lang.double");
-            htblColNameType.put("numCourses", "java.lang.Integer");
-            dbApp.createTable(strTableName, "id", htblColNameType);
-
 //
 //			Hashtable htblColNameValue11 = new Hashtable();
 //			htblColNameValue11.put("id", Integer.valueOf(11));
@@ -571,11 +559,10 @@ public class DBApp {
 //			dbApp.insertIntoTable(strTableName, htblColNameValue12);
 
             Hashtable<String, Object> ht = new Hashtable<>();
-//            ht.put("id", 7);
-            ht.put("name", "Ahmed");
-            ht.put("age", 23);
+//            ht.put("id", 1);
+//            ht.put("name", "Ahmed");
+            ht.put("age", 20);
 //			  ht.put("gpa",2.2);
-
 //			ht.put("city","Cairo");
 //			ht.put("uni","GUC");
 //			ht.put("birth",8);
