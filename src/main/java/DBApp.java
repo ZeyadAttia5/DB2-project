@@ -32,13 +32,13 @@ public class DBApp {
     // type as value
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
 
+        // Check if the table already exists
+        if (csvConverter.tablePresent(strTableName)) throw new DBAppException("This page is already present.");
         try {
-
-            //initialize a new table object
+            // Initialize a new table object
             Table newTable = new Table(strTableName);
-            // should do something here to prevent calling createTable twice onthe same parameters from overwriting a serialized object
             newTable.serialize();
-            //create the metaData.csv file using the hashtable input and store it in the metaData package
+            // Create the metaData.csv file using the hashtable input and store it in the metaData package
             csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
 
         } catch (Exception e) {
@@ -47,31 +47,33 @@ public class DBApp {
     }
 
     // following method creates a B+tree index
-    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
+    public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException, IOException, ClassNotFoundException {
 
-        // adjusting metadata file with new index
-        boolean found = csvConverter.addIndexToCSV(strTableName, strColName, strIndexName);
-        if (!found) {
-            DBAppException e = new DBAppException("The index name " + strIndexName + " already exists in " + strTableName);
-            throw e;
+        // Adjusting metadata file with new index
+        csvConverter.addIndexToMetadata(strTableName, strColName, strIndexName);
+
+        // Retrieving data type for desired column
+        String dataType = csvConverter.getDataType(strTableName, strColName);
+
+        // Initialising b+tree
+        BPTree tree = null;
+        if (dataType.equalsIgnoreCase("java.lang.Integer")) {
+            tree = new BPTree<Integer>(3);
+        } else if (dataType.equalsIgnoreCase("java.lang.String")) {
+            tree = new BPTree<String>(3);
+        } else  {
+            tree = new BPTree<Double>(3);
         }
 
-        // retrieving data type for desired column
-        String tmp = csvConverter.getDataType(strTableName, strColName);
-
-        // initialising b+tree
-        BPTree tree = null;
-        if (tmp.equalsIgnoreCase("java.lang.Integer")) {
-            tree = new BPTree<Integer>(10);
-
-        } else if (tmp.equalsIgnoreCase("java.lang.String")) {
-            tree = new BPTree<String>(10);
-
-        } else if (tmp.equalsIgnoreCase("java.lang.Double")) {
-            tree = new BPTree<Double>(10);
-        } else {
-            DBAppException e = new DBAppException("Not found");
-            throw e;
+        // Populating tree if table is not empty
+        Table currentTable = Table.deserialize(strTableName);
+        for (String page : currentTable.tablePages) {
+            Page currentPage = Page.deserialize(page);
+            for (int i = 0; i < currentPage.getTuples().size(); i++) {
+                Tuple currentTuple = currentPage.getTuples().get(i);
+                Object value = currentTuple.getValues().get(strColName);
+                tree.insert((Comparable) value, new Ref(page, i));
+            }
         }
 
         tree.serialize(strTableName, strIndexName);
@@ -87,8 +89,7 @@ public class DBApp {
         target.insert(newTuple);
         System.out.println(Page.deserialize(target.tablePages.get(0)));
         target = Table.deserialize(strTableName);
-        for(String pageName : target.tablePages)
-        {
+        for (String pageName : target.tablePages) {
             System.out.println("Page name: " + pageName);
             System.out.println("The page: " + Page.deserialize(pageName));
         }
@@ -112,19 +113,22 @@ public class DBApp {
         try {
             for (String column : htblColNameValue.keySet()) {
                 String indexName = csvConverter.getIndexName(strTableName, column);
+                Hashtable ht = new Hashtable<String, Object>();
+                ht.put(column, htblColNameValue.get(column));
+
                 if (!indexName.equalsIgnoreCase("null")) {
-                    currTable.updateIndexedTable(column, strClusteringKeyValue, htblColNameValue);
+                    currTable.updateIndexedTable(column, strClusteringKeyValue, ht);
                 } else {
-                    currTable.updateTable(strClusteringKeyValue, htblColNameValue);
+
+                    currTable.updateTable(strClusteringKeyValue, ht);
                 }
             }
 
         } catch (IOException e) {
-            System.out.println("Table not found\n" + e.getMessage());
+            throw new DBAppException("Table not found\n" + e.getMessage());
         } catch (ClassNotFoundException e) {
-            System.out.println("Table not found\n" + e.getMessage());
+            throw new DBAppException("Table not found\n" + e.getMessage());
         }
-
         //save changes
         currTable.serialize();
     }
@@ -143,130 +147,175 @@ public class DBApp {
         }
     }
 
-	public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[]  strarrOperators) throws DBAppException {
-		if (arrSQLTerms.length == 0)
-			throw new DBAppException("No SQL terms");
-		if (strarrOperators != null && strarrOperators.length + 1 != arrSQLTerms.length)
-			throw new DBAppException("number of operators doesn't match the SQL terms count");
-		ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
-		int j = 0;
-		Iterator finalRes = null;
-		for (SQLTerm sqlTerm : arrSQLTerms) {
-			String columnName = sqlTerm._strColumnName;
-			Object value = sqlTerm._objValue;
-			String tableName = sqlTerm._strTableName;
-			String operator = sqlTerm._strOperator.toUpperCase();
-			if(!operator.equals("=") || !operator.equals(">") || !operator.equals("<") ||operator!="!="||operator!=">="||operator!="<="){
-				throw new DBAppException("Invalid operator");
-			}
-			try {//ehtmal n serialize kol haga tany b3d el deserializing
-				Table tableitself = Table.deserialize(tableName);
-				if (csvConverter.getIndexName(tableName, columnName)!=null && operator!="!=") {
-					ArrayList<Tuple> helper=new ArrayList<>();
-					BPTree ind = BPTree.deserialize(tableName, columnName);
-					ArrayList<Ref> references = new ArrayList<>();
-					int indexInPage=0;
-					String pagename="";
-					Page pagenow;
-					switch (operator){
-						case "=":
-							ind.search((Comparable) value);
-							pagename = references.get(0).getPage();
-							pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
-							indexInPage=references.get(0).getIndexInPage();
-							helper.add(pagenow.tuples.get(indexInPage));
-							res.add(helper);
-							break;
-						case ">=":
-							ind.searchGreaterEqual((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
-								indexInPage=references.get(k).getIndexInPage();
-								helper.add(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-						case ">":
-							ind.searchGreaterthan((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
-								indexInPage=references.get(k).getIndexInPage();
-								helper.add(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-						case "<=":
-							for(int k=0;k<=tableitself.tablePages.size();k++){
-								pagename=tableitself.tablePages.get(k);
-								pagenow=Page.deserialize(tableName + "/" + pagename + ".class");
-								for(int p=0;p<pagenow.tuples.size();p++){
-									helper.add(pagenow.tuples.get(p));
-								}
-							}
-							ind.searchGreaterEqual((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
-								indexInPage=references.get(k).getIndexInPage();
-								helper.remove(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-						case "<":
-							for(int k=0;k<=tableitself.tablePages.size();k++){
-								pagename=tableitself.tablePages.get(k);
-								pagenow=Page.deserialize(tableName + "/" + pagename + ".class");
-								for(int p=0;p<pagenow.tuples.size();p++){
-									helper.add(pagenow.tuples.get(p));
-								}
-							}
-							ind.searchGreaterthan((Comparable) value);
-							for(int k=0;k<references.size();k++){
-								pagename = references.get(k).getPage();
-								pagenow = Page.deserialize(tableName + "/" + pagename + ".class");
-								indexInPage=references.get(k).getIndexInPage();
-								helper.remove(pagenow.tuples.get(indexInPage));
-							}
-							res.add(helper);
-							break;
-					}
-				}
-				else{
-				res.add(tableitself.searchTable(columnName, operator, value));}
-				tableitself.serialize();//might remove depending on deserialize
-			} catch (Exception e) {
-				throw new DBAppException("Table " + tableName + "not found.");
-			}
-			if (res.size() > 1) {
-				ArrayList<Tuple> l1 = (ArrayList<Tuple>) res.remove(0);//check valid datatype
-				ArrayList<Tuple> l2 = (ArrayList<Tuple>) res.remove(0);
-				ArrayList<Tuple> anding = new ArrayList<>(l1);
-				anding.retainAll(l2);
-				ArrayList<Tuple> oring = new ArrayList<>(l1);
-				oring.addAll(l2);
-				switch (strarrOperators[j].toUpperCase()) {
-					case "AND":
-						res.add(anding);
-						break;
-					case "OR":
-						res.add(oring);
-						break;
-					case "XOR":
-						oring.retainAll(anding);
-						res.add(oring);
-						break;
-					default: throw new DBAppException("inavalid operator only and, or , xor are allowed");
-				}
-				j++;
-			}
-		}
-		return res.remove(0).iterator();
-	}
+    public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
 
+        if (arrSQLTerms.length == 0) throw new DBAppException("No SQL terms");
 
-    public static void main(String[] args) {
+        if (strarrOperators != null && strarrOperators.length + 1 != arrSQLTerms.length)
+            throw new DBAppException("Number of operators doesn't match the SQL terms count");
+
+        ArrayList<ArrayList<Tuple>> res = new ArrayList<>();
+        int j = 0;
+        String prev=null;
+        for (SQLTerm sqlTerm : arrSQLTerms) {
+
+            String columnName = sqlTerm._strColumnName;
+            Object value = sqlTerm._objValue;
+            String tableName = sqlTerm._strTableName;
+            String operator = sqlTerm._strOperator.toUpperCase();
+            String columnType = csvConverter.getColumnType(tableName, columnName);
+            if (columnType == null) {
+                throw new DBAppException("Column " + columnName + " not found");
+            }
+            // If operator is invalid
+            if (!sqlTerm.validOperator()) {
+                throw new DBAppException("Invalid operator");
+            }
+            try {
+                Table tableitself = Table.deserialize(tableName);
+
+                // If column has an index and operator is not "!="
+                if (!csvConverter.getIndexName(tableName, columnName).equals("null") && !operator.equals("!=")) {
+
+                    ArrayList<Tuple> helper = new ArrayList<>();
+                    BPTree ind = BPTree.deserialize(tableName, columnName);
+                    ArrayList<Ref> references = new ArrayList<>();
+                    int indexInPage = 0;
+                    String pagename = "";
+                    Page pagenow;
+                    switch (operator) {
+                        case "=":
+                            references = ind.search((Comparable) value);
+                            for (int i = 0; i < references.size(); i++) {
+                            pagename = references.get(0).getPage();
+                            pagenow = Page.deserialize(pagename);
+                            indexInPage = references.get(i).getIndexInPage();
+                            helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case ">=":
+                            references = ind.getRefsGreaterEqual((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case ">":
+                            references = ind.getRefsGreaterThan((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case "<=":
+                            references = ind.getRefsLessEqual((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                        case "<":
+                            references = ind.getRefsLessThan((Comparable) value);
+                            for (int k = 0; k < references.size(); k++) {
+                                pagename = references.get(k).getPage();
+                                pagenow = Page.deserialize(pagename);
+                                indexInPage = references.get(k).getIndexInPage();
+                                helper.add(pagenow.tuples.get(indexInPage));
+                            }
+                            res.add(helper);
+                            break;
+                    }
+                } else {
+                    res.add(tableitself.searchTable(columnName, operator, value));
+                }
+
+            } catch (Exception e) {
+                throw new DBAppException("Table " + tableName + " not found.");
+            }
+            if (res.size() > 1) {
+                if(prev!=null&&!prev.equals(tableName)){
+                    throw new DBAppException("Engine is not supporting joins");
+                }
+                prev =tableName;
+                ArrayList<Tuple> l1 = res.remove(0);
+                ArrayList<Tuple> l2 = res.remove(0);
+                ArrayList<Tuple> midres = new ArrayList<>();
+                switch (strarrOperators[j].toUpperCase()) {
+                    case "AND":
+                        for (Tuple tuple: l1) {
+                            for(Tuple tuple2 :l2){
+                                if(tuple2.getValues().equals(tuple.getValues())){
+                                    midres.add(tuple);
+                                }
+                            }
+                        }
+                        res.add(midres);
+                        break;
+                    case "OR":
+                        for (Tuple tuple: l1) {
+                            midres.add(tuple);
+                        }
+                        int mid=midres.size();
+                        for(Tuple t2 :l2) {
+                            boolean flag = false;
+                            for(int i=0;i<mid;i++){
+                                if (midres.get(i).getValues().equals(t2.getValues())){
+                                    flag=true;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t2);
+                            }
+                        }
+                        res.add(midres);
+                        break;
+                    case "XOR":
+                        for(Tuple t1:l1){
+                            boolean flag=false;
+                            for(Tuple t2:l2){
+                                if(t1.getValues().equals(t2.getValues())){
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t1);
+                            }
+                        }
+                        for(Tuple t1:l2){
+                            boolean flag=false;
+                            for(Tuple t2:l1){
+                                if(t1.getValues().equals(t2.getValues())){
+                                    flag=true;
+                                    break;
+                                }
+                            }
+                            if(!flag){
+                                midres.add(t1);
+                            }
+                        }
+                        res.add(midres);
+                        break;
+                    default:
+                        throw new DBAppException("inavalid operator only and, or , xor are allowed");
+                }
+                j++;
+            }
+        }
+        return res.remove(0).iterator();
+    }
+
+    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
 
         try {
 
@@ -380,6 +429,19 @@ public class DBApp {
 //			htblColNameValue10.put("city", "Cairo");
 //			htblColNameValue10.put("uni", "ES");
 //			htblColNameValue10.put("birth", 5);
+        DBApp dbApp = new DBApp();
+        dbApp.init();
+
+
+        String strTableName = "Student";
+
+        // Table Creation
+        Hashtable htblColNameType = new Hashtable();
+        htblColNameType.put("id", "java.lang.Integer");
+        htblColNameType.put("name", "java.lang.String");
+        htblColNameType.put("gpa", "java.lang.double");
+        htblColNameType.put("numCourses", "java.lang.Integer");
+        dbApp.createTable(strTableName, "id", htblColNameType);
 //
 //			Hashtable htblColNameValue11 = new Hashtable();
 //			htblColNameValue11.put("id", Integer.valueOf(11));
@@ -429,26 +491,35 @@ public class DBApp {
 //
 //			htblColNameValue.clear( );
 //			SQLTerm[] arrSQLTerms;
-//			arrSQLTerms = new SQLTerm[2];
-//			arrSQLTerms[0]._strTableName =  "Student";
-//			arrSQLTerms[0]._strColumnName=  "name";
-//			arrSQLTerms[0]._strOperator  =  "=";
-//			arrSQLTerms[0]._objValue     =  "John Noor";
+//			arrSQLTerms = new SQLTerm[1];
+//			arrSQLTerms[0] = new SQLTerm("Student", "name", "<=", "Dalia Noor");
+////			arrSQLTerms[1] = new SQLTerm();
+////			arrSQLTerms[1]._strTableName =  "Student";
+////			arrSQLTerms[1]._strColumnName=  "gpa";
+////			arrSQLTerms[1]._strOperator  =  "=";
+////			arrSQLTerms[1]._objValue     =  new Double( 7 );
 //
-//			arrSQLTerms[1]._strTableName =  "Student";
-//			arrSQLTerms[1]._strColumnName=  "gpa";
-//			arrSQLTerms[1]._strOperator  =  "=";
-//			arrSQLTerms[1]._objValue     =  new Double( 1.5 );
-//
-//			String[]strarrOperators = new String[1];
-//			strarrOperators[0] = "OR";
+//			String[]strarrOperators = new String[0];
+////			strarrOperators[0] = "OR";
 //			// select * from Student where name = "John Noor" or gpa = 1.5;
 //			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
-        } catch (Exception exp) {
-            exp.printStackTrace();
-        }
-    }
+//			while(resultSet.hasNext())
+//				System.out.println(resultSet.next());
 
+
+
+//        // Table doesn't exist
+//        dbApp.createIndex("fake table", "gpa", "gpaIndex");
+//        // Column doesn't exist
+//        dbApp.createIndex(strTableName, "fake col", "gpaIndex");
+//        // nameIndex already exists
+//        dbApp.createIndex(strTableName, "name", "nameIndex");
+//        dbApp.createIndex(strTableName, "gpa", "nameIndex");
+//        // name already has an index
+//        dbApp.createIndex(strTableName, "name", "nameIndex");
+//        dbApp.createIndex(strTableName, "name", "otherName");
+
+    }
 
 
 }

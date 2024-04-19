@@ -1,6 +1,5 @@
 import java.io.*;
 import java.util.*;
-import java.io.File;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,7 +19,7 @@ public class Page implements Serializable {
     }
 
     public static Vector<String[]> readCSV(String tableName) {
-        String csvFilePath = "src/metadata.csv";
+        String csvFilePath = "src/main/resources/metadata.csv";
         Vector<String[]> result = new Vector<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath))) {
             String line;
@@ -42,19 +41,43 @@ public class Page implements Serializable {
         FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + arr[0] + "/" + fileName + ".class");
         ObjectInputStream in = new ObjectInputStream(fileIn);
         page = (Page) in.readObject();
-        //in.close();
-        //fileIn.close();
+        in.close();
+        fileIn.close();
         return page;
     }
-//try (FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
-//    ObjectInputStream objectIn = new ObjectInputStream(fileIn)) {
-//        bTree = (BPTree) objectIn.readObject();
-//        System.out.println("B+ tree deserialized successfully.");
-//    } catch (IOException | ClassNotFoundException e) {
-//        e.printStackTrace();
-//    }
-//        return bTree;
-//}
+
+    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
+//        Page page = new Page("Student",2, "id");
+//        Hashtable htblColNameValue = new Hashtable( );
+//        htblColNameValue.put("id", new Integer( 2 ));
+//        htblColNameValue.put("name", new String("Yara Noor" ) );
+//        htblColNameValue.put("gpa", new Double( 0.90 ) );
+//        Tuple t = new Tuple(htblColNameValue);
+//        page.insert(t);
+//        System.out.println(page);
+//        page.serialize();
+//        System.out.println(deserialize("Student_2"));
+
+//        Hashtable h = new Hashtable( );
+//        h.put("id", new Integer( 3 ));
+//        h.put("name", new String("Ahmed Noor" ) );
+//        h.put("gpa", new Double( 0.95 ) );
+//        Tuple t2 = new Tuple(h);
+//
+//        Hashtable h2 = new Hashtable( );
+//        h2.put("id", new Integer( 2 ));
+//        h2.put("name", new String("Ahmed Noor" ) );
+//        h2.put("gpa", new Double( 0.95 ) );
+//        Tuple t3 = new Tuple(h2);
+//
+//        page.insert(t);
+//        page.insert(t2);
+//        System.out.println(page);
+//
+//        page.insert(t3);
+//        System.out.println(page);
+    }
+
     public Vector<Tuple> getTuples() {
         return tuples;
     }
@@ -80,6 +103,8 @@ public class Page implements Serializable {
             if (!result.equals("null")) {
                 BPTree tree = BPTree.deserialize(tableName, colName);
                 tree.insertingWithShifting((Comparable) tuple.values.get(colName), reference, this.maxSize);
+                tree.serialize(tableName, result);
+
             }
         }
     }
@@ -137,8 +162,7 @@ public class Page implements Serializable {
             Object midValue = midTuple.values.get(this.clusteringKey);
             if (((Comparable) midValue).compareTo(value) == 0) {
                 low = mid; // Value already exists
-                System.out.println("Can not insert duplicate tuple");
-                return null;
+                throw new DBAppException("Can't Insert duplicate clustering keys");
             } else if (((Comparable) midValue).compareTo(value) < 0) {
                 low = mid + 1;
             } else {
@@ -174,12 +198,8 @@ public class Page implements Serializable {
                 }
             }
 
-            Object[] temp;
             Tuple extra = this.tuples.lastElement();
             this.tuples.remove(extra);
-            this.max = (this.tuples.get(this.maxSize - 1)).values.get(clusteringKey);
-            this.min = (this.tuples.get(0)).values.get(clusteringKey);
-
 
             for (File file : files) {
                 if (extra != null) {
@@ -208,19 +228,22 @@ public class Page implements Serializable {
                 currTable.tablePages.add(newPage.name);
             }
         }
+
+        this.max = (this.tuples.lastElement()).values.get(clusteringKey);
+        this.min = (this.tuples.get(0)).values.get(clusteringKey);
         currTable.pageInfo.put(this.name, new Object[]{this.max, this.min, this.tuples.size()});
         this.serialize();
         currTable.serialize();
         return result;
     }
 
-    public int binarySearchPage(String clusteringKeyValue, String dataType) throws DBAppException {
+    public Hashtable<Integer, Tuple> binarySearchPage(String clusteringKeyValue, String dataType) throws DBAppException {
 
         Object newValue = null;
         if (dataType.equalsIgnoreCase("java.lang.integer")) {
             newValue = Integer.parseInt(clusteringKeyValue);
         } else if (dataType.equalsIgnoreCase("java.lang.string")) {
-            newValue = (String) clusteringKeyValue;
+            newValue = clusteringKeyValue;
         } else if (dataType.equalsIgnoreCase("java.lang.double")) {
             newValue = Double.parseDouble(clusteringKeyValue);
         }
@@ -233,7 +256,7 @@ public class Page implements Serializable {
         // Initialize variables for binary search
         int low = 0;
         int high = tuples.size() - 1;
-
+        Hashtable<Integer, Tuple> ht = new Hashtable<Integer, Tuple>();
         // Binary search loop
         while (low <= high) {
             int mid = (low + high) / 2;
@@ -246,7 +269,8 @@ public class Page implements Serializable {
 
             if (compareResult == 0) {
                 // Found exact match, return mid
-                return mid;
+                ht.put(mid, midTuple);
+                break;
             } else if (compareResult < 0) {
                 // If midTuple's clustering key is greater than clusteringKeyValue, search left half
                 high = mid - 1;
@@ -257,7 +281,7 @@ public class Page implements Serializable {
         }
 
         // If not found, return -1
-        return -1;
+        return ht;
     }
 
     public void deleteTuples(Hashtable<String, Object> htblColNameValue) throws DBAppException {
@@ -434,9 +458,10 @@ public class Page implements Serializable {
                 // do nothing :)
             }
         }
-        if (isSuccess == false) {
+        if (!isSuccess) {
             System.out.println("Couldn't update");
         }
+        oldPage.serialize();
         return isSuccess;
     }
 
@@ -495,11 +520,11 @@ public class Page implements Serializable {
             int right = tuples.size() - 1;
             while (left <= right) {
                 int mid = left + (right - left) / 2;
-                if (tuples.get(mid).values.get(columnName) == value) {
+                if (tuples.get(mid).values.get(columnName).equals(value)) {
                     results.add(tuples.get(mid));
                     return results;
                 }
-                if (((Comparable) tuples.get(mid).values.get(columnName)).compareTo((Comparable) value) < 0)
+                if (((Comparable) tuples.get(mid).values.get(columnName)).compareTo(value) < 0)
                     left = mid + 1;
                 else
                     right = mid - 1;
@@ -534,19 +559,19 @@ public class Page implements Serializable {
                 return columnValue.equals(searchValue);
             case ">":
                 if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) > 0;
+                    return ((Comparable) columnValue).compareTo(searchValue) > 0;
                 }
             case "<":
                 if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) < 0;
+                    return ((Comparable) columnValue).compareTo(searchValue) < 0;
                 }
             case ">=":
                 if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) >= 0;
+                    return ((Comparable) columnValue).compareTo(searchValue) >= 0;
                 }
             case "<=":
                 if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo((Comparable) searchValue) <= 0;
+                    return ((Comparable) columnValue).compareTo(searchValue) <= 0;
                 }
             case "!=":
                 return !columnValue.equals(searchValue);
@@ -559,39 +584,7 @@ public class Page implements Serializable {
     public String toString() {
         String result = "";
         for (Tuple tuple : this.tuples)
-            result += tuple.toString() + "///";
+            result += tuple.toString();
         return result;
-    }
-
-    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
-//      Page page = new Page("Student",2, "id");
-//      Hashtable htblColNameValue = new Hashtable( );
-//      htblColNameValue.put("id", new Integer( 2 ));
-//      htblColNameValue.put("name", new String("Yara Noor" ) );
-//      htblColNameValue.put("gpa", new Double( 0.90 ) );
-//      Tuple t = new Tuple(htblColNameValue);
-//      page.insert(t);
-//      System.out.println(page);
-//      page.serialize();
-//      System.out.println(deserialize("Student_2"));
-
-//        Hashtable h = new Hashtable( );
-//        h.put("id", new Integer( 3 ));
-//        h.put("name", new String("Ahmed Noor" ) );
-//        h.put("gpa", new Double( 0.95 ) );
-//        Tuple t2 = new Tuple(h);
-//
-//        Hashtable h2 = new Hashtable( );
-//        h2.put("id", new Integer( 2 ));
-//        h2.put("name", new String("Ahmed Noor" ) );
-//        h2.put("gpa", new Double( 0.95 ) );
-//        Tuple t3 = new Tuple(h2);
-//
-//        page.insert(t);
-//        page.insert(t2);
-//        System.out.println(page);
-//
-//        page.insert(t3);
-//        System.out.println(page);
     }
 }

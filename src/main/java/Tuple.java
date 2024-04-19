@@ -32,7 +32,7 @@ public class Tuple implements Serializable {
             result.append(this.values.get(key) + ",");
         }
         result.setLength(result.length() - 1);
-        return result.toString();
+        return result.toString()+"\n";
     }
 
     public Hashtable getValues() {
