@@ -4,6 +4,7 @@
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 
@@ -31,19 +32,31 @@ public class DBApp {
     // htblColNameValue will have the column name as key and the data
     // type as value
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
+            // Check if the table already exists
+            if (csvConverter.tablePresent(strTableName))
+                throw new DBAppException("This page is already present.");
 
-        // Check if the table already exists
-        if (csvConverter.tablePresent(strTableName)) throw new DBAppException("This page is already present.");
-        try {
-            // Initialize a new table object
-            Table newTable = new Table(strTableName);
-            newTable.serialize();
+            // Traverse column data to check validity of data
+            HashSet<String> availableColumns = new HashSet<>();
+            for (String key : htblColNameType.keySet()) {
+                String dataType = htblColNameType.get(key);
+                // Invalid data type for any of the columns
+                if (!dataType.equalsIgnoreCase("java.lang.string") && !dataType.equalsIgnoreCase("java.lang.double") && !dataType.equalsIgnoreCase("java.lang.integer"))
+                    throw new DBAppException("Invalid data type for " + key + " please enter integer, string or double");
+                availableColumns.add(key);
+            }
+
+            // Attempting to create a clustering key on a column that doesn't exist
+            if (!availableColumns.contains(strClusteringKeyColumn))
+                throw new DBAppException("Cannot create a clustering key on a column that doesn't exist. Try creating the table again with valid inputs.");
+
             // Create the metaData.csv file using the hashtable input and store it in the metaData package
             csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            // Initialize a new table object
+            Table newTable = new Table(strTableName);
+            newTable.serialize();
+
     }
 
     // following method creates a B+tree index
@@ -157,7 +170,7 @@ public class DBApp {
             String columnName = sqlTerm._strColumnName;
             Object value = sqlTerm._objValue;
             String tableName = sqlTerm._strTableName;
-            String operator = sqlTerm._strOperator.toUpperCase();
+            String operator = sqlTerm._strOperator;
             String columnType = csvConverter.getColumnType(tableName, columnName);
             if (columnType == null) {
                 throw new DBAppException("Column " + columnName + " not found");
@@ -325,8 +338,7 @@ public class DBApp {
         htblColNameType.put("gpa", "java.lang.double");
         htblColNameType.put("numCourses", "java.lang.Integer");
         dbApp.createTable(strTableName, "id", htblColNameType);
-//
-//
+
 //        Hashtable htblColNameValue = new Hashtable();
 //
 //        // inserting 78452, zaky noor, 0.88

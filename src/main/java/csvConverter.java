@@ -38,16 +38,17 @@ public class csvConverter {
              BufferedReader bufferedReader = new BufferedReader(fileReader);
              FileWriter writer = new FileWriter(METADATA_FILE, true)) {
 
-            // Check if the table name already exists in metadata
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                String[] parts = line.split(",");
-                String existingTableName = parts[0].trim();
-                if (existingTableName.equals(tableName)) {
-                    System.out.println("Table name '" + tableName + "' already exists in the CSV file. Cannot convert.");
-                    return;
-                }
-            }
+            // 7aset eno a7san law 3amalna el 7eta de bara abl ma n-khosh n-convert asfa awy
+//            // Check if the table name already exists in metadata
+//            String line;
+//            while ((line = bufferedReader.readLine()) != null) {
+//                String[] parts = line.split(",");
+//                String existingTableName = parts[0].trim();
+//                if (existingTableName.equals(tableName)) {
+//                    System.out.println("Table name '" + tableName + "' already exists in the CSV file. Cannot convert.");
+//                    return;
+//                }
+//            }
 
             // Write header to CSV file if it's empty
             if (Files.size(Path.of(METADATA_FILE)) == 0) {
@@ -159,9 +160,9 @@ public class csvConverter {
 
     public static boolean tablePresent(String tableName){
 
-        try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
             String line;
-            while ((line = reader1.readLine()) != null) {
+            while ((line = reader.readLine()) != null) {
                 String[] fields = line.split(",");
                 if (fields[0].equals(tableName))
                     return true;
