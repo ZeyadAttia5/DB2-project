@@ -1,7 +1,3 @@
-/**
- * @author Wael Abouelsaadat
- */
-
 import java.io.IOException;
 import java.util.*;
 
@@ -10,24 +6,18 @@ public class DBApp {
 
 
     public DBApp() {
-
     }
 
-
-    // this does whatever initialization you would like
-    // or leave it empty if there is no code you want to
-    // execute at application startup
     public void init() {
         csvConverter.createMetaDataFile();
-
     }
 
-    // following method creates one table only
-    // strClusteringKeyColumn is the name of the column that will be the primary
-    // key and the clustering column as well. The data type of that column will
-    // be passed in htblColNameType
-    // htblColNameValue will have the column name as key and the data
-    // type as value
+    // =======================================================================================================================================
+    //  Table Creation:
+    //  strTableName -> name of table to be created
+    //  strClusteringKeyColumn -> column that is the primary key and the clustering column
+    //  htblColNameValue<column name, data type> -> hashtable of column names and their data types
+    // =======================================================================================================================================
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
             // Check if the table already exists
             if (csvConverter.tablePresent(strTableName))
@@ -48,7 +38,7 @@ public class DBApp {
                 throw new DBAppException("Cannot create a clustering key on a column that doesn't exist. Try creating the table again with valid inputs.");
 
             // Create the metaData.csv file using the hashtable input and store it in the metaData package
-            csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
+            csvConverter.addTableToMetaData(htblColNameType, strTableName, strClusteringKeyColumn);
 
             // Initialize a new table object
             Table newTable = new Table(strTableName);
@@ -56,7 +46,14 @@ public class DBApp {
 
     }
 
-    // following method creates a B+tree index
+
+    // =======================================================================================================================================
+    //  B+Tree index Creation:
+    //  strTableName -> name of table in which index will be created
+    //  strColName -> column in which index will be created
+    //  strIndexName -> name of index to be created
+    // =======================================================================================================================================
+
     public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException, IOException, ClassNotFoundException {
 
         // Adjusting metadata file with new index
@@ -88,29 +85,15 @@ public class DBApp {
 
         tree.serialize(strTableName, strIndexName);
 
-        BPTreeLeafNode currLeaf = tree.searchMinNode();
-
-        while(currLeaf!=null ){
-            for(int i = 0;i< currLeaf.numberOfKeys; i++){
-                System.out.println(currLeaf);
-                System.out.println("Page: " + currLeaf.records[i].getPage()+ ". Index: " + currLeaf.records[i].getIndexInPage());
-                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
-                    int size = currLeaf.getOverflow(i).size();
-                    // Traverse the duplicates
-                    for(int j =0; j< size; j++){
-                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
-                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
-                        System.out.println("Page: "+ currentPage + ". Index: " + currentIndex);
-                    }
-                }
-            }
-            currLeaf = currLeaf.getNext();
-        }
-
     }
 
-    // following method inserts one row only.
-    // htblColNameValue must include a value for the primary key
+
+    // =======================================================================================================================================
+    //  Insertion into table:
+    //  inserting one row only
+    //  strTableName -> name of table you are inserting to
+    //  htblColNameValue<column name, value> -> hashtable of columns and their corresponding values to insert. must include a value for the primary key
+    // =======================================================================================================================================
     public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
 
         // Inserting into a table that doesn't exist
@@ -124,22 +107,27 @@ public class DBApp {
 
         Table target = Table.deserialize(strTableName);
         Tuple newTuple = new Tuple(htblColNameValue);
+        System.out.println(newTuple);
         target.insert(newTuple);
         System.out.println(Page.deserialize(target.tablePages.get(0)));
         target = Table.deserialize(strTableName);
         for (String pageName : target.tablePages) {
             System.out.println("Page name: " + pageName);
-            System.out.println("The page:\n" + Page.deserialize(pageName));
+            System.out.println("The page: " + Page.deserialize(pageName));
         }
         System.out.println(target.tablePages);
         System.out.println();
 
     }
 
-    // following method updates one row only
-    // htblColNameValue holds the key and new value
-    // htblColNameValue will not include clustering key as column name
-    // strClusteringKeyValue is the value to look for to find the row to update.
+
+    // =======================================================================================================================================
+    //  Updating row in table:
+    //  updates one row only, cannot update clustering key
+    //  strTableName -> name of table you are updating in
+    //  strClusteringKeyValue -> value to look for to find the row to update
+    //  htblColNameValue<column name, value> -> hashtable of columns and their corresponding values to update
+    // =======================================================================================================================================
     public void updateTable(String strTableName, String strClusteringKeyValue, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 
         // Check if the table exists
@@ -147,26 +135,9 @@ public class DBApp {
             throw new DBAppException("Table " +strTableName+" doesn't exist.");
 
         // Checking if clustering key data type is correct
+        checkClusteringType(strTableName, strClusteringKeyValue);
 
-        // Find clustering col name
-        String clusteringColName = csvConverter.getClusteringKey(strTableName);
-        // Find the clustering data type
-        String dataType = csvConverter.getDataType(strTableName, clusteringColName);
-        Object newValue = null;
-        try{
-            if (dataType.equalsIgnoreCase("java.lang.integer")) {
-                newValue = Integer.parseInt(strClusteringKeyValue);
-            } else if (dataType.equalsIgnoreCase("java.lang.string")) {
-                newValue = strClusteringKeyValue;
-            } else if (dataType.equalsIgnoreCase("java.lang.double")) {
-                newValue = Double.parseDouble(strClusteringKeyValue);
-            }
-        }
-        catch (Exception e){
-            throw new DBAppException("Incorrect clustering key data type.");
-        }
-
-
+        // Checking if hashtable input is valid
         validHashTableInput(strTableName, htblColNameValue);
 
         // Get the table
@@ -194,31 +165,14 @@ public class DBApp {
         currTable.serialize();
     }
 
-    private static void validHashTableInput(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
-        List <String[]> tableMetadata = csvConverter.getTableMetadata(strTableName); // Metadata of the table
-        // Get all columns in table
-        HashSet <String> availableColumns = new HashSet<>();
-        for(String[] column : tableMetadata){
-            availableColumns.add(column[1]);
-        }
 
-        // Handling invalid input
-        for (Map.Entry<String, Object> entry : htblColNameValue.entrySet()) {
-            String key = entry.getKey();
-            Object value = entry.getValue();
-            // Trying to update a column that doesn't exist
-            if(!availableColumns.contains(key))
-                throw new DBAppException("Cannot update attribute " + key + " because it doesn't exist.");
-            // Trying to update a column with an invalid data type
-            if( !compatibleTypes(value, csvConverter.getDataType(strTableName, key)))
-                throw new DBAppException("Invalid value: " + value +". Check data type.");
-        }
-    }
 
-    // following method could be used to delete one or more rows.
-    // htblColNameValue holds the key and value. This will be used in search
-    // to identify which rows/tuples to delete.
-    // htblColNameValue enteries are ANDED together
+    // =======================================================================================================================================
+    //  Deleting from table:
+    //  can delete many rows
+    //  strTableName -> name of table you are inserting to
+    //  htblColNameValue<column name, value> -> hashtable of columns and their corresponding values to delete, define entries anded otgether
+    // =======================================================================================================================================
     public void deleteFromTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
         // Check if the table exists
         if (!csvConverter.tablePresent(strTableName))
@@ -227,13 +181,15 @@ public class DBApp {
         validHashTableInput(strTableName, htblColNameValue);
 
         Table table = Table.deserialize( strTableName);
-        if (table != null) {
-            table.delete(htblColNameValue);
-            table.serialize();
-        } else {
-            throw new DBAppException("table " + strTableName + " does not exist");
-        }
+        table.delete(htblColNameValue);
+        table.serialize();
+
     }
+
+
+    // =======================================================================================================================================
+    //  Selecting from table:
+    // =======================================================================================================================================
 
     public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
 
@@ -261,7 +217,7 @@ public class DBApp {
             Object value = sqlTerm._objValue;
             String tableName = sqlTerm._strTableName;
             String operator = sqlTerm._strOperator;
-            String columnType = csvConverter.getColumnType(tableName, columnName);
+            String columnType = csvConverter.getDataType(tableName, columnName);
 
             // Selecting from a table that doesn't exist
             if (!csvConverter.tablePresent(tableName))
@@ -296,51 +252,62 @@ public class DBApp {
                     switch (operator) {
                         case "=":
                             references = ind.search((Comparable) value);
-                            for (int i = 0; i < references.size(); i++) {
-                            pagename = references.get(0).getPage();
-                            pagenow = Page.deserialize(pagename);
-                            indexInPage = references.get(i).getIndexInPage();
-                            helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int i = 0; i < references.size(); i++) {
+                                    pagename = references.get(0).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(i).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
                         case ">=":
                             references = ind.getRefsGreaterEqual((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
+
                             res.add(helper);
                             break;
                         case ">":
                             references = ind.getRefsGreaterThan((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
                         case "<=":
                             references = ind.getRefsLessEqual((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
                         case "<":
                             references = ind.getRefsLessThan((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
@@ -421,6 +388,47 @@ public class DBApp {
         return res.remove(0).iterator();
     }
 
+    public static void checkClusteringType(String strTableName, String strClusteringKeyValue) throws DBAppException {
+        // Find clustering col name
+        String clusteringColName = csvConverter.getClusteringKey(strTableName);
+        // Find the clustering data type
+        String dataType = csvConverter.getDataType(strTableName, clusteringColName);
+        Object newValue = null;
+        try{
+            if (dataType.equalsIgnoreCase("java.lang.integer")) {
+                newValue = Integer.parseInt(strClusteringKeyValue);
+            } else if (dataType.equalsIgnoreCase("java.lang.string")) {
+                newValue = strClusteringKeyValue;
+            } else if (dataType.equalsIgnoreCase("java.lang.double")) {
+                newValue = Double.parseDouble(strClusteringKeyValue);
+            }
+        }
+        catch (Exception e){
+            throw new DBAppException("Incorrect clustering key data type.");
+        }
+    }
+
+    public static void validHashTableInput(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException {
+        List<String[]> tableMetadata = csvConverter.getTableMetadata(strTableName); // Metadata of the table
+        // Get all columns in table
+        HashSet<String> availableColumns = new HashSet<>();
+        for(String[] column : tableMetadata){
+            availableColumns.add(column[1]);
+        }
+
+        // Handling invalid input
+        for (Map.Entry<String, Object> entry : htblColNameValue.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+            // Trying to update a column that doesn't exist
+            if(!availableColumns.contains(key))
+                throw new DBAppException("Cannot update attribute " + key + " because it doesn't exist.");
+            // Trying to update a column with an invalid data type
+            if( !compatibleTypes(value, csvConverter.getDataType(strTableName, key)))
+                throw new DBAppException("Invalid value: " + value +". Check data type.");
+        }
+    }
+
     public static boolean compatibleTypes(Object value, String columnType) {
         switch (columnType.toLowerCase()) {
             case "java.lang.integer":
@@ -433,197 +441,4 @@ public class DBApp {
         return false;
     }
 
-    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
-
-        try {
-
-            String strTableName = "Student";
-            DBApp dbApp = new DBApp();
-            dbApp.init();
-
-//             Table Creation
-//            Hashtable htblColNameType = new Hashtable();
-//            htblColNameType.put("id", "java.lang.Integer");
-//            htblColNameType.put("name", "java.lang.String");
-//            htblColNameType.put("age", "java.lang.Integer");
-//			htblColNameType.put("gpa", "java.lang.double");
-//			htblColNameType.put("city", "java.lang.String");
-//			htblColNameType.put("uni", "java.lang.String");
-//			htblColNameType.put("birth", "java.lang.Integer");
-//            dbApp.createTable(strTableName, "id", htblColNameType);
-
-          	dbApp.createIndex(strTableName, "gpa", "gpaIndex");
-//          	dbApp.createIndex(strTableName,"id","idIndex");
-//          	dbApp.createIndex(strTableName,"name","nameIndex");
-//          	dbApp.createIndex(strTableName,"birth","birthIndex");
-
-//          	Hashtable htblColNameValue1 = new Hashtable();
-//          	htblColNameValue1.put("id", Integer.valueOf(1));
-//          	htblColNameValue1.put("name", "Jana");
-//			htblColNameValue1.put("age", 21);
-//			htblColNameValue1.put("gpa", 0.7);
-//			htblColNameValue1.put("city", "Cairo");
-//			htblColNameValue1.put("uni", "GUC");
-//			htblColNameValue1.put("birth", 5);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue1);
-//
-//
-//			Hashtable htblColNameValue2 = new Hashtable();
-//			htblColNameValue2.put("id", Integer.valueOf(2));htblColNameValue2.put("name", "Nabila");
-//			htblColNameValue2.put("age", 21);
-//			htblColNameValue2.put("gpa", 0.7);
-//			htblColNameValue2.put("city", "Cairo");
-//			htblColNameValue2.put("uni", "GUC");
-//			htblColNameValue2.put("birth", 6);
-//            dbApp.insertIntoTable(strTableName, htblColNameValue2);
-//
-//
-//			Hashtable htblColNameValue3 = new Hashtable();
-//			htblColNameValue3.put("id", Integer.valueOf(3));
-//			htblColNameValue3.put("name", "Salma");
-//			htblColNameValue3.put("age", 21);
-//			htblColNameValue3.put("gpa", 0.7);
-//			htblColNameValue3.put("city", "Mansoura");
-//			htblColNameValue3.put("uni", "GUC");
-//			htblColNameValue3.put("birth", 6);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue3);
-//
-//			Hashtable htblColNameValue4 = new Hashtable();
-//			htblColNameValue4.put("id", Integer.valueOf(4));
-//			htblColNameValue4.put("name", "Laila");
-//			htblColNameValue4.put("age", 10);
-//			htblColNameValue4.put("gpa", 1.0);
-//			htblColNameValue4.put("city", "Alex");
-//			htblColNameValue4.put("uni", "ELS");
-//			htblColNameValue4.put("birth", 11);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue4);
-//
-//			Hashtable htblColNameValue5 = new Hashtable();
-//			htblColNameValue5.put("id", Integer.valueOf(5));
-//			htblColNameValue5.put("name", "Maya");
-//			htblColNameValue5.put("age", 20);
-//			htblColNameValue5.put("gpa", 1.2);
-//			htblColNameValue5.put("city", "Mans");
-//			htblColNameValue5.put("uni", "GUC");
-//			htblColNameValue5.put("birth", 6);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue5);
-
-//            Hashtable<String, Object> ht = new Hashtable<>();
-//            ht.put("id", 1);
-//            ht.put("name", "Maya");
-//            ht.put("age", 21);
-//			  ht.put("gpa",1.0);
-//			ht.put("city","Mansoura");
-//			ht.put("uni","ELS");
-//			ht.put("birth",8);
-
-//            dbApp.deleteFromTable(strTableName, ht);
-//            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
-
-//			Hashtable htblColNameValue6 = new Hashtable();
-//			htblColNameValue6.put("id", Integer.valueOf(6));
-//			htblColNameValue6.put("name", "Gamila");
-//			htblColNameValue6.put("age", 19);
-//			htblColNameValue6.put("gpa", 1.5);
-//			htblColNameValue6.put("city", "Mans");
-//			htblColNameValue6.put("uni", "GUC");
-//			htblColNameValue6.put("birth", 8);
-//
-//			Hashtable htblColNameValue7 = new Hashtable();
-//			htblColNameValue7.put("id", Integer.valueOf(7));
-//			htblColNameValue7.put("name", "Alia");
-//			htblColNameValue7.put("age", 15);
-//			htblColNameValue7.put("gpa", 2.2);
-//			htblColNameValue7.put("city", "Cairo");
-//			htblColNameValue7.put("uni", "BIS");
-//			htblColNameValue7.put("birth", 9);
-//
-//			Hashtable htblColNameValue8 = new Hashtable();
-//			htblColNameValue8.put("id", Integer.valueOf(8));
-//			htblColNameValue8.put("name", "Farida");
-//			htblColNameValue8.put("age", 15);
-//			htblColNameValue8.put("gpa", 3.3);
-//			htblColNameValue8.put("city", "Alex");
-//			htblColNameValue8.put("uni", "BIS");
-//			htblColNameValue8.put("birth", 9);
-//
-//			Hashtable htblColNameValue9 = new Hashtable();
-//			htblColNameValue9.put("id", Integer.valueOf(9));
-//			htblColNameValue9.put("name", "Ahmed");
-//			htblColNameValue9.put("age", 23);
-//			htblColNameValue9.put("gpa", 1.1);
-//			htblColNameValue9.put("city", "Alex");
-//			htblColNameValue9.put("uni", "SU");
-//			htblColNameValue9.put("birth", 11);
-//
-//			Hashtable htblColNameValue10 = new Hashtable();
-//			htblColNameValue10.put("id", Integer.valueOf(10));
-//			htblColNameValue10.put("name", "Ali");
-//			htblColNameValue10.put("age", 16);
-//			htblColNameValue10.put("gpa", 2.2);
-//			htblColNameValue10.put("city", "Cairo");
-//			htblColNameValue10.put("uni", "ES");
-//			htblColNameValue10.put("birth", 5);
-//
-//			Hashtable htblColNameValue11 = new Hashtable();
-//			htblColNameValue11.put("id", Integer.valueOf(11));
-//			htblColNameValue11.put("name", "Ibraheem");
-//			htblColNameValue11.put("age", 5);
-//			htblColNameValue11.put("gpa", 4.4);
-//			htblColNameValue11.put("city", "Mans");
-//			htblColNameValue11.put("uni", "ES");
-//			htblColNameValue11.put("birth", 5);
-//
-//			Hashtable htblColNameValue12 = new Hashtable();
-//			htblColNameValue12.put("id", Integer.valueOf(12));
-//			htblColNameValue12.put("name", "Bika");
-//			htblColNameValue12.put("age", 2);
-//			htblColNameValue12.put("gpa", 0.1);
-//			htblColNameValue12.put("city", "Cats");
-//			htblColNameValue12.put("uni", "Kitten");
-//			htblColNameValue12.put("birth", 11);
-//
-//          dbApp.insertIntoTable(strTableName, htblColNameValue6);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue7);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue8);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue9);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue10);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue11);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue12);
-
-//          dbApp.updateTable(strTableName, "3", ht);
-//
-//			htblColNameValue.clear( );
-//			SQLTerm[] arrSQLTerms;
-//			arrSQLTerms = new SQLTerm[1];
-//			arrSQLTerms[0] = new SQLTerm("Student", "name", "<=", "Dalia Noor");
-////			arrSQLTerms[1] = new SQLTerm();
-////			arrSQLTerms[1]._strTableName =  "Student";
-////			arrSQLTerms[1]._strColumnName=  "gpa";
-////			arrSQLTerms[1]._strOperator  =  "=";
-////			arrSQLTerms[1]._objValue     =  new Double( 7 );
-//
-//			String[]strarrOperators = new String[0];
-////			strarrOperators[0] = "OR";
-//			// select * from Student where name = "John Noor" or gpa = 1.5;
-//			Iterator resultSet = dbApp.selectFromTable(arrSQLTerms , strarrOperators);
-//			while(resultSet.hasNext())
-//				System.out.println(resultSet.next());
-
-
-//        // Table doesn't exist
-//        dbApp.createIndex("fake table", "gpa", "gpaIndex");
-//        // Column doesn't exist
-//        dbApp.createIndex(strTableName, "fake col", "gpaIndex");
-//        // nameIndex already exists
-//        dbApp.createIndex(strTableName, "name", "nameIndex");
-//        dbApp.createIndex(strTableName, "gpa", "nameIndex");
-//        // name already has an index
-//        dbApp.createIndex(strTableName, "name", "nameIndex");
-//        dbApp.createIndex(strTableName, "name", "otherName");
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

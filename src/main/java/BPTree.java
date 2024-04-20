@@ -6,7 +6,6 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
     private static final long serialVersionUID = 1L;
     private int order;
     private BPTreeNode<T> root;
-//    private String filename;
     private ArrayList<BPTreeNode<T>> nodes = new ArrayList<BPTreeNode<T>>();
 
     /**
@@ -19,15 +18,13 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         root = new BPTreeLeafNode<T>(this.order);
         nodes.add(root);
         root.setRoot(true);
-        // nodes=this.getNodes();
-        // this.createFile(filename);
+        nodes=this.getNodes();
     }
 
     public void serialize(String tableName, String indexName) {
         try (FileOutputStream fileOut = new FileOutputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
              ObjectOutputStream objectOut = new ObjectOutputStream(fileOut)) {
             objectOut.writeObject(this);
-//            System.out.println("B+ tree serialized successfully.");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,16 +36,11 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         try (FileInputStream fileIn = new FileInputStream("src/main/resources/tables/" + tableName +"/" + indexName + ".class");
              ObjectInputStream objectIn = new ObjectInputStream(fileIn)) {
             bTree = (BPTree) objectIn.readObject();
-//            System.out.println("B+ tree deserialized successfully.");
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
         return bTree;
     }
-
-//    public String getFileName() {
-//        return filename;
-//    }
 
     public ArrayList getNodes() {
         ArrayList output = new ArrayList();
@@ -190,9 +182,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
     }
 
     public ArrayList<Ref> searchDuplicates(T Key) {
-
         return root.searchFromNodesDuplicates(Key);
-
     }
 
     public BPTreeLeafNode searchNode(T key) {
@@ -234,56 +224,6 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
      * @return a boolean to indicate whether the key is successfully deleted or it
      *         was not in the tree
      */
-//    public Ref insertRef(T key, int maxRows, String tableName, boolean empty) {
-//        if (empty) {
-//            return new Ref(tableName + "0" + ".class", 0);
-//        } else {
-//            BPTreeLeafNode b = this.searchGreaterthan(key);
-//            if (b == null) {
-//                Ref BeforeLast;
-//                if (this.getLastLeaf().getOverflow(this.getLastLeaf().numberOfKeys - 1) != null) {
-//                    if (this.getLastLeaf().getOverflow(this.getLastLeaf().numberOfKeys - 1).size() == 0) {
-//                        BeforeLast = this.getLastLeaf().getLastRecord();
-//                    } else {
-//                        Vector<Ref> refs = this.getLastLeaf().getOverflow(this.getLastLeaf().numberOfKeys - 1);
-//                        BeforeLast = refs.get(refs.size() - 1);
-//                    }
-//                } else {
-//                    BeforeLast = this.getLastLeaf().getLastRecord();
-//                }
-//                System.err.println("Last ref is" + BeforeLast);
-//                String pageNumber = BeforeLast.getPage();
-//                String number = pageNumber.substring(tableName.length(), pageNumber.length() - 4);
-//                int n = Integer.parseInt(number);
-//                int rowsCurrent = BeforeLast.getIndexInPage() + 1;
-//                System.err.println("will I enter?");
-//                if (rowsCurrent >= maxRows) {
-//                    System.err.println("I entered");
-//                    int newRow = 0;
-//                    n++;
-//                    String nn = Integer.toString(n);
-//                    String pageNew = tableName + nn + ".class";
-//                    return new Ref(pageNew, newRow);
-//
-//                } else {
-//                    return new Ref(pageNumber, rowsCurrent);
-//
-//                }
-//
-//            } else {
-//                int indexInser = -1;
-//                for (int i = 0; i < b.numberOfKeys; i++)
-//                    if (b.getKey(i).compareTo(key) > 0) {
-//                        indexInser = i;
-//                        break;
-//                    }
-//                return b.getRecord(indexInser);
-//            }
-//
-//        }
-//
-//    }
-
     public boolean deleteHelper(T key, Ref ref) {
         if (root.numberOfKeys == 0) {
             if (root instanceof BPTreeInnerNode)
@@ -308,17 +248,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 
         }
 
-//		if (ref == null) {
-//			while (this.searchNode(key) != null) {
-//				boolean done2 = false;
-//				done = this.deleteL(key, ref);
-//				done = done2 || done;
-//			}
-//		}
         if (ref != null) {
-//			boolean done2 = false;
-//			done = this.deleteL(key, ref);
-//			done = done2 || done;
             done = this.deleteHelper(key, ref);
         }
         if(done )
@@ -387,49 +317,48 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         // </For Testing>
         return s;
     }
-    public static ArrayList<Ref> intersection(ArrayList<Ref> list1, ArrayList<Ref> list2) {
+//    public static ArrayList<Ref> intersection(ArrayList<Ref> list1, ArrayList<Ref> list2) {
+//
+//        if(list1 == null)
+//            return list2;
+//        if(list2== null)
+//            return list1;
+//        if(list1 == null && list2 == null)
+//            return new ArrayList<>();
+//
+//        // Create a HashSet to store unique elements of list1
+//        HashSet<Ref> set = new HashSet<Ref>(list1);
+//
+//        // Create a result ArrayList to store the intersection
+//        ArrayList<Ref> result = new ArrayList<>();
+//
+//        // Iterate through elements of list2
+//        for (Ref ref : list2) {
+//            // If the ref exists in the HashSet or if it's equal to any ref in list1, it's common to both lists
+//            if (set.contains(ref) || containsEqualRef(list1, ref)) {
+//                result.add(ref); // Add the common ref to the result list
+//                set.remove(ref); // Remove the ref from the HashSet to avoid duplicates
+//            }
+//        }
+//
+//        return result; // Return the intersection ArrayList
+//    }
 
-        if(list1 == null)
-            return list2;
-        if(list2== null)
-            return list1;
-        if(list1 == null && list2 == null)
-            return new ArrayList<>();
-
-        // Create a HashSet to store unique elements of list1
-        HashSet<Ref> set = new HashSet<Ref>(list1);
-
-        // Create a result ArrayList to store the intersection
-        ArrayList<Ref> result = new ArrayList<>();
-
-        // Iterate through elements of list2
-        for (Ref ref : list2) {
-            // If the ref exists in the HashSet or if it's equal to any ref in list1, it's common to both lists
-            if (set.contains(ref) || containsEqualRef(list1, ref)) {
-                result.add(ref); // Add the common ref to the result list
-                set.remove(ref); // Remove the ref from the HashSet to avoid duplicates
-            }
-        }
-
-        return result; // Return the intersection ArrayList
-    }
-
-    // Helper method to check if any ref in the list is equal to the given ref
-    private static boolean containsEqualRef(ArrayList<Ref> list, Ref ref) {
-        for (Ref r : list) {
-            if (r.isEqual(ref)) {
-                return true;
-            }
-        }
-        return false;
-    }
+//    // Helper method to check if any ref in the list is equal to the given ref
+//    private static boolean containsEqualRef(ArrayList<Ref> list, Ref ref) {
+//        for (Ref r : list) {
+//            if (r.isEqual(ref)) {
+//                return true;
+//            }
+//        }
+//        return false;
+//    }
 
     public void visualizeTree() {
         if (root == null) {
             System.out.println("The tree is empty.");
             return;
         }
-
         visualizeTreeHelper(root, "", true);
     }
 
@@ -508,9 +437,6 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
     }
 
     public void deletingWithShifting(T key, Ref recordReference){
-        if (key == null || recordReference == null) {
-            throw new NullPointerException("Cannot delete with null key or ref");
-        }
 
         int deletedIndex = recordReference.getIndexInPage();
         String deletedPage = recordReference.getPage();
@@ -533,15 +459,16 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
                         int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
                         String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
                         if( currentPage.compareToIgnoreCase(deletedPage) == 0 && currentIndex> deletedIndex){
-                            currLeaf.getOverflow(i).remove(j);
-                            currLeaf.getOverflow(i).add(j, new Ref(currentPage, currentIndex-1));
+                                currLeaf.getOverflow(i).remove(j);
+                                currLeaf.getOverflow(i).add(j, new Ref(currentPage, currentIndex-1));
                         }
                     }
                 }
             }
             currLeaf = currLeaf.getNext();
         }
-        this.delete(key, recordReference);
+        this.delete( key, recordReference);
+
     }
 
     public static ArrayList<Ref> getRefs(BPTreeLeafNode bnode){
@@ -680,10 +607,10 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 
 
     public static void main(String[] args) {
-
+//
         BPTree<String> treename= new BPTree<>(2);
 
-        //first page inserts
+        //first page inserts (max size 5)
         treename.insert("salma", new Ref("p_1", 1));
         treename.insert("ahmed", new Ref("p_1", 2));
         treename.insert("farida", new Ref("p_1", 3));
@@ -703,59 +630,26 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         treename.insert("alia", new Ref("p_3", 3));
         System.out.println(treename);
 
-
-        int insertedIndex = 4;
-        String insertedPage = "p_1";
-        //inserting something in the middle requiring shifting
-        treename.insertingWithShifting("naya", new Ref(insertedPage,insertedIndex), 5);
-
-
-
-//        BPTreeLeafNode firstLeaf = treename.searchMinNode();
-//        BPTreeLeafNode currLeaf = firstLeaf;
-
-//        Object searchingWith = "mai";
-//        BPTreeLeafNode currLeaf = treename.searchGreaterEqual("mai");
-//        currLeaf = treename.searchGreaterEqual("mai");
-//        System.out.println(currLeaf.findIndex((Comparable) searchingWith));
-//
-//        boolean firstLeaf = true;
-//        while(currLeaf!=null) {
-//            System.out.println(currLeaf);
-//            if(firstLeaf){
-//                for (int i = currLeaf.findIndex((Comparable) searchingWith); i < currLeaf.numberOfKeys; i++) {
-//                    System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
-//                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
-//                        int size = currLeaf.getOverflow(i).size();
-//                        for (int j = 0; j < size; j++)
-//                            System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
-//                    }
-//                }
-//                firstLeaf =false;
-//            }
-//            else{
-//                for (int i = 0; i < currLeaf.numberOfKeys; i++) {
-//                    System.out.println(currLeaf.records[i].getPage()+": " +currLeaf.records[i].getIndexInPage());
-//                    if (currLeaf.getOverflow(i) != null && currLeaf.getOverflow(i).size() > 0) {
-//                        int size = currLeaf.getOverflow(i).size();
-//                        for (int j = 0; j < size; j++)
-//                            System.out.println(((Ref) currLeaf.getOverflow(i).get(j)).getPage()+" : " +((Ref) currLeaf.getOverflow(i).get(j)).getIndexInPage());
-//                    }
-//                }
-//
-//            }
-//
-//            currLeaf = currLeaf.getNext();
-//        }
-
-
         System.out.println(treename);
-        System.out.println(treename.getRefsGreaterThan("mai"));
-        System.out.println(treename.getRefsGreaterEqual("mai"));
 
+        BPTreeLeafNode currLeaf = treename.searchMinNode();
 
-
-        //handle case where ur search = null so not there
+        while(currLeaf!=null ){
+            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+                System.out.println(currLeaf);
+                System.out.println("Page: " + currLeaf.records[i].getPage()+ ". Index: " + currLeaf.records[i].getIndexInPage());
+                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+                    int size = currLeaf.getOverflow(i).size();
+                    // Traverse the duplicates
+                    for(int j =0; j< size; j++){
+                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+                        System.out.println("Page: "+ currentPage + ". Index: " + currentIndex);
+                    }
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
 
 
 
