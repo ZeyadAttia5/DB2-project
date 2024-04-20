@@ -284,6 +284,17 @@ public class Page implements Serializable {
         return ht;
     }
 
+    private boolean tupleMatchesConditions(Tuple tuple, Hashtable<String, Object> conditions) {
+        // Looping over the conditions hashtable to make sure the tuple matches them
+        for (String column : conditions.keySet()) {
+            Object expectedValue = conditions.get(column);
+            Object actualValue = tuple.values.get(column);
+            if (!expectedValue.equals(actualValue))
+                return false;
+        }
+        return true;
+    }
+
     public ArrayList<Ref> deleteTuples(Hashtable<String, Object> htblColNameValue) throws DBAppException {
         ArrayList<Ref> references = new ArrayList<>();
         // Check if there's a clustering key in the conditions, if there is no clustering key; loop through the tuples
@@ -344,17 +355,6 @@ public class Page implements Serializable {
             result = true;
         conditions.clear();
         return result;
-    }
-
-    private boolean tupleMatchesConditions(Tuple tuple, Hashtable<String, Object> conditions) {
-        // Looping over the conditions hashtable to make sure the tuple matches them
-        for (String column : conditions.keySet()) {
-            Object expectedValue = conditions.get(column);
-            Object actualValue = tuple.values.get(column);
-            if (!expectedValue.equals(actualValue))
-                return false;
-        }
-        return true;
     }
 
     public Boolean deleteClusteringIndex(Ref ref, Hashtable<String, Object> conditions) throws DBAppException {
