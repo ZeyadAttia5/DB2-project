@@ -220,6 +220,114 @@ public class Page implements Serializable {
     }
 
     // =======================================================================================================================================
+    //  Deletion from page
+    // =======================================================================================================================================
+
+    // Looping over the conditions hashtable to make sure the tuple matches them
+    private boolean tupleMatchesConditions(Tuple tuple, Hashtable<String, Object> conditions) {
+        for (String column : conditions.keySet()) {
+            Object expectedValue = conditions.get(column);
+            Object actualValue = tuple.values.get(column);
+            if (!expectedValue.equals(actualValue))
+                return false;
+        }
+        return true;
+    }
+
+    public ArrayList<Ref> deleteTuples(Hashtable<String, Object> htblColNameValue) throws DBAppException {
+        ArrayList<Ref> references = new ArrayList<>();
+        // Check if there's a clustering key in the conditions, if there is no clustering key; loop through the tuples
+        if (!htblColNameValue.containsKey(clusteringKey)) {
+            for (int i = 0; i<=tuples.size() - 1; i++) {
+                Tuple tuple = tuples.get(i);
+                if (tupleMatchesConditions(tuple, htblColNameValue)) {
+                    Ref ref = new Ref(this.name, i);
+                    references.add(ref);
+                }
+            }
+        }
+        // If there's a clustering key we perform binary search to find the corresponding tuple then see if it matches other conditions in the hashtable if present
+        else {
+            Object clusteringKeyValue = htblColNameValue.get(clusteringKey);
+            int index = binarySearchDelete(clusteringKeyValue);
+            if (index != -1) {
+                Tuple matchingTuple = tuples.get(index);
+                htblColNameValue.remove(clusteringKey);
+                if(!htblColNameValue.isEmpty()){
+                    if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
+                        Ref ref = new Ref(this.name, index);
+                        references.add(ref);
+                    }
+                    else
+                        System.out.println("Clustering key value doesn't match the rest of the conditions");
+                }
+                else{
+                    Ref ref = new Ref(this.name, index);
+                    references.add(ref);
+                }
+            }
+            else
+                System.out.println("Clustering key value not found");
+        }
+        htblColNameValue.clear();
+        return references;
+    }
+
+    public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
+        // Take a reference to check whether it matches the rest of the conditions
+        // Get the index of the reference in the page & its corresponding tuple
+        int refIndex = ref.getIndexInPage();
+        Tuple tuple = tuples.get(refIndex);
+        boolean result = false;
+        if(!conditions.isEmpty()) {
+            if (tupleMatchesConditions(tuple, conditions)) {
+                result = true;
+            }
+        }
+        else
+            result = true;
+        conditions.clear();
+        return result;
+    }
+
+    public Boolean deleteClusteringIndex(Ref ref, Hashtable<String, Object> conditions) throws DBAppException {
+        boolean deleted = false;
+        int refIndex = ref.getIndexInPage();
+        Tuple tuple = tuples.get(refIndex);
+        conditions.remove(clusteringKey);
+        if (!conditions.isEmpty()) {
+            if (tupleMatchesConditions(tuple, conditions))
+                deleted = true;
+            else
+                System.out.println("Clustering indexed tuple doesn't match the rest of the conditions");
+        }
+        else
+            deleted = true;
+        conditions.clear();
+        return deleted;
+    }
+
+    public int binarySearchDelete(Object clusteringKeyValue) {
+        int low = 0;
+        int high = tuples.size() - 1;
+
+        while (low <= high) {
+            int mid = low + (high - low) / 2;
+            Tuple midTuple = tuples.get(mid);
+            // Assuming the clustering key value is a Comparable type
+            Comparable midValue = (Comparable) midTuple.values.get(clusteringKey);
+            // Compare the clustering key value with the provided clusteringKeyValue
+            int cmp = midValue.compareTo(clusteringKeyValue);
+            if (cmp == 0)
+                return mid;
+            else if (cmp < 0) {
+                low = mid + 1;
+            } else
+                high = mid - 1;
+        }
+        return -1;
+    }
+    // =======================================================================================================================================
     //  Helper Methods
     // =======================================================================================================================================
 
