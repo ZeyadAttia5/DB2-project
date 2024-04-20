@@ -108,16 +108,6 @@ public class Table implements Serializable {
 
     public void delete(Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
 
-        Hashtable<String, Object> conditionsTemp = new Hashtable<>();
-        Enumeration<String> keys = htblColNameValue.keys();
-
-        //Storing a temporary version of the hashtable of conditions
-        while (keys.hasMoreElements()) {
-            String key = keys.nextElement();
-            Object value = htblColNameValue.get(key);
-            conditionsTemp.put(key, value);
-        }
-
         //Storing references to be deleted
         ArrayList<Ref> toDelete= null;
 
@@ -130,7 +120,8 @@ public class Table implements Serializable {
                 Object clusteringKeyValue = htblColNameValue.get(column);
                 Page clusteringPage = this.binarySearch(clusteringKeyValue.toString());
                 if(clusteringPage==null) {
-                    throw new DBAppException("Clustering key value not found in the table");
+                    System.out.println("Clustering key value not found in the table");
+                    return;
                 }
                 else{
                     System.out.println(clusteringPage.name);
@@ -143,10 +134,11 @@ public class Table implements Serializable {
                     BPTree b = BPTree.deserialize (name, column);
                     //Get the reference in the BPTree that matches the value in the conditions
                     ArrayList<Ref> reference = b.search((Comparable) htblColNameValue.get(column));
-                    if(toDelete == null){
+                    if(toDelete == null ){
                         toDelete = new ArrayList<>();
-                        for(int i =0 ; i< reference.size();i++)
-                            toDelete.add(reference.get(i));
+                        if(reference!=null)
+                            for(int i =0 ; i< reference.size();i++)
+                                toDelete.add(reference.get(i));
                     }
                     else
                         intersection(toDelete, reference);
@@ -157,7 +149,7 @@ public class Table implements Serializable {
                     Ref ref = new Ref(clusteringPage.name, index);
                     ArrayList<Ref> arr = new ArrayList<>();
                     arr.add(ref);
-                    if(toDelete == null){
+                    if(toDelete == null ){
                         toDelete = new ArrayList<>();
                         toDelete.add(arr.get(0));
                     }
@@ -173,20 +165,22 @@ public class Table implements Serializable {
                     BPTree b = BPTree.deserialize (name, column);
                     //Get the reference in the BPTree that matches the value in the conditions
                     ArrayList<Ref> reference = b.search((Comparable) htblColNameValue.get(column));
-                    if(toDelete == null){
+                    if(toDelete == null ){
                         toDelete = new ArrayList<>();
-                        for(int i =0 ; i< reference.size();i++)
-                            toDelete.add(reference.get(i));
+                        if(reference!= null)
+                            for(int i =0 ; i< reference.size();i++)
+                                toDelete.add(reference.get(i));
                     }
                     else
                         intersection(toDelete, reference);
                 }
                 else{
                     ArrayList<Ref> references = getRefLinear(column, htblColNameValue.get(column));
-                    if(toDelete == null){
+                    if(toDelete == null ){
                         toDelete = new ArrayList<>();
-                        for(int i =0 ; i< references.size();i++)
-                            toDelete.add(references.get(i));
+                        if(references!= null)
+                            for(int i =0 ; i< references.size();i++)
+                                toDelete.add(references.get(i));
                     }
                     else
                         intersection(toDelete, references);
@@ -194,13 +188,12 @@ public class Table implements Serializable {
 
             }
         }
-
-        System.out.println("HELLOOO SIZEEEE" +toDelete.size());
         //Delete the references that were deleted from the table from the BP tree itself
         List<String[]> metaData = csvConverter.getTableMetadata(this.name);
         for(String [] line : metaData){
             String indexName = csvConverter.getIndexName(name, line[1]);
             if(!Objects.equals(indexName, "null")){
+                if(toDelete!=null)
                 for(Ref ref : toDelete){
                     BPTree b = BPTree.deserialize (name,  line[1]);
                     Page p = Page.deserialize(ref.getPage());
@@ -211,6 +204,7 @@ public class Table implements Serializable {
                 }
             }
         }
+        if(toDelete!= null)
         removeFromTable(toDelete);
     }
 
@@ -229,19 +223,23 @@ public class Table implements Serializable {
 
 
         // Create a HashSet to store unique elements of list1
-        HashSet<Ref> set = new HashSet<Ref>(list1);
+        HashSet<Ref> set = new HashSet<Ref>(list2);
 
         // Create a result ArrayList to store the intersection
         ArrayList<Ref> result = new ArrayList<>();
 
         // Iterate through elements of list2
-        for (Ref ref : list2) {
+        for (Ref ref : list1) {
             // If the ref exists in the HashSet or if it's equal to any ref in list1, it's common to both lists
-            if (set.contains(ref) || containsEqualRef(list1, ref)) {
+            if (set.contains(ref) || containsEqualRef(list2, ref)) {
                 result.add(ref); // Add the common ref to the result list
                 set.remove(ref); // Remove the ref from the HashSet to avoid duplicates
             }
         }
+
+        list1.clear();
+        for(int i =0; i< result.size(); i++)
+            list1.add(result.get(i));
 
     }
 

@@ -48,7 +48,7 @@ public class DBApp {
                 throw new DBAppException("Cannot create a clustering key on a column that doesn't exist. Try creating the table again with valid inputs.");
 
             // Create the metaData.csv file using the hashtable input and store it in the metaData package
-            csvConverter.convert(htblColNameType, strTableName, strClusteringKeyColumn);
+            csvConverter.addTableToMetaData(htblColNameType, strTableName, strClusteringKeyColumn);
 
             // Initialize a new table object
             Table newTable = new Table(strTableName);
@@ -243,7 +243,7 @@ public class DBApp {
             Object value = sqlTerm._objValue;
             String tableName = sqlTerm._strTableName;
             String operator = sqlTerm._strOperator;
-            String columnType = csvConverter.getColumnType(tableName, columnName);
+            String columnType = csvConverter.getDataType(tableName, columnName);
 
             // Selecting from a table that doesn't exist
             if (!csvConverter.tablePresent(tableName))
@@ -437,7 +437,7 @@ public class DBApp {
 			dbApp.createTable(strTableName, "id", htblColNameType);
 
           	dbApp.createIndex(strTableName, "gpa", "gpaIndex");
-          	dbApp.createIndex(strTableName,"id","idIndex");
+//          	dbApp.createIndex(strTableName,"id","idIndex");
           	dbApp.createIndex(strTableName,"name","nameIndex");
           	dbApp.createIndex(strTableName,"birth","birthIndex");
 
@@ -559,7 +559,7 @@ public class DBApp {
 			htblColNameValue12.put("birth", 11);
 //
 			dbApp.insertIntoTable(strTableName, htblColNameValue1);
-          dbApp.insertIntoTable(strTableName, htblColNameValue2);
+            dbApp.insertIntoTable(strTableName, htblColNameValue2);
 			dbApp.insertIntoTable(strTableName, htblColNameValue3);
 			dbApp.insertIntoTable(strTableName, htblColNameValue4);
 			dbApp.insertIntoTable(strTableName, htblColNameValue5);
@@ -572,11 +572,60 @@ public class DBApp {
 			dbApp.insertIntoTable(strTableName, htblColNameValue12);
 
             Hashtable<String, Object> ht = new Hashtable<>();
+
+
+
+            //deleting with clustering only (works)
+//            ht.put("id", 5);
+
+            // deleting with clustering + index (works)
 //            ht.put("id", 7);
+//            ht.put("gpa", 2.);
+
+            //deleting with clustering + no index (works)
+//            ht.put("city", "Alex");
+//            ht.put("gpa", 1.1);
+
+
+            // deleting with clustering + index + no index (works)
+
+//            ht.put("id", 7);
+//            ht.put("city", "Cairo");
+//            ht.put("gpa", 9.9);
+
+
+            // deleting with [clustering+btree] only (works)
+//            ht.put("id", 16);
+
+            //deleting with index only (works)
+//            ht.put("gpa", 9.9);
+
+            // deleting with nonindex only (works)
+//            ht.put("city","Cairo");
+
+            // deleting with [clustering+btree] + index (works)
+//            ht.put("id", 7);
+//            ht.put("gpa", 2.2);
+
+            // deleting with index + without index (works)
+//            ht.put("city", "Alex");
+//            ht.put("gpa", 1.1);
+
+            // deleting with [clustering+btree] + without index (works)
+//            ht.put("id", 7);
+//            ht.put("city", "Cairo");
+
+            // deleting with [clustering+btree] + without index + with index (works)
+//            ht.put("id", 7);
+//            ht.put("city", "Cairo");
+//            ht.put("gpa", 2.2);
+
+
+//            ht.put("id", 9);
 //            ht.put("name", "Ahmed");
 //            ht.put("age", 23);
-			  ht.put("gpa",2.2);
-			ht.put("city","Cairo");
+//			  ht.put("gpa",1.1);
+//			ht.put("city","Alex");
 //			ht.put("uni","GUC");
 //			ht.put("birth",8);
 
