@@ -88,6 +88,25 @@ public class DBApp {
 
         tree.serialize(strTableName, strIndexName);
 
+        BPTreeLeafNode currLeaf = tree.searchMinNode();
+
+        while(currLeaf!=null ){
+            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+                System.out.println(currLeaf);
+                System.out.println("Page: " + currLeaf.records[i].getPage()+ ". Index: " + currLeaf.records[i].getIndexInPage());
+                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+                    int size = currLeaf.getOverflow(i).size();
+                    // Traverse the duplicates
+                    for(int j =0; j< size; j++){
+                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+                        System.out.println("Page: "+ currentPage + ". Index: " + currentIndex);
+                    }
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+
     }
 
     // following method inserts one row only.
@@ -110,7 +129,7 @@ public class DBApp {
         target = Table.deserialize(strTableName);
         for (String pageName : target.tablePages) {
             System.out.println("Page name: " + pageName);
-            System.out.println("The page: " + Page.deserialize(pageName));
+            System.out.println("The page:\n" + Page.deserialize(pageName));
         }
         System.out.println(target.tablePages);
         System.out.println();
@@ -421,8 +440,8 @@ public class DBApp {
             String strTableName = "Student";
             DBApp dbApp = new DBApp();
             dbApp.init();
-//
-////             Table Creation
+
+//             Table Creation
 //            Hashtable htblColNameType = new Hashtable();
 //            htblColNameType.put("id", "java.lang.Integer");
 //            htblColNameType.put("name", "java.lang.String");
@@ -432,12 +451,12 @@ public class DBApp {
 //			htblColNameType.put("uni", "java.lang.String");
 //			htblColNameType.put("birth", "java.lang.Integer");
 //            dbApp.createTable(strTableName, "id", htblColNameType);
-//
-//          	dbApp.createIndex(strTableName, "gpa", "gpaIndex");
-////          	dbApp.createIndex(strTableName,"id","idIndex");
+
+          	dbApp.createIndex(strTableName, "gpa", "gpaIndex");
+//          	dbApp.createIndex(strTableName,"id","idIndex");
 //          	dbApp.createIndex(strTableName,"name","nameIndex");
 //          	dbApp.createIndex(strTableName,"birth","birthIndex");
-//
+
 //          	Hashtable htblColNameValue1 = new Hashtable();
 //          	htblColNameValue1.put("id", Integer.valueOf(1));
 //          	htblColNameValue1.put("name", "Jana");
@@ -446,6 +465,8 @@ public class DBApp {
 //			htblColNameValue1.put("city", "Cairo");
 //			htblColNameValue1.put("uni", "GUC");
 //			htblColNameValue1.put("birth", 5);
+//            dbApp.insertIntoTable(strTableName, htblColNameValue1);
+//
 //
 //			Hashtable htblColNameValue2 = new Hashtable();
 //			htblColNameValue2.put("id", Integer.valueOf(2));htblColNameValue2.put("name", "Nabila");
@@ -454,6 +475,8 @@ public class DBApp {
 //			htblColNameValue2.put("city", "Cairo");
 //			htblColNameValue2.put("uni", "GUC");
 //			htblColNameValue2.put("birth", 6);
+//            dbApp.insertIntoTable(strTableName, htblColNameValue2);
+//
 //
 //			Hashtable htblColNameValue3 = new Hashtable();
 //			htblColNameValue3.put("id", Integer.valueOf(3));
@@ -463,6 +486,7 @@ public class DBApp {
 //			htblColNameValue3.put("city", "Mansoura");
 //			htblColNameValue3.put("uni", "GUC");
 //			htblColNameValue3.put("birth", 6);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue3);
 //
 //			Hashtable htblColNameValue4 = new Hashtable();
 //			htblColNameValue4.put("id", Integer.valueOf(4));
@@ -472,6 +496,7 @@ public class DBApp {
 //			htblColNameValue4.put("city", "Alex");
 //			htblColNameValue4.put("uni", "ELS");
 //			htblColNameValue4.put("birth", 11);
+//			dbApp.insertIntoTable(strTableName, htblColNameValue4);
 //
 //			Hashtable htblColNameValue5 = new Hashtable();
 //			htblColNameValue5.put("id", Integer.valueOf(5));
@@ -481,24 +506,19 @@ public class DBApp {
 //			htblColNameValue5.put("city", "Mans");
 //			htblColNameValue5.put("uni", "GUC");
 //			htblColNameValue5.put("birth", 6);
-//
-//			dbApp.insertIntoTable(strTableName, htblColNameValue1);
-//          dbApp.insertIntoTable(strTableName, htblColNameValue2);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue3);
-//			dbApp.insertIntoTable(strTableName, htblColNameValue4);
 //			dbApp.insertIntoTable(strTableName, htblColNameValue5);
 
-            Hashtable<String, Object> ht = new Hashtable<>();
-            ht.put("id", 1);
+//            Hashtable<String, Object> ht = new Hashtable<>();
+//            ht.put("id", 1);
 //            ht.put("name", "Maya");
-            ht.put("age", 21);
+//            ht.put("age", 21);
 //			  ht.put("gpa",1.0);
 //			ht.put("city","Mansoura");
 //			ht.put("uni","ELS");
 //			ht.put("birth",8);
 
-            dbApp.deleteFromTable(strTableName, ht);
-            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+//            dbApp.deleteFromTable(strTableName, ht);
+//            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
 
 //			Hashtable htblColNameValue6 = new Hashtable();
 //			htblColNameValue6.put("id", Integer.valueOf(6));
