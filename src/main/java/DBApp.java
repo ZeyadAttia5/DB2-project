@@ -85,6 +85,25 @@ public class DBApp {
 
         tree.serialize(strTableName, strIndexName);
 
+        BPTreeLeafNode currLeaf = tree.searchMinNode();
+
+        while(currLeaf!=null ){
+            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+                System.out.println(currLeaf);
+                System.out.println("Page: " + currLeaf.records[i].getPage()+ ". Index: " + currLeaf.records[i].getIndexInPage());
+                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+                    int size = currLeaf.getOverflow(i).size();
+                    // Traverse the duplicates
+                    for(int j =0; j< size; j++){
+                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+                        System.out.println("Page: "+ currentPage + ". Index: " + currentIndex);
+                    }
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
+
     }
 
 
