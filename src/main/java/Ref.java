@@ -37,11 +37,9 @@ public class Ref implements Serializable {
         pageName = newPage;
     }
 
-
     public boolean isEqual(Ref ref) {
         return this.pageName.equals(ref.pageName) && this.indexInPage == ref.indexInPage;
     }
-
 
     public String toString() {
         String s = "";
@@ -49,13 +47,4 @@ public class Ref implements Serializable {
         return s;
     }
 
-    public int compareTo(Ref other) {
-        // Compare by pageName first
-        int cmp = this.pageName.compareTo(other.pageName);
-        if (cmp != 0) {
-            return cmp;
-        }
-        // If pageName is the same, compare by indexInPage in descending order
-        return Integer.compare(other.indexInPage, this.indexInPage);
-    }
 }

@@ -632,27 +632,26 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
 
         System.out.println(treename);
 
-//        BPTreeLeafNode firstLeaf = treename.searchMinNode();
-//        BPTreeLeafNode currLeaf = firstLeaf;
-//
-//        while(currLeaf!=null ){
-//            for(int i = 0;i< currLeaf.numberOfKeys; i++){
-//                System.out.println(currLeaf);
-//                System.out.println(currLeaf.records[i].getPage());
-//                System.out.println(currLeaf.records[i].getIndexInPage());
-//                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
-//                    int size = currLeaf.getOverflow(i).size();
-//                    // Traverse the duplicates and check if they should be changed or not
-//                    for(int j =0; j< size; j++){
-//                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
-//                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
-//                        System.out.println(currentPage);
-//                        System.out.println(currentIndex);
-//                    }
-//                }
-//            }
-//            currLeaf = currLeaf.getNext();
-//        }
+        BPTreeLeafNode currLeaf = treename.searchMinNode();
+
+        while(currLeaf!=null ){
+            for(int i = 0;i< currLeaf.numberOfKeys; i++){
+                System.out.println(currLeaf);
+                System.out.println(currLeaf.records[i].getPage());
+                System.out.println(currLeaf.records[i].getIndexInPage());
+                if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
+                    int size = currLeaf.getOverflow(i).size();
+                    // Traverse the duplicates and check if they should be changed or not
+                    for(int j =0; j< size; j++){
+                        int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
+                        String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
+                        System.out.println(currentPage);
+                        System.out.println(currentIndex);
+                    }
+                }
+            }
+            currLeaf = currLeaf.getNext();
+        }
 
 
 

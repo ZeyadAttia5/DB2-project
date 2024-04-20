@@ -18,21 +18,19 @@ public class Page implements Serializable {
         this.clusteringKey = clusteringKey;
     }
 
-    public static Vector<String[]> readCSV(String tableName) {
-        String csvFilePath = "src/main/resources/metadata.csv";
-        Vector<String[]> result = new Vector<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(csvFilePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] columns = line.split(","); // Assuming comma (,) as delimiter
-                if (columns[0].equals(tableName))
-                    result.add(columns);
 
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return result;
+    // =======================================================================================================================================
+    //  Page configuration, serialisation and deserialisation
+    // =======================================================================================================================================
+
+
+    public void serialize() throws IOException {
+        String[] arr = this.name.split("_");
+        FileOutputStream fileOut = new FileOutputStream("src/main/resources/tables/" + arr[0] + "/" + this.name + ".class");
+        ObjectOutputStream out = new ObjectOutputStream(fileOut);
+        out.writeObject(this);
+        out.close();
+        fileOut.close();
     }
 
     public static Page deserialize(String fileName) throws IOException, ClassNotFoundException {
@@ -46,90 +44,52 @@ public class Page implements Serializable {
         return page;
     }
 
-    public static void main(String[] args) throws DBAppException, IOException, ClassNotFoundException {
-//        Page page = new Page("Student",2, "id");
-//        Hashtable htblColNameValue = new Hashtable( );
-//        htblColNameValue.put("id", new Integer( 2 ));
-//        htblColNameValue.put("name", new String("Yara Noor" ) );
-//        htblColNameValue.put("gpa", new Double( 0.90 ) );
-//        Tuple t = new Tuple(htblColNameValue);
-//        page.insert(t);
-//        System.out.println(page);
-//        page.serialize();
-//        System.out.println(deserialize("Student_2"));
+    public void deleteSerializedFile() {
+        String[] arr = this.name.split("_");
+        String filePath = "src/main/resources/tables/" + arr[0] + "/" + this.name + ".class";
+        File file = new File(filePath);
 
-//        Hashtable h = new Hashtable( );
-//        h.put("id", new Integer( 3 ));
-//        h.put("name", new String("Ahmed Noor" ) );
-//        h.put("gpa", new Double( 0.95 ) );
-//        Tuple t2 = new Tuple(h);
-//
-//        Hashtable h2 = new Hashtable( );
-//        h2.put("id", new Integer( 2 ));
-//        h2.put("name", new String("Ahmed Noor" ) );
-//        h2.put("gpa", new Double( 0.95 ) );
-//        Tuple t3 = new Tuple(h2);
-//
-//        page.insert(t);
-//        page.insert(t2);
-//        System.out.println(page);
-//
-//        page.insert(t3);
-//        System.out.println(page);
-    }
-
-    public Vector<Tuple> getTuples() {
-        return tuples;
-    }
-
-    public Tuple getTuple(int indexInPage) {
-        return this.getTuples().get(indexInPage);
-    }
-
-    private void insertHelper(Ref reference, Tuple tuple, String tableName) {
-        for (String colName : tuple.values.keySet()) {
-            String result = csvConverter.getIndexName(tableName, colName);
-            if (!result.equals("null")) {
-                BPTree tree = BPTree.deserialize(tableName, colName);
-                tree.insert((Comparable) tuple.values.get(colName), reference);
-                tree.serialize(tableName, result);
+        // Check if the file exists
+        if (file.exists()) {
+            // Attempt to delete the file
+            boolean deleted = file.delete();
+            if (deleted) {
+                System.out.println("Serialized file deleted successfully: " + filePath);
+            } else {
+                System.out.println("Failed to delete serialized file: " + filePath);
             }
+        } else {
+            System.out.println("Serialized file does not exist: " + filePath);
         }
     }
 
-    private void insertHelperShifting(Ref reference, Tuple tuple, String tableName) {
-        for (String colName : tuple.values.keySet()) {
-            String result = csvConverter.getIndexName(tableName, colName);
-            if (!result.equals("null")) {
-                BPTree tree = BPTree.deserialize(tableName, colName);
-                tree.insertingWithShifting((Comparable) tuple.values.get(colName), reference, this.maxSize);
-                tree.serialize(tableName, result);
 
-            }
+    public static int readConfigFile() {
+        Properties properties = new Properties();
+        String fileName = "src/main/resources/DBApp.config";
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(fileName);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        try {
+            properties.load(fis);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        String maxSizeStr = properties.getProperty("MaximumRowsCountinPage");
+        if (maxSizeStr != null) {
+            return Integer.parseInt(maxSizeStr);
+        } else {
+            return 200; // Default value
         }
     }
 
-    public static File[] sortFiles(File[] files) {
-        Arrays.sort(files, new Comparator<File>() {
-            @Override
-            public int compare(File file1, File file2) {
-                int num1 = extractNumber(file1.getName());
-                int num2 = extractNumber(file2.getName());
-                return Integer.compare(num1, num2);
-            }
 
-            private int extractNumber(String fileName) {
-                // Regex pattern to match underscore followed by digits
-                Pattern pattern = Pattern.compile("_(\\d+)\\.class");
-                Matcher matcher = pattern.matcher(fileName);
-                if (matcher.find()) {
-                    return Integer.parseInt(matcher.group(1));
-                }
-                return -1; // Return -1 if no number found
-            }
-        });
-        return files;
-    }
+    // =======================================================================================================================================
+    //  Insertion into page
+    // =======================================================================================================================================
 
     public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
@@ -150,7 +110,6 @@ public class Page implements Serializable {
             insertHelper(result, tuple, arr[0]);
             return result;
         }
-
 
         int low = 0;
         int high = this.tuples.size() - 1;
@@ -237,6 +196,88 @@ public class Page implements Serializable {
         return result;
     }
 
+    private void insertHelper(Ref reference, Tuple tuple, String tableName) {
+        for (String colName : tuple.values.keySet()) {
+            String result = csvConverter.getIndexName(tableName, colName);
+            if (!result.equals("null")) {
+                BPTree tree = BPTree.deserialize(tableName, colName);
+                tree.insert((Comparable) tuple.values.get(colName), reference);
+                tree.serialize(tableName, result);
+            }
+        }
+    }
+
+    private void insertHelperShifting(Ref reference, Tuple tuple, String tableName) {
+        for (String colName : tuple.values.keySet()) {
+            String result = csvConverter.getIndexName(tableName, colName);
+            if (!result.equals("null")) {
+                BPTree tree = BPTree.deserialize(tableName, colName);
+                tree.insertingWithShifting((Comparable) tuple.values.get(colName), reference, this.maxSize);
+                tree.serialize(tableName, result);
+
+            }
+        }
+    }
+
+    // =======================================================================================================================================
+    //  Helper Methods
+    // =======================================================================================================================================
+
+
+    public static File[] sortFiles(File[] files) {
+        Arrays.sort(files, new Comparator<File>() {
+            @Override
+            public int compare(File file1, File file2) {
+                int num1 = extractNumber(file1.getName());
+                int num2 = extractNumber(file2.getName());
+                return Integer.compare(num1, num2);
+            }
+
+            private int extractNumber(String fileName) {
+                // Regex pattern to match underscore followed by digits
+                Pattern pattern = Pattern.compile("_(\\d+)\\.class");
+                Matcher matcher = pattern.matcher(fileName);
+                if (matcher.find()) {
+                    return Integer.parseInt(matcher.group(1));
+                }
+                return -1; // Return -1 if no number found
+            }
+        });
+        return files;
+    }
+
+    private boolean compareValues(Object columnValue, Object searchValue, String operator) {
+        switch (operator) {
+            case "=":
+                return columnValue.equals(searchValue);
+            case ">":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo(searchValue) > 0;
+                }
+            case "<":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo(searchValue) < 0;
+                }
+            case ">=":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo(searchValue) >= 0;
+                }
+            case "<=":
+                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
+                    return ((Comparable) columnValue).compareTo(searchValue) <= 0;
+                }
+            case "!=":
+                return !columnValue.equals(searchValue);
+        }
+        return false;
+    }
+
+
+    // =======================================================================================================================================
+    //  Searching in page
+    // =======================================================================================================================================
+
+
     public Hashtable<Integer, Tuple> binarySearchPage(String clusteringKeyValue, String dataType) throws DBAppException {
 
         Object newValue = null;
@@ -284,116 +325,6 @@ public class Page implements Serializable {
         return ht;
     }
 
-//    public void deleteTuples(Hashtable<String, Object> htblColNameValue) throws DBAppException {
-//        // Check if there's a clustering key in the conditions
-//        // If there is no clustering key; loop through the tuples
-//        if (!htblColNameValue.containsKey(clusteringKey)) {
-//            for (int i = 0; i<=tuples.size() - 1; i++) {
-//                Tuple tuple = tuples.get(i);
-//                // Check if all the conditions are met in the tuple
-//                if (tupleMatchesConditions(tuple, htblColNameValue)) {
-//                    tuple.setValuesToNull();
-//                }
-//            }
-//        }
-//        // If there's a clustering key we perform binary search to find the corresponding tuple then see if it matches other conditions in the hashtable if present
-//        else {
-//            Object clusteringKeyValue = htblColNameValue.get(clusteringKey);
-//            int index = binarySearchDelete(clusteringKeyValue);
-//            // If the tuple corresponding to the clustering key value was found; the rest of the conditions are checked
-//            if (index != -1) {
-//                Tuple matchingTuple = tuples.get(index);
-//                htblColNameValue.remove(clusteringKey);
-//                // Check if there are remaining conditions to check
-//                if(!htblColNameValue.isEmpty()){
-//                    if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
-//                        matchingTuple.setValuesToNull();
-//                    }
-//                    else{
-//                        throw new DBAppException("Clustering key value doesn't match the rest of the conditions");
-//                    }
-//                }
-//                else{
-//                    matchingTuple.setValuesToNull();
-////                    tuples.remove(matchingTuple);
-//                }
-//            }
-//            else{
-//                throw new DBAppException("Clustering value not found");
-//            }
-//        }
-//        // If all the tuples were deleted from the page then the whole page will get deleted
-//        if (tuples.isEmpty()) { // fix the idea of deletion
-//            File file = new File(this.name + ".class");
-//            file.delete();
-//        }
-//    }
-
-    public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
-        // Take a reference to check whether it matches the rest of the conditions
-        // Get the index of the reference in the page & its corresponding tuple
-        int refIndex = ref.getIndexInPage();
-        Tuple tuple = tuples.get(refIndex);
-        // Stores whether the reference matches all the conditions in the hashtable
-        boolean result = false;
-        // Check if there are remaining conditions to see if the tuple matches them
-        if(!conditions.isEmpty()) {
-            if (tupleMatchesConditions(tuple, conditions)) {
-                tuple.setValuesToNull();
-                result = true;
-            }
-        }
-        // If there are no remaining conditions the tuple is removed
-        else{
-            tuple.setValuesToNull();
-            result = true;
-        }
-        if (tuples.isEmpty()) {
-            File file = new File(this.name + ".class");
-            file.delete();
-        }
-        return result;
-    }
-
-    private boolean tupleMatchesConditions(Tuple tuple, Hashtable<String, Object> conditions) {
-        // Looping over the conditions hashtable to make sure the tuple matches them
-        for (String column : conditions.keySet()) {
-            Object expectedValue = conditions.get(column);
-            Object actualValue = tuple.values.get(column);
-            if (!expectedValue.equals(actualValue)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public Boolean deleteClusteringIndex(Ref ref, Hashtable<String, Object> conditions) throws DBAppException {
-        //A flag to check whether the reference has been deleted or not to add it to the toDelete arrayList in the Table class to delete it from the BP tree
-        boolean deleted = false;
-        //Get the index of the reference that's being checked if it should be deleted
-        int refIndex = ref.getIndexInPage();
-        //Get the tuple representing that reference
-        Tuple tuple = tuples.get(refIndex);
-        conditions.remove(clusteringKey);
-        //Check if there are other conditions to be matched from the hashtable to the tuple's values
-        if (!conditions.isEmpty()) {
-            //If there are remaining conditions the tupleMatchesConditions method is called to check if it matches them
-            if (tupleMatchesConditions(tuple, conditions)) {
-                //Null-ify the tuple
-                tuple.setValuesToNull();
-                deleted = true;
-            }
-            else {
-                throw new DBAppException("Clustering indexed tuple doesn't match the rest of the conditions");
-            }
-        }
-        else {
-            //There are no other conditions so the tuple will be deleted
-            tuple.setValuesToNull();
-            deleted = true;
-        }
-        return deleted;
-    }
 
     public static int binarySearchDelete(Object clusteringKeyValue, Page p ) {
         Vector<Tuple> tuples = p.getTuples();
@@ -418,84 +349,6 @@ public class Page implements Serializable {
             }
         }
         return -1;
-    }
-
-    private Comparable convertToComparable(Object value) {
-        if (value instanceof Comparable) {
-            // If the value is already comparable, return it
-            return (Comparable) value;
-        } else {
-            // If the value is not comparable, convert it to a string and return
-            return String.valueOf(value);
-        }
-    }
-
-    private int compareValues(Comparable value1, Comparable value2) {
-        // Compare the values
-        return value1.compareTo(value2);
-    }
-
-
-
-    /**
-     * Updates a tuple in place
-     *
-     * @param refToOldTuple
-     * @param htblColNameType
-     * @return true if update was successful, false otherwise
-     * @throws IOException
-     * @throws ClassNotFoundException
-     */
-    public boolean updateTuple(Ref refToOldTuple, Hashtable<String, Object> htblColNameType) throws IOException, ClassNotFoundException {
-        Page oldPage = Page.deserialize(refToOldTuple.getPage());
-        Tuple oldTuple = oldPage.getTuple(refToOldTuple.getIndexInPage());
-        boolean isSuccess = false;
-        for (String col : htblColNameType.keySet()) {
-            if ((oldTuple.getValues().containsKey(col))) {
-                //
-                oldTuple.getValues().put(col, htblColNameType.get(col));
-                isSuccess = true;
-            } else {
-                // do nothing :)
-            }
-        }
-        if (!isSuccess) {
-            System.out.println("Couldn't update");
-        }
-        oldPage.serialize();
-        return isSuccess;
-    }
-
-    public static int readConfigFile() {
-        Properties properties = new Properties();
-        String fileName = "src/main/resources/DBApp.config";
-        FileInputStream fis = null;
-        try {
-            fis = new FileInputStream(fileName);
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-        try {
-            properties.load(fis);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        String maxSizeStr = properties.getProperty("MaximumRowsCountinPage");
-        if (maxSizeStr != null) {
-            return Integer.parseInt(maxSizeStr);
-        } else {
-
-            return 200; // Default value
-        }
-    }
-
-    public void serialize() throws IOException {
-        String[] arr = this.name.split("_");
-        FileOutputStream fileOut = new FileOutputStream("src/main/resources/tables/" + arr[0] + "/" + this.name + ".class");
-        ObjectOutputStream out = new ObjectOutputStream(fileOut);
-        out.writeObject(this);
-        out.close();
-        fileOut.close();
     }
 
     public ArrayList<Tuple> searchlinearPage(String columnName, Object value, String operator) throws DBAppException {
@@ -554,32 +407,52 @@ public class Page implements Serializable {
         return results;
     }
 
-    private boolean compareValues(Object columnValue, Object searchValue, String operator) {
-        switch (operator) {
-            case "=":
-                return columnValue.equals(searchValue);
-            case ">":
-                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo(searchValue) > 0;
-                }
-            case "<":
-                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo(searchValue) < 0;
-                }
-            case ">=":
-                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo(searchValue) >= 0;
-                }
-            case "<=":
-                if (columnValue instanceof Comparable && searchValue instanceof Comparable) {
-                    return ((Comparable) columnValue).compareTo(searchValue) <= 0;
-                }
-            case "!=":
-                return !columnValue.equals(searchValue);
+
+
+    // =======================================================================================================================================
+    //  Updating in page
+    // =======================================================================================================================================
+
+    /**
+     * Updates a tuple in place
+     *
+     * @param refToOldTuple
+     * @param htblColNameType
+     * @return true if update was successful, false otherwise
+     * @throws IOException
+     * @throws ClassNotFoundException
+     */
+    public boolean updateTuple(Ref refToOldTuple, Hashtable<String, Object> htblColNameType) throws IOException, ClassNotFoundException {
+        Page oldPage = Page.deserialize(refToOldTuple.getPage());
+        Tuple oldTuple = oldPage.getTuple(refToOldTuple.getIndexInPage());
+        boolean isSuccess = false;
+        for (String col : htblColNameType.keySet()) {
+            if ((oldTuple.getValues().containsKey(col))) {
+                //
+                oldTuple.getValues().put(col, htblColNameType.get(col));
+                isSuccess = true;
+            } else {
+                // do nothing :)
+            }
         }
-        return false;
+        if (!isSuccess) {
+            System.out.println("Couldn't update");
+        }
+        oldPage.serialize();
+        return isSuccess;
     }
 
+    // =======================================================================================================================================
+    //  Getters, Setters & toString
+    // =======================================================================================================================================
+
+    public Vector<Tuple> getTuples() {
+        return tuples;
+    }
+
+    public Tuple getTuple(int indexInPage) {
+        return this.getTuples().get(indexInPage);
+    }
 
     @Override
     public String toString() {
@@ -588,4 +461,5 @@ public class Page implements Serializable {
             result += tuple.toString();
         return result;
     }
+
 }

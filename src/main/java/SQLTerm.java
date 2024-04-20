@@ -1,8 +1,3 @@
-import java.io.IOException;
-import java.util.ArrayList;
-
-/** * @author Wael Abouelsaadat */
-
 public class SQLTerm {
 
 	public String _strTableName,_strColumnName, _strOperator;

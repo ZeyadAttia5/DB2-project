@@ -6,6 +6,10 @@ import java.util.*;
 public class csvConverter {
     private static final String METADATA_FILE = "src/main/resources/metadata.csv";
 
+    // =======================================================================================================================================
+    //  MetaData Configuration
+    // =======================================================================================================================================
+
     public static void createMetaDataFile(){
         File metadataFile = new File(METADATA_FILE);
 
@@ -79,87 +83,6 @@ public class csvConverter {
         }
     }
 
-    public static String getDataType(String strTableName, String strColName) {
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(strTableName) && fields[1].equals(strColName)) return fields[2];
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-
-    }
-
-
-    public static String getIndexName(String tableName, String colName) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(tableName) && fields[1].equals(colName)) return fields[4];
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    //returns a string with the ClusteringKey Column Name
-    public static String getClusteringKey(String tableName) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 4 && parts[0].equalsIgnoreCase(tableName) && parts[3].equalsIgnoreCase("True")) {
-                    return parts[1]; // Return the clustering key column name
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null; // No clustering key found for the table
-    }
-
-    public static boolean isClusteringKey(String tableName, String clusteringKeyValue) {
-        return getClusteringKey(tableName).equalsIgnoreCase(clusteringKeyValue);
-    }
-
-    //  returns a List<String[]> of the table's metadata
-    public static List<String[]> getTableMetadata(String tableName) {
-        List<String[]> tableMetadata = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 6 && parts[0].equalsIgnoreCase(tableName)) {
-                    tableMetadata.add(parts);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return tableMetadata;
-    }
-
-    public static boolean tablePresent(String tableName){
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(tableName))
-                    return true;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
     // Adding index to metadata
     public static void addIndexToMetadata(String strTableName, String strColName, String strIndexName) throws DBAppException {
 
@@ -173,6 +96,11 @@ public class csvConverter {
         if(!updated)
             throw new DBAppException("There already exists an index for this column in this table.");
     }
+
+
+    // =======================================================================================================================================
+    //   Helpers
+    // =======================================================================================================================================
 
 
     private static void ValidateTableColumnIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
@@ -243,6 +171,92 @@ public class csvConverter {
         }
         return updated;
     }
+
+
+    // =======================================================================================================================================
+    //  Getters & Checkers
+    // =======================================================================================================================================
+
+    public static String getDataType(String strTableName, String strColName) {
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(strTableName) && fields[1].equals(strColName)) return fields[2];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String getIndexName(String tableName, String colName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(tableName) && fields[1].equals(colName)) return fields[4];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    //returns a string with the ClusteringKey Column Name
+    public static String getClusteringKey(String tableName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 4 && parts[0].equalsIgnoreCase(tableName) && parts[3].equalsIgnoreCase("True")) {
+                    return parts[1]; // Return the clustering key column name
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null; // No clustering key found for the table
+    }
+
+    //  returns a List<String[]> of the table's metadata
+    public static List<String[]> getTableMetadata(String tableName) {
+        List<String[]> tableMetadata = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 6 && parts[0].equalsIgnoreCase(tableName)) {
+                    tableMetadata.add(parts);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return tableMetadata;
+    }
+
+
+    public static boolean isClusteringKey(String tableName, String clusteringKeyValue) {
+        return getClusteringKey(tableName).equalsIgnoreCase(clusteringKeyValue);
+    }
+
+    public static boolean tablePresent(String tableName){
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(tableName))
+                    return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 
 
 
