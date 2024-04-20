@@ -296,10 +296,6 @@ public class Page implements Serializable {
                     references.add(ref);
                 }
             }
-            for(Ref ref:references){
-                Tuple tuple = tuples.get(ref.getIndexInPage());
-//                tuples.remove(tuple);
-            }
         }
         // If there's a clustering key we perform binary search to find the corresponding tuple then see if it matches other conditions in the hashtable if present
         else {
@@ -314,27 +310,19 @@ public class Page implements Serializable {
                     if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
                         Ref ref = new Ref(this.name, index);
                         references.add(ref);
-//                        tuples.remove(matchingTuple);
                     }
-                    else{
+                    else
                         System.out.println("Clustering key value doesn't match the rest of the conditions");
-                    }
                 }
                 else{
                     Ref ref = new Ref(this.name, index);
                     references.add(ref);
-//                    tuples.remove(matchingTuple);
                 }
             }
-            else{
+            else
                 System.out.println("Clustering key value not found");
-            }
         }
-        // If all the tuples were deleted from the page then the whole page will get deleted
-        if (tuples.isEmpty()) { // fix the idea of deletion
-            File file = new File(this.name + ".class");
-            file.delete();
-        }
+        htblColNameValue.clear();
         return references;
     }
 
@@ -348,19 +336,13 @@ public class Page implements Serializable {
         // Check if there are remaining conditions to see if the tuple matches them
         if(!conditions.isEmpty()) {
             if (tupleMatchesConditions(tuple, conditions)) {
-//                tuples.remove(tuple);
                 result = true;
             }
         }
         // If there are no remaining conditions the tuple is removed
-        else{
-//            tuples.remove(tuple);
+        else
             result = true;
-        }
-        if (tuples.isEmpty()) {
-            File file = new File(this.name + ".class");
-            file.delete();
-        }
+        conditions.clear();
         return result;
     }
 
@@ -369,9 +351,8 @@ public class Page implements Serializable {
         for (String column : conditions.keySet()) {
             Object expectedValue = conditions.get(column);
             Object actualValue = tuple.values.get(column);
-            if (!expectedValue.equals(actualValue)) {
+            if (!expectedValue.equals(actualValue))
                 return false;
-            }
         }
         return true;
     }
@@ -386,20 +367,16 @@ public class Page implements Serializable {
         conditions.remove(clusteringKey);
         //Check if there are other conditions to be matched from the hashtable to the tuple's values
         if (!conditions.isEmpty()) {
-            //If there are remaining conditions the tupleMatchesConditions method is called to check if it matches them
-            if (tupleMatchesConditions(tuple, conditions)) {
-//                tuples.remove(tuple);
+            // If there are remaining conditions the tupleMatchesConditions method is called to check if it matches them
+            if (tupleMatchesConditions(tuple, conditions))
                 deleted = true;
-            }
-            else {
+            else
                 System.out.println("Clustering indexed tuple doesn't match the rest of the conditions");
-            }
         }
-        else {
-            //There are no other conditions so the tuple will be deleted
-//            tuples.remove(tuple);
+        else
+            // There are no other conditions so the tuple will be deleted
             deleted = true;
-        }
+        conditions.clear();
         return deleted;
     }
 
@@ -410,19 +387,16 @@ public class Page implements Serializable {
         while (low <= high) {
             int mid = low + (high - low) / 2;
             Tuple midTuple = tuples.get(mid);
-
             // Assuming the clustering key value is a Comparable type
             Comparable midValue = (Comparable) midTuple.values.get(clusteringKey);
-
             // Compare the clustering key value with the provided clusteringKeyValue
             int cmp = midValue.compareTo(clusteringKeyValue);
-            if (cmp == 0) {
+            if (cmp == 0)
                 return mid;
-            } else if (cmp < 0) {
+            else if (cmp < 0) {
                 low = mid + 1;
-            } else {
+            } else
                 high = mid - 1;
-            }
         }
         return -1;
     }

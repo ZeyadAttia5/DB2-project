@@ -185,16 +185,12 @@ public class Table implements Serializable {
                 BPTree b = BPTree.deserialize (this.name, column);
                 // Perform a search on the BP tree that gives the corresponding references with a value matching the conditions hashtable
                 ArrayList<Ref> references = b.search((Comparable) htblColNameValue.get(column));
-                // If there were no previous indices the toDelete gets filled for the first time
-//                if (toDelete.isEmpty()) {
-//                    for (Ref ref : references) {
-//                        toDelete.add(ref);
-//                    }
-//                }
-//                // The toDelete had previous references from previous indices in the conditions so an intersection is being done over the toDelete's previous indices' references & the new index's references
-//                else{
+                if(references == null){
+                    System.out.println("Conditions not matched");
+                    return;
+                }
+                // If toDelete had previous references from previous indices in the conditions an intersection is being done over the toDelete's previous indices' references & the new index's references
                 intersection(toDelete,references);
-//                }
                 // The checked indexed column is removed from the conditions hashtable
                 iterator.remove();
             }
@@ -248,28 +244,34 @@ public class Table implements Serializable {
             }
         }
 
-        //Delete the reference that was deleted from the table from the BP tree itself
+        // Delete the reference that was deleted from the table from the B+ tree itself
         List<String[]> tableData = csvConverter.getTableMetadata(this.name);
         if (tableData != null && tableData.size() > 0) {
-            for (String[] line : tableData) {
-                String indexName = csvConverter.getIndexName(name, line[1]);
-                if (!Objects.equals(indexName, "null")) {
-                    for (Ref ref : toDelete) {
-                        System.out.println(ref);
+            for (Ref ref : toDelete) {
+                int refIndex = ref.getIndexInPage();
+                String refPage = ref.getPage();
+                for (String[] line : tableData) {
+                    String indexName = csvConverter.getIndexName(name, line[1]);
+                    if (!Objects.equals(indexName, "null")) {
                         BPTree b = BPTree.deserialize(name, line[1]);
-                        int refIndex = ref.getIndexInPage();
-                        String refPage = ref.getPage();
                         Page page = Page.deserialize(refPage);
                         Tuple tuple = page.getTuple(refIndex);
                         Hashtable<String,Object> values = tuple.getValues();
                         Object key = values.get(line[1]);
-                        b.deletingWithShifting((Comparable) key, CIref);
-                        page.tuples.remove(refIndex);
-                        page.serialize();
+                        b.deletingWithShifting((Comparable) key, ref);
                         b.serialize(name, indexName);
-                        System.out.println("i am deleted from tree");
                     }
-                    if (CIref != null) {
+                }
+                Page page = Page.deserialize(refPage);
+                page.tuples.remove(refIndex);
+                page.serialize();
+            }
+            if(CIref != null){
+                int CIrefIndex = CIref.getIndexInPage();
+                String CIrefPage = CIref.getPage();
+                for (String[] line : tableData) {
+                    String indexName = csvConverter.getIndexName(name, line[1]);
+                    if (!Objects.equals(indexName, "null")) {
                         BPTree b = BPTree.deserialize(name, line[1]);
                         int refIndex = CIref.getIndexInPage();
                         String refPage = CIref.getPage();
@@ -278,14 +280,55 @@ public class Table implements Serializable {
                         Hashtable<String,Object> values = tuple.getValues();
                         Object key = values.get(line[1]);
                         b.deletingWithShifting((Comparable) key, CIref);
-                        page.tuples.remove(refIndex);
-                        page.serialize();
-                        b.serialize(this.name, indexName);
-                        System.out.println("i am deleted from tree CIref");
+                        b.serialize(name, indexName);
                     }
+                }
+                Page page = Page.deserialize(CIrefPage);
+                page.tuples.remove(CIrefIndex);
+                page.serialize();
+                // Delete the page in case all its tuples were deleted
+                if (page.tuples.isEmpty()) {
+                    File file = new File(this.name + ".class");
+                    file.delete();
                 }
             }
         }
+//
+//        //Delete the reference that was deleted from the table from the BP tree itself
+//        List<String[]> tableData = csvConverter.getTableMetadata(this.name);
+//        if (tableData != null && tableData.size() > 0) {
+//            for (String[] line : tableData) {
+//                String indexName = csvConverter.getIndexName(name, line[1]);
+//                if (!Objects.equals(indexName, "null")) {
+//                    for (Ref ref : toDelete) {
+//                        BPTree b = BPTree.deserialize(name, line[1]);
+//                        int refIndex = ref.getIndexInPage();
+//                        String refPage = ref.getPage();
+//                        Page page = Page.deserialize(refPage);
+//                        Tuple tuple = page.getTuple(refIndex);
+//                        Hashtable<String,Object> values = tuple.getValues();
+//                        Object key = values.get(line[1]);
+//                        b.deletingWithShifting((Comparable) key, CIref);
+//                        page.tuples.remove(refIndex);
+//                        page.serialize();
+//                        b.serialize(name, indexName);
+//                    }
+//                    if (CIref != null) {
+//                        BPTree b = BPTree.deserialize(name, line[1]);
+//                        int refIndex = CIref.getIndexInPage();
+//                        String refPage = CIref.getPage();
+//                        Page page = Page.deserialize(refPage);
+//                        Tuple tuple = page.getTuple(refIndex);
+//                        Hashtable<String,Object> values = tuple.getValues();
+//                        Object key = values.get(line[1]);
+//                        b.deletingWithShifting((Comparable) key, CIref);
+//                        page.tuples.remove(refIndex);
+//                        page.serialize();
+//                        b.serialize(this.name, indexName);
+//                    }
+//                }
+//            }
+//        }
     }
 
     public void sortReferencesDescending(ArrayList<Ref> references) {
@@ -309,7 +352,8 @@ public class Table implements Serializable {
 
     public static void intersection(ArrayList<Ref> list1, ArrayList<Ref> list2) {
         if (list1.isEmpty()) {
-            list1.addAll(list2); // If list1 is empty, add all elements from list2
+            if(list2 != null && !list2.isEmpty())
+                list1.addAll(list2); // If list1 is empty, add all elements from list2
         } else {
             HashSet<Ref> set = new HashSet<>(list1);
             set.retainAll(list2); // Retains only the elements in list 1 that are also present in list 2
