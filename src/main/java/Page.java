@@ -107,9 +107,7 @@ public class Page implements Serializable {
             currTable.pageInfo.put(this.name, new Object[]{this.max, this.min, this.tuples.size()});
             currTable.serialize();
             result = new Ref(this.name, this.tuples.size() - 1);
-            if(currTable.tablePages.indexOf(this.name) == 0) {
-                insertHelper(result, tuple, arr[0]);
-            }
+
             return result;
         }
 
