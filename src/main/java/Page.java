@@ -182,7 +182,7 @@ public class Page implements Serializable {
                 String lastPage = currTable.tablePages.lastElement();
                 String[] lastName = lastPage.split("_");
                 int lastInt = Integer.parseInt(lastName[1]);
-                Page newPage = new Page(currTable.name, lastInt, this.clusteringKey);
+                Page newPage = new Page(currTable.name, lastInt+1, this.clusteringKey);
                 newPage.insert(extra);
                 newPage.serialize();
                 currTable.pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
