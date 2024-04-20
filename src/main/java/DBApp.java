@@ -113,7 +113,7 @@ public class DBApp {
         target = Table.deserialize(strTableName);
         for (String pageName : target.tablePages) {
             System.out.println("Page name: " + pageName);
-            System.out.println("The page: " + Page.deserialize(pageName));
+            System.out.println("The page:\n" + Page.deserialize(pageName));
         }
         System.out.println(target.tablePages);
         System.out.println();
