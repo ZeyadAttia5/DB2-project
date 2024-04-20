@@ -284,18 +284,21 @@ public class Page implements Serializable {
         return ht;
     }
 
-    public void deleteTuples(Hashtable<String, Object> htblColNameValue) throws DBAppException {
-        // Check if there's a clustering key in the conditions
-        // If there is no clustering key; loop through the tuples
+    public ArrayList<Ref> deleteTuples(Hashtable<String, Object> htblColNameValue) throws DBAppException {
+        ArrayList<Ref> references = new ArrayList<>();
+        // Check if there's a clustering key in the conditions, if there is no clustering key; loop through the tuples
         if (!htblColNameValue.containsKey(clusteringKey)) {
             for (int i = 0; i<=tuples.size() - 1; i++) {
                 Tuple tuple = tuples.get(i);
                 // Check if all the conditions are met in the tuple
-
                 if (tupleMatchesConditions(tuple, htblColNameValue)) {
-                    tuple.setValuesToNull();
-//                    tuples.set(i,null);
+                    Ref ref = new Ref(this.name, i);
+                    references.add(ref);
                 }
+            }
+            for(Ref ref:references){
+                Tuple tuple = tuples.get(ref.getIndexInPage());
+//                tuples.remove(tuple);
             }
         }
         // If there's a clustering key we perform binary search to find the corresponding tuple then see if it matches other conditions in the hashtable if present
@@ -309,19 +312,22 @@ public class Page implements Serializable {
                 // Check if there are remaining conditions to check
                 if(!htblColNameValue.isEmpty()){
                     if (tupleMatchesConditions(matchingTuple, htblColNameValue)) {
-                        matchingTuple.setValuesToNull();
+                        Ref ref = new Ref(this.name, index);
+                        references.add(ref);
+//                        tuples.remove(matchingTuple);
                     }
                     else{
-                        throw new DBAppException("Clustering key value doesn't match the rest of the conditions");
+                        System.out.println("Clustering key value doesn't match the rest of the conditions");
                     }
                 }
                 else{
-                    matchingTuple.setValuesToNull();
+                    Ref ref = new Ref(this.name, index);
+                    references.add(ref);
 //                    tuples.remove(matchingTuple);
                 }
             }
             else{
-                throw new DBAppException("Clustering value not found");
+                System.out.println("Clustering key value not found");
             }
         }
         // If all the tuples were deleted from the page then the whole page will get deleted
@@ -329,10 +335,10 @@ public class Page implements Serializable {
             File file = new File(this.name + ".class");
             file.delete();
         }
+        return references;
     }
 
     public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
-//    public boolean checkReference(Ref ref, Hashtable<String, Object> conditions) {
         // Take a reference to check whether it matches the rest of the conditions
         // Get the index of the reference in the page & its corresponding tuple
         int refIndex = ref.getIndexInPage();
@@ -342,13 +348,13 @@ public class Page implements Serializable {
         // Check if there are remaining conditions to see if the tuple matches them
         if(!conditions.isEmpty()) {
             if (tupleMatchesConditions(tuple, conditions)) {
-                tuples.remove(tuple);
+//                tuples.remove(tuple);
                 result = true;
             }
         }
         // If there are no remaining conditions the tuple is removed
         else{
-            tuple.setValuesToNull();
+//            tuples.remove(tuple);
             result = true;
         }
         if (tuples.isEmpty()) {
@@ -382,17 +388,16 @@ public class Page implements Serializable {
         if (!conditions.isEmpty()) {
             //If there are remaining conditions the tupleMatchesConditions method is called to check if it matches them
             if (tupleMatchesConditions(tuple, conditions)) {
-                //Null-ify the tuple
-                tuple.setValuesToNull();
+//                tuples.remove(tuple);
                 deleted = true;
             }
             else {
-                throw new DBAppException("Clustering indexed tuple doesn't match the rest of the conditions");
+                System.out.println("Clustering indexed tuple doesn't match the rest of the conditions");
             }
         }
         else {
             //There are no other conditions so the tuple will be deleted
-            tuple.setValuesToNull();
+//            tuples.remove(tuple);
             deleted = true;
         }
         return deleted;

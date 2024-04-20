@@ -120,7 +120,7 @@ public class Table implements Serializable {
 
         //Storing references to be deleted from the BP tree
         ArrayList<Ref> toDelete = new ArrayList<>();
-
+        Ref CIref;
         // Looping over the conditions to check if there exists a clustering indexed column or clustering column in the conditions
         for(String column:htblColNameValue.keySet()){
             if(csvConverter.isClusteringKey(name,column)){
@@ -150,23 +150,28 @@ public class Table implements Serializable {
                             //Go to that page & perform the delete method on it that checks whether to remove it if there are additional conditions in the hashtable
                             Boolean deleted = page.deleteClusteringIndex(reference.get(0), htblColNameValue);
                             page.serialize();
-                            b.serialize(name, csvConverter.getIndexName(name, column));
+                            //b.serialize(name, csvConverter.getIndexName(name, column));
                             //If the reference got deleted it will be added to the ArrayList of references to delete from the tree
                             if (deleted){
                                 toDelete.add(reference.get(0));
-                                // I want to delete from the tree without entering 213. Can i delete here
                             }
                         }
                     }
                 }
                 // If the clustering key has no index on it, the deleteTuples method will be called on the conditions hashtable
                 else {
-                    clusteringPage.deleteTuples(htblColNameValue);
+                    ArrayList<Ref> reference = clusteringPage.deleteTuples(htblColNameValue);
+                    toDelete.add(reference.get(0));
                     clusteringPage.serialize();
-                    return;
                 }
             }
         }
+        if(!toDelete.isEmpty()) {
+            CIref = toDelete.get(0);
+            toDelete.remove(0);
+        }
+        else
+            CIref = null;
 
         // Stores the pages that contain references that should be deleted from the BP tree if they match all conditions in the hashtable
         HashSet<String> uniquePages = new HashSet<>();
@@ -181,22 +186,22 @@ public class Table implements Serializable {
                 // Perform a search on the BP tree that gives the corresponding references with a value matching the conditions hashtable
                 ArrayList<Ref> references = b.search((Comparable) htblColNameValue.get(column));
                 // If there were no previous indices the toDelete gets filled for the first time
-                if (toDelete.isEmpty()) {
-                    for (Ref ref : references) {
-                        toDelete.add(ref);
-                    }
-                }
-                // The toDelete had previous references from previous indices in the conditions so an intersection is being done over the toDelete's previous indices' references & the new index's references
-                else{
-                    intersection(toDelete,references);
-                }
+//                if (toDelete.isEmpty()) {
+//                    for (Ref ref : references) {
+//                        toDelete.add(ref);
+//                    }
+//                }
+//                // The toDelete had previous references from previous indices in the conditions so an intersection is being done over the toDelete's previous indices' references & the new index's references
+//                else{
+                intersection(toDelete,references);
+//                }
                 // The checked indexed column is removed from the conditions hashtable
                 iterator.remove();
             }
         }
 
         // Sort the references in the toDelete ArrayList in descending order to delete from the end of the page first
-        if(!toDelete.isEmpty()) {
+        if(!(toDelete.size() <=1)) {
             sortReferencesDescending(toDelete);
         }
 
@@ -206,67 +211,78 @@ public class Table implements Serializable {
                 uniquePages.add(ref.getPage());
         }
 
-
         // Stores the references that will be deleted from the toDelete in case they don't match the rest of the conditions in the hashtable
         ArrayList<Ref> toRemoveFromtoDelete = new ArrayList<>();
         // Checking if there are previously indexed references to check whether they match the rest of the conditions in the hashtable
         if (!uniquePages.isEmpty()) {
             // Looping over the uniquePages of the references
             for (String fileName : uniquePages) {
-                try {
-                    Page page = Page.deserialize(fileName);
-                    // Iterating through the references that are in that page to check if they should be deleted
-                    for (Ref ref : toDelete) {
-                        if (ref.getPage().equals(fileName)) {
-                            // Calling the checkReference method to check if the tuple matches the rest of the conditions to remove it
-                            boolean removed = page.checkReference(ref, htblColNameValue);
-                            // Checking if the reference didn't match the rest of the conditions to remove it from the toDelete
-                            if (!removed) {
-                                toRemoveFromtoDelete.add(ref);
-                            }
+                Page page = Page.deserialize(fileName);
+                // Iterating through the references that are in that page to check if they should be deleted
+                for (Ref ref : toDelete) {
+                    if (ref.getPage().equals(fileName)) {
+                        // Calling the checkReference method to check if the tuple matches the rest of the conditions to remove it
+                        boolean removed = page.checkReference(ref, htblColNameValue);
+                        // Checking if the reference didn't match the rest of the conditions to remove it from the toDelete
+                        if (!removed) {
+                            toRemoveFromtoDelete.add(ref);
                         }
                     }
-                    page.serialize();
-                    // Removing all the references that weren't deleted as they didn't match all conditions in the hashtable from the toDelete
-                    toDelete.removeAll(toRemoveFromtoDelete);
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
                 }
+                page.serialize();
+                // Removing all the references that weren't deleted as they didn't match all conditions in the hashtable from the toDelete
+                toDelete.removeAll(toRemoveFromtoDelete);
             }
         }
 
         // There were no indexed columns in the conditions hashtable; handling all the non-indexed columns
         else {
-            for (String fileName : tablePages) {
-                try {
+            if(!htblColNameValue.isEmpty()) {
+                for (String fileName : tablePages) {
                     Page page = Page.deserialize(fileName);
                     // Call the deleteTuples on each page by passing the conditions hashtable to it
-                    page.deleteTuples(htblColNameValue);
+                    ArrayList<Ref> references = page.deleteTuples(htblColNameValue);
+                    intersection(toDelete, references);
                     page.serialize();
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
                 }
             }
         }
 
         //Delete the reference that was deleted from the table from the BP tree itself
-        for(String column:conditionsTemp.keySet()){
-            String indexName = csvConverter.getIndexName(name, column);
-            if(!Objects.equals(indexName, "null")){
-                for(Ref ref : toDelete){
-                    //if condition to delete el 3adeya wala laa
-                    BPTree b = BPTree.deserialize (name, column);
-                    int refIndex = ref.getIndexInPage();
-                    String refPage = ref.getPage();
-                    Page page = Page.deserialize(refPage);
-                    if(refIndex != page.tuples.size()){
-                        b.deletingWithShifting((Comparable) conditionsTemp.get(column), ref);
+        List<String[]> tableData = csvConverter.getTableMetadata(this.name);
+        if (tableData != null && tableData.size() > 0) {
+            for (String[] line : tableData) {
+                String indexName = csvConverter.getIndexName(name, line[1]);
+                if (!Objects.equals(indexName, "null")) {
+                    for (Ref ref : toDelete) {
+                        System.out.println(ref);
+                        BPTree b = BPTree.deserialize(name, line[1]);
+                        int refIndex = ref.getIndexInPage();
+                        String refPage = ref.getPage();
+                        Page page = Page.deserialize(refPage);
+                        Tuple tuple = page.getTuple(refIndex);
+                        Hashtable<String,Object> values = tuple.getValues();
+                        Object key = values.get(line[1]);
+                        b.deletingWithShifting((Comparable) key, CIref);
+                        page.tuples.remove(refIndex);
+                        page.serialize();
+                        b.serialize(name, indexName);
+                        System.out.println("i am deleted from tree");
                     }
-                    else{
-                        b.delete((Comparable) conditionsTemp.get(column), ref);
+                    if (CIref != null) {
+                        BPTree b = BPTree.deserialize(name, line[1]);
+                        int refIndex = CIref.getIndexInPage();
+                        String refPage = CIref.getPage();
+                        Page page = Page.deserialize(refPage);
+                        Tuple tuple = page.getTuple(refIndex);
+                        Hashtable<String,Object> values = tuple.getValues();
+                        Object key = values.get(line[1]);
+                        b.deletingWithShifting((Comparable) key, CIref);
+                        page.tuples.remove(refIndex);
+                        page.serialize();
+                        b.serialize(this.name, indexName);
+                        System.out.println("i am deleted from tree CIref");
                     }
-                    b.serialize(name, column);
-                    System.out.println("i am deleted from tree");
                 }
             }
         }
@@ -291,23 +307,15 @@ public class Table implements Serializable {
         Collections.sort(references, refComparator);
     }
 
-    public static <T> ArrayList<T> intersection(ArrayList<T> list1, ArrayList<T> list2) {
-        // Store unique elements from list1
-        HashSet<T> set = new HashSet<>(list1);
-
-        // Stores the intersection
-        ArrayList<T> intersectionList = new ArrayList<>();
-
-        // Iterating through list2 & checking if each element is present in the HashSet
-        for (T element : list2) {
-            if (set.contains(element)) {
-                intersectionList.add(element);
-                // Removing the element from the HashSet to avoid duplicates in the intersection
-                set.remove(element);
-            }
+    public static void intersection(ArrayList<Ref> list1, ArrayList<Ref> list2) {
+        if (list1.isEmpty()) {
+            list1.addAll(list2); // If list1 is empty, add all elements from list2
+        } else {
+            HashSet<Ref> set = new HashSet<>(list1);
+            set.retainAll(list2); // Retains only the elements in list 1 that are also present in list 2
+            list1.clear();
+            list1.addAll(set);
         }
-
-        return intersectionList;
     }
 
     /**

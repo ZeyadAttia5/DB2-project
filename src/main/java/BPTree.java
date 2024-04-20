@@ -508,6 +508,9 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
     }
 
     public void deletingWithShifting(T key, Ref recordReference){
+        if (key == null || recordReference == null) {
+            throw new NullPointerException("Cannot delete with null key or ref");
+        }
 
         int deletedIndex = recordReference.getIndexInPage();
         String deletedPage = recordReference.getPage();
@@ -538,8 +541,7 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
             }
             currLeaf = currLeaf.getNext();
         }
-        this.delete( key, recordReference);
-
+        this.delete(key, recordReference);
     }
 
     public static ArrayList<Ref> getRefs(BPTreeLeafNode bnode){
