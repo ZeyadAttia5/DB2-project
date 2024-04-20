@@ -394,11 +394,11 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
                 if(currLeaf.records[i].getPage().compareToIgnoreCase(insertedPage) > 0|| currLeaf.records[i].getPage().compareToIgnoreCase(insertedPage) == 0 && currLeaf.records[i].getIndexInPage()>=insertedIndex ){
                     int currIndex = currLeaf.records[i].getIndexInPage();
                     // Handling case where there is no room in the page
-                    if(currIndex+1 > maxPageSize){
+                    if(currIndex+1 >= maxPageSize){
                         String[] x = currLeaf.records[i].getPage().split("_");
                         int pageNum = Integer.parseInt(x[1]);
                         String tableName = x[0];
-                        currLeaf.records[i].setIndexInPage(1);
+                        currLeaf.records[i].setIndexInPage(0);
                         currLeaf.records[i].setPageName(tableName+"_"+ (pageNum+1));
                     }
                     else{
@@ -415,12 +415,12 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
                         String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
                         if(currentPage.compareToIgnoreCase(insertedPage)> 0 || currentPage.compareToIgnoreCase(insertedPage) == 0 && currentIndex>= insertedIndex){
                             // Handling case where there is no room in the page
-                            if(currentIndex+1 > maxPageSize){
+                            if(currentIndex+1 >= maxPageSize){
                                 String[] x = currentPage.split("_");
                                 int pageNum = Integer.parseInt(x[1]);
                                 String tableName = x[0];
                                 currLeaf.getOverflow(i).remove(j);
-                                currLeaf.getOverflow(i).add(j, new Ref(tableName+"_"+ (pageNum+1), 1));
+                                currLeaf.getOverflow(i).add(j, new Ref(tableName+"_"+ (pageNum+1), 0));
                             }
                             else{
                                 currLeaf.getOverflow(i).remove(j);
