@@ -90,7 +90,21 @@ public class Page implements Serializable {
     // =======================================================================================================================================
     //  Insertion into page
     // =======================================================================================================================================
-
+    public Ref insert2(Tuple tuple) throws IOException {
+        Ref result = null;
+        String[] arr = this.name.split("_");
+        Table currTable = Table.deserialize(arr[0]);
+        String clust = csvConverter.getClusteringKey(arr[0]);
+        this.tuples.add(tuple);
+        this.max = tuple.values.get(clust);
+        this.min = this.max;
+        this.serialize();
+        currTable.tablePages.add(this.name);
+        currTable.pageInfo.put(this.name, new Object[]{this.max, this.min, this.tuples.size()});
+        currTable.serialize();
+        result = new Ref(this.name, this.tuples.size() - 1);
+        return result;
+    }
     public Ref insert(Tuple tuple) throws DBAppException, IOException, ClassNotFoundException {
 
         String[] arr = this.name.split("_");
@@ -107,6 +121,7 @@ public class Page implements Serializable {
             currTable.pageInfo.put(this.name, new Object[]{this.max, this.min, this.tuples.size()});
             currTable.serialize();
             result = new Ref(this.name, this.tuples.size() - 1);
+            if(currTable.tablePages.indexOf(this.name) > 0)
             insertHelper(result, tuple, arr[0]);
             return result;
         }
@@ -183,7 +198,7 @@ public class Page implements Serializable {
                 String[] lastName = lastPage.split("_");
                 int lastInt = Integer.parseInt(lastName[1]);
                 Page newPage = new Page(currTable.name, lastInt+1, this.clusteringKey);
-                newPage.insert(extra);
+                newPage.insert2(extra);
                 newPage.serialize();
                 currTable.pageInfo.put(newPage.name, new Object[]{newPage.max, newPage.min, newPage.tuples.size()});
                 currTable.tablePages.add(newPage.name);
@@ -199,6 +214,7 @@ public class Page implements Serializable {
     }
 
     private void insertHelper(Ref reference, Tuple tuple, String tableName) {
+
         for (String colName : tuple.values.keySet()) {
             String result = csvConverter.getIndexName(tableName, colName);
             if (!result.equals("null")) {
