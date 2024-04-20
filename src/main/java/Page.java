@@ -167,7 +167,7 @@ public class Page implements Serializable {
                     currPage.tuples.add(0, extra);
                     insertHelperShifting(new Ref(currPage.name, 0), tuple, arr[0]);
                     currPage.min = currPage.tuples.get(0).values.get(clusteringKey);
-                    currPage.max = currPage.tuples.get(currPage.maxSize - 1).values.get(clusteringKey);
+                    currPage.max = currPage.tuples.get(currPage.tuples.size() - 1).values.get(clusteringKey);
                     currTable.pageInfo.put(currPage.name, new Object[]{currPage.max, currPage.min, currPage.tuples.size()});
                     currPage.serialize();
                     if (currPage.tuples.size() > maxSize) {
