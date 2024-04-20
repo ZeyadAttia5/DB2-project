@@ -18,8 +18,8 @@ public class Main {
 
 
         // Example SQL statements to parse
-        //String sql ="SELECT name FROM Student WHERE age >= 5 AND id > 99 OR id < 67;";
-        String sql = "CREATE INDEX name_index ON Employee (name);";
+        String sql ="SELECT name FROM Student WHERE age >= 5 AND id > 99 OR id < 67;";
+        //String sql = "CREATE INDEX name_index ON Employee (name);";
 
 
         // Create a CustomListener instance
