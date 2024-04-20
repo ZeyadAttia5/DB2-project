@@ -252,51 +252,62 @@ public class DBApp {
                     switch (operator) {
                         case "=":
                             references = ind.search((Comparable) value);
-                            for (int i = 0; i < references.size(); i++) {
-                            pagename = references.get(0).getPage();
-                            pagenow = Page.deserialize(pagename);
-                            indexInPage = references.get(i).getIndexInPage();
-                            helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int i = 0; i < references.size(); i++) {
+                                    pagename = references.get(0).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(i).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
                         case ">=":
                             references = ind.getRefsGreaterEqual((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
+
                             res.add(helper);
                             break;
                         case ">":
                             references = ind.getRefsGreaterThan((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
                         case "<=":
                             references = ind.getRefsLessEqual((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
                         case "<":
                             references = ind.getRefsLessThan((Comparable) value);
-                            for (int k = 0; k < references.size(); k++) {
-                                pagename = references.get(k).getPage();
-                                pagenow = Page.deserialize(pagename);
-                                indexInPage = references.get(k).getIndexInPage();
-                                helper.add(pagenow.tuples.get(indexInPage));
+                            if(references != null){
+                                for (int k = 0; k < references.size(); k++) {
+                                    pagename = references.get(k).getPage();
+                                    pagenow = Page.deserialize(pagename);
+                                    indexInPage = references.get(k).getIndexInPage();
+                                    helper.add(pagenow.tuples.get(indexInPage));
+                                }
                             }
                             res.add(helper);
                             break;
