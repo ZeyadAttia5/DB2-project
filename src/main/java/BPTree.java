@@ -637,16 +637,14 @@ public class BPTree<T extends Comparable<T>> implements Serializable {
         while(currLeaf!=null ){
             for(int i = 0;i< currLeaf.numberOfKeys; i++){
                 System.out.println(currLeaf);
-                System.out.println(currLeaf.records[i].getPage());
-                System.out.println(currLeaf.records[i].getIndexInPage());
+                System.out.println("Page: " + currLeaf.records[i].getPage()+ ". Index: " + currLeaf.records[i].getIndexInPage());
                 if (currLeaf.getOverflow(i)!= null && currLeaf.getOverflow(i).size()>0 ) {
                     int size = currLeaf.getOverflow(i).size();
-                    // Traverse the duplicates and check if they should be changed or not
+                    // Traverse the duplicates
                     for(int j =0; j< size; j++){
                         int currentIndex = ((Ref)currLeaf.getOverflow(i).get(j)).getIndexInPage();
                         String currentPage =  ((Ref)currLeaf.getOverflow(i).get(j)).getPage();
-                        System.out.println(currentPage);
-                        System.out.println(currentIndex);
+                        System.out.println("Page: "+ currentPage + ". Index: " + currentIndex);
                     }
                 }
             }

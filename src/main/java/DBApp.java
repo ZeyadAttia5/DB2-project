@@ -6,22 +6,18 @@ public class DBApp {
 
 
     public DBApp() {
-
     }
 
-    // this does whatever initialization you would like
-    // or leave it empty if there is no code you want to
-    // execute at application startup
     public void init() {
         csvConverter.createMetaDataFile();
     }
 
-    // following method creates one table only
-    // strClusteringKeyColumn is the name of the column that will be the primary
-    // key and the clustering column as well. The data type of that column will
-    // be passed in htblColNameType
-    // htblColNameValue will have the column name as key and the data
-    // type as value
+    // =======================================================================================================================================
+    //  Table Creation:
+    //  strTableName -> name of table to be created
+    //  strClusteringKeyColumn -> column that is the primary key and the clustering column
+    //  htblColNameValue<column name, data type> -> hashtable of column names and their data types
+    // =======================================================================================================================================
     public void createTable(String strTableName, String strClusteringKeyColumn, Hashtable<String, String> htblColNameType) throws DBAppException {
             // Check if the table already exists
             if (csvConverter.tablePresent(strTableName))
@@ -50,7 +46,14 @@ public class DBApp {
 
     }
 
-    // following method creates a B+tree index
+
+    // =======================================================================================================================================
+    //  B+Tree index Creation:
+    //  strTableName -> name of table in which index will be created
+    //  strColName -> column in which index will be created
+    //  strIndexName -> name of index to be created
+    // =======================================================================================================================================
+
     public void createIndex(String strTableName, String strColName, String strIndexName) throws DBAppException, IOException, ClassNotFoundException {
 
         // Adjusting metadata file with new index
@@ -84,8 +87,13 @@ public class DBApp {
 
     }
 
-    // following method inserts one row only.
-    // htblColNameValue must include a value for the primary key
+
+    // =======================================================================================================================================
+    //  Insertion into table:
+    //  inserting one row only
+    //  strTableName -> name of table you are inserting to
+    //  htblColNameValue<column name, value> -> hashtable of columns and their corresponding values to insert. must include a value for the primary key
+    // =======================================================================================================================================
     public void insertIntoTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
 
         // Inserting into a table that doesn't exist
@@ -112,10 +120,14 @@ public class DBApp {
 
     }
 
-    // following method updates one row only
-    // htblColNameValue holds the key and new value
-    // htblColNameValue will not include clustering key as column name
-    // strClusteringKeyValue is the value to look for to find the row to update.
+
+    // =======================================================================================================================================
+    //  Updating row in table:
+    //  updates one row only, cannot update clustering key
+    //  strTableName -> name of table you are updating in
+    //  strClusteringKeyValue -> value to look for to find the row to update
+    //  htblColNameValue<column name, value> -> hashtable of columns and their corresponding values to update
+    // =======================================================================================================================================
     public void updateTable(String strTableName, String strClusteringKeyValue, Hashtable<String, Object> htblColNameValue) throws DBAppException {
 
         // Check if the table exists
@@ -155,11 +167,12 @@ public class DBApp {
 
 
 
-
-    // following method could be used to delete one or more rows.
-    // htblColNameValue holds the key and value. This will be used in search
-    // to identify which rows/tuples to delete.
-    // htblColNameValue enteries are ANDED together
+    // =======================================================================================================================================
+    //  Deleting from table:
+    //  can delete many rows
+    //  strTableName -> name of table you are inserting to
+    //  htblColNameValue<column name, value> -> hashtable of columns and their corresponding values to delete, define entries anded otgether
+    // =======================================================================================================================================
     public void deleteFromTable(String strTableName, Hashtable<String, Object> htblColNameValue) throws DBAppException, IOException, ClassNotFoundException {
         // Check if the table exists
         if (!csvConverter.tablePresent(strTableName))
@@ -172,6 +185,11 @@ public class DBApp {
         table.serialize();
 
     }
+
+
+    // =======================================================================================================================================
+    //  Selecting from table:
+    // =======================================================================================================================================
 
     public Iterator selectFromTable(SQLTerm[] arrSQLTerms, String[] strarrOperators) throws DBAppException {
 

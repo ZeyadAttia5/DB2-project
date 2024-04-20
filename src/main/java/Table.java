@@ -266,8 +266,11 @@ public class Table implements Serializable {
         for(int i=0; i<ref.size(); i++){
             Page page = Page.deserialize(ref.get(i).getPage());
             page.tuples.remove(ref.get(i).getIndexInPage());
-            if(page.tuples.isEmpty())
+            if(page.tuples.isEmpty()){
                 page.deleteSerializedFile();
+                pageInfo.remove(page.name);
+                tablePages.remove(page.name);
+            }
             else
                 page.serialize();
         }
