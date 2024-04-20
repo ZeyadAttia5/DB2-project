@@ -3,6 +3,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -18,9 +19,10 @@ public class Main {
 
 
         // Example SQL statements to parse
-        String sql ="SELECT name FROM Student WHERE age >= 5 AND id > 99 OR id < 67;";
+        String sql ="SELECT * FROM Student WHERE name != Gamila AND age >= 19;";
         //String sql = "CREATE INDEX name_index ON Employee (name);";
-
+        //
+        DBApp app = new DBApp();
 
         // Create a CustomListener instance
         CustomListener listener = new CustomListener();
@@ -45,7 +47,7 @@ public class Main {
                 arrSQLTerms[i] = new SQLTerm();
             List<List<String>> whereStatements = listener.Select_parsedConditions;
 
-
+            //populating tha array of SQLTerm
             for (int i = 0; i < whereStatements.size(); i++) {
                 arrSQLTerms[i]._strTableName = listener.tableName;
                 arrSQLTerms[i]._strColumnName = whereStatements.get(i).get(0);
@@ -61,10 +63,8 @@ public class Main {
                     } else if (valueStr.matches("-?\\d+(\\.\\d+)?")) { // Check if the value is a double
                         parsedValue = Double.parseDouble(valueStr);
                     } else {
-                        throw new NumberFormatException("Value is not a valid integer or double: " + valueStr);
+                        parsedValue = valueStr; // Assuming the value is a string
                     }
-
-
                 } catch (NumberFormatException e) {
                     throw new NumberFormatException("Failed to parse value: " + e.getMessage());
                 }
@@ -75,9 +75,13 @@ public class Main {
             for (int i = 0; i < listener.Select_logical_operators.size(); i++) {
                 stringArray[i] = listener.Select_logical_operators.get(i);
             }
-            //        DBApp app = new DBApp();
-            //        System.out.println(arrSQLTerms[0]._strOperator);
-            //        app.selectFromTable(arrSQLTerms, stringArray);
+
+                    System.out.println(arrSQLTerms[1]._objValue.getClass().getSimpleName());
+                    System.out.println(Arrays.toString(stringArray));
+                    Iterator resultSet = app.selectFromTable(arrSQLTerms , stringArray);
+                    while(resultSet.hasNext())
+                            System.out.print(resultSet.next());
+
         }
 
         if (sql.toLowerCase().contains("create")) {
