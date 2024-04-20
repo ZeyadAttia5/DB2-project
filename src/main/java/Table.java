@@ -759,7 +759,7 @@ public class Table implements Serializable {
         x.add(new Ref("b",2));
         x.add(new Ref("b",3));
         x.add(new Ref("c",3));
-        orderByPageAndIndexDescending(x);
+        //orderByPageAndIndexDescending(x);
         for (int i =0; i< x.size(); i++)
         System.out.println(x.get(i));
     }
