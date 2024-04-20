@@ -37,7 +37,7 @@ public class Main {
             // Parse the SQL statements and get the parse trees
             SQLiteParser.Sql_stmtContext selectParseTree = selectParser.sql_stmt();
 
-
+            //walking the Select statement tree
             walker.walk(listener, selectParseTree);
             SQLTerm[] arrSQLTerms;
             arrSQLTerms = new SQLTerm[listener.Select_operators.size()];
@@ -80,7 +80,6 @@ public class Main {
             //        app.selectFromTable(arrSQLTerms, stringArray);
         }
 
-        //walking the create index tree
         if (sql.toLowerCase().contains("create")) {
             // Create a CharStream from the SQL strings
             CharStream createIndexStream = CharStreams.fromString(sql);
@@ -89,7 +88,7 @@ public class Main {
             SQLiteParser createIndexParser = new SQLiteParser(new CommonTokenStream(createIndexLexer));
             // Parse the SQL statements and get the parse trees
             SQLiteParser.Sql_stmtContext createIndexParseTree = createIndexParser.sql_stmt();
-
+            //walking the create index tree
             walker.walk(listener, createIndexParseTree);
             //app.createIndex(listener.tableName, listener.createIndexColumns.get(0), listener.indexName);
 
