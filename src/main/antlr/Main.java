@@ -28,7 +28,7 @@ public class Main {
         ParseTreeWalker walker = new ParseTreeWalker();
 
 
-        if (sql.contains("SELECT") || sql.contains("select")) {
+        if (sql.toLowerCase().contains("select")) {
             // Create a CharStream from the SQL strings
             CharStream selectStream = CharStreams.fromString(sql);
             // Create a lexer and parser for each SQL statement
@@ -81,7 +81,7 @@ public class Main {
         }
 
         //walking the create index tree
-        if (sql.contains("create") || sql.contains("CREATE")) {
+        if (sql.toLowerCase().contains("create")) {
             // Create a CharStream from the SQL strings
             CharStream createIndexStream = CharStreams.fromString(sql);
             // Create a lexer and parser for each SQL statement
