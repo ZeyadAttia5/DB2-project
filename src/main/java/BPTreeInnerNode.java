@@ -1,5 +1,4 @@
 import java.io.Serializable;
-import java.util.ArrayList;
 
 public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T> implements Serializable {
     /**
@@ -67,7 +66,7 @@ public class BPTreeInnerNode<T extends Comparable<T>> extends BPTreeNode<T> impl
      * insert given key in the corresponding index.
      *
      * @param key    key to be inserted
-     * @param Ref    reference which that inserted key is located
+     * @param recordReference    reference which that inserted key is located
      * @param parent parent of that inserted node
      * @param ptr    index of pointer in the parent node pointing to the current
      *               node

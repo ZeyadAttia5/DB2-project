@@ -4,8 +4,11 @@ import java.nio.file.Path;
 import java.util.*;
 
 public class csvConverter {
-
     private static final String METADATA_FILE = "src/main/resources/metadata.csv";
+
+    // =======================================================================================================================================
+    //  MetaData Configuration
+    // =======================================================================================================================================
 
     public static void createMetaDataFile(){
         File metadataFile = new File(METADATA_FILE);
@@ -22,7 +25,7 @@ public class csvConverter {
         }
     }
 
-    public static void convert(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
+    public static void addTableToMetaData(Hashtable<String, String> hashtable, String tableName, String strClusteringKeyColumn) {
 
         for(String key : hashtable.keySet())
         {
@@ -37,18 +40,6 @@ public class csvConverter {
         try (FileReader fileReader = new FileReader(METADATA_FILE);
              BufferedReader bufferedReader = new BufferedReader(fileReader);
              FileWriter writer = new FileWriter(METADATA_FILE, true)) {
-
-            // 7aset eno a7san law 3amalna el 7eta de bara abl ma n-khosh n-convert asfa awy
-//            // Check if the table name already exists in metadata
-//            String line;
-//            while ((line = bufferedReader.readLine()) != null) {
-//                String[] parts = line.split(",");
-//                String existingTableName = parts[0].trim();
-//                if (existingTableName.equals(tableName)) {
-//                    System.out.println("Table name '" + tableName + "' already exists in the CSV file. Cannot convert.");
-//                    return;
-//                }
-//            }
 
             // Write header to CSV file if it's empty
             if (Files.size(Path.of(METADATA_FILE)) == 0) {
@@ -92,104 +83,6 @@ public class csvConverter {
         }
     }
 
-    public static String getDataType(String strTableName, String strColName) {
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(strTableName) && fields[1].equals(strColName)) return fields[2];
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-
-    }
-
-
-    public static String getIndexName(String tableName, String colName) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(tableName) && fields[1].equals(colName)) return fields[4];
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    //returns a string with the ClusteringKey Column Name
-    public static String getClusteringKey(String tableName) {
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 4 && parts[0].equalsIgnoreCase(tableName) && parts[3].equalsIgnoreCase("True")) {
-                    return parts[1]; // Return the clustering key column name
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null; // No clustering key found for the table
-    }
-
-    public static boolean isClusteringKey(String tableName, String clusteringKeyValue) {
-        return getClusteringKey(tableName).equalsIgnoreCase(clusteringKeyValue);
-    }
-
-    //  returns a List<String[]> of the table's metadata
-    public static List<String[]> getTableMetadata(String tableName) {
-        List<String[]> tableMetadata = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length >= 6 && parts[0].equalsIgnoreCase(tableName)) {
-                    tableMetadata.add(parts);
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return tableMetadata;
-    }
-
-    public static boolean tablePresent(String tableName){
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(tableName))
-                    return true;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    //returns the data type of the column
-    public static String getColumnType(String tableName, String columnName){
-
-        try (BufferedReader reader1 = new BufferedReader(new FileReader(METADATA_FILE))) {
-            String line;
-            while ((line = reader1.readLine()) != null) {
-                String[] fields = line.split(",");
-                if (fields[0].equals(tableName) && fields[1].equals(columnName))
-                    return fields[2];
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-
     // Adding index to metadata
     public static void addIndexToMetadata(String strTableName, String strColName, String strIndexName) throws DBAppException {
 
@@ -203,6 +96,12 @@ public class csvConverter {
         if(!updated)
             throw new DBAppException("There already exists an index for this column in this table.");
     }
+
+
+    // =======================================================================================================================================
+    //   Helpers
+    // =======================================================================================================================================
+
 
     private static void ValidateTableColumnIndex(String strTableName, String strColName, String strIndexName) throws DBAppException {
         HashSet<String> existingIndices = new HashSet<>(); // Names of all indices for table of interest
@@ -261,7 +160,6 @@ public class csvConverter {
             e.printStackTrace();
         }
 
-
         // Write the modified metadata back to the file
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(METADATA_FILE))) {
             for (String modifiedLine : lines) {
@@ -275,18 +173,91 @@ public class csvConverter {
     }
 
 
+    // =======================================================================================================================================
+    //  Getters & Checkers
+    // =======================================================================================================================================
 
-    public static void main(String[] args) {
-//        Hashtable htblColNameType = new Hashtable( );
-//        htblColNameType.put("id", "java.lang.Integer");
-//        htblColNameType.put("name", "java.lang.String");
-//        htblColNameType.put("gpa", "java.lang.double");
-//        convert(htblColNameType,"test", "id");
+    public static String getDataType(String strTableName, String strColName) {
 
-        // testing with same table name and same index name
-//        addIndexToCSV("Girl","gpa","GpaIndex");// should work
-//        addIndexToCSV("Girl","id","IdIndex");// should not work bec same name
-
-
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(strTableName) && fields[1].equals(strColName)) return fields[2];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
+
+    public static String getIndexName(String tableName, String colName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(tableName) && fields[1].equals(colName)) return fields[4];
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    //returns a string with the ClusteringKey Column Name
+    public static String getClusteringKey(String tableName) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 4 && parts[0].equalsIgnoreCase(tableName) && parts[3].equalsIgnoreCase("True")) {
+                    return parts[1]; // Return the clustering key column name
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null; // No clustering key found for the table
+    }
+
+    //  returns a List<String[]> of the table's metadata
+    public static List<String[]> getTableMetadata(String tableName) {
+        List<String[]> tableMetadata = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length >= 6 && parts[0].equalsIgnoreCase(tableName)) {
+                    tableMetadata.add(parts);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return tableMetadata;
+    }
+
+
+    public static boolean isClusteringKey(String tableName, String clusteringKeyValue) {
+        return getClusteringKey(tableName).equalsIgnoreCase(clusteringKeyValue);
+    }
+
+    public static boolean tablePresent(String tableName){
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(METADATA_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] fields = line.split(",");
+                if (fields[0].equals(tableName))
+                    return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+
+
+
 }

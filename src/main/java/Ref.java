@@ -37,15 +37,14 @@ public class Ref implements Serializable {
         pageName = newPage;
     }
 
-
     public boolean isEqual(Ref ref) {
         return this.pageName.equals(ref.pageName) && this.indexInPage == ref.indexInPage;
     }
-
 
     public String toString() {
         String s = "";
         s += "PageName:" + this.getPage() + "  RowIndex:" + this.getIndexInPage();
         return s;
     }
+
 }
