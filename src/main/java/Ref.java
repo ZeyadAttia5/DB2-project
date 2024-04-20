@@ -48,4 +48,14 @@ public class Ref implements Serializable {
         s += "PageName:" + this.getPage() + "  RowIndex:" + this.getIndexInPage();
         return s;
     }
+
+    public int compareTo(Ref other) {
+        // Compare by pageName first
+        int cmp = this.pageName.compareTo(other.pageName);
+        if (cmp != 0) {
+            return cmp;
+        }
+        // If pageName is the same, compare by indexInPage in descending order
+        return Integer.compare(other.indexInPage, this.indexInPage);
+    }
 }

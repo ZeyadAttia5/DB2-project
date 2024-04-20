@@ -118,12 +118,14 @@ public class Table implements Serializable {
             conditionsTemp.put(key, value);
         }
 
-        //Storing references to be deleted from the BP tree
-        ArrayList<Ref> toDelete = new ArrayList<>();
+        //Storing references to be deleted
+        ArrayList<Ref> toDelete= null;
 
         // Looping over the conditions to check if there exists a clustering indexed column or clustering column in the conditions
-        for(String column:htblColNameValue.keySet()){
+        for(String column : htblColNameValue.keySet()){
+            String indexName = csvConverter.getIndexName(name, column);
             if(csvConverter.isClusteringKey(name,column)){
+
                 //If the column is the clustering key; binary search is used to find the page it's present in
                 Object clusteringKeyValue = htblColNameValue.get(column);
                 Page clusteringPage = this.binarySearch(clusteringKeyValue.toString());
@@ -133,146 +135,171 @@ public class Table implements Serializable {
                 else{
                     System.out.println(clusteringPage.name);
                 }
+
                 //The clustering key value we are searching for is found in the clusteringPage
                 //Check if there's an index on the clustering column to get its reference
-                String indexName = csvConverter.getIndexName(name, column);
                 if(!indexName.equals("null")){
                     //The clustering column has an index on it; we get the BPTree on that column
                     BPTree b = BPTree.deserialize (name, column);
                     //Get the reference in the BPTree that matches the value in the conditions
                     ArrayList<Ref> reference = b.search((Comparable) htblColNameValue.get(column));
-                    if(!reference.isEmpty()) {
-                        //There is a matching reference in the BPTree; we will search it to get the corresponding page
-                        String pageToGoTo = reference.get(0).getPage();
-                        //Check if the reference's page is the same as the clusteringKeyValue's page
-                        if (pageToGoTo.equals(clusteringPage.name)) {
-                            Page page = Page.deserialize(pageToGoTo);
-                            //Go to that page & perform the delete method on it that checks whether to remove it if there are additional conditions in the hashtable
-                            Boolean deleted = page.deleteClusteringIndex(reference.get(0), htblColNameValue);
-                            page.serialize();
-                            b.serialize(name, csvConverter.getIndexName(name, column));
-                            //If the reference got deleted it will be added to the ArrayList of references to delete from the tree
-                            if (deleted){
-                                toDelete.add(reference.get(0)); //but also return so??
-                            }
-                        }
+                    if(toDelete == null){
+                        toDelete = new ArrayList<>();
+                        for(int i =0 ; i< reference.size();i++)
+                            toDelete.add(reference.get(i));
                     }
+                    else
+                        intersection(toDelete, reference);
                 }
-                // If the clustering key has no index on it, the deleteTuples method will be called on the conditions hashtable
+                // If the clustering key has no index on it
                 else {
-                    clusteringPage.deleteTuples(htblColNameValue);
-                    clusteringPage.serialize();
-                    return; //go to delete from tree
+                    int index = Page.binarySearchDelete(clusteringKeyValue, clusteringPage);
+                    Ref ref = new Ref(clusteringPage.name, index);
+                    ArrayList<Ref> arr = new ArrayList<>();
+                    arr.add(ref);
+                    if(toDelete == null){
+                        toDelete = new ArrayList<>();
+                        toDelete.add(arr.get(0));
+                    }
+                    else
+                        intersection(toDelete, arr);
                 }
             }
-        }
-
-        // Stores the pages that contain references that should be deleted from the BP tree if they match all conditions in the hashtable
-        HashSet<String> uniquePages = new HashSet<>();
-
-        // Iterating through the columns to check if there's an index on them
-        for (Iterator<String> iterator = htblColNameValue.keySet().iterator(); iterator.hasNext();) {
-            String column = iterator.next();
-            String indexName = csvConverter.getIndexName(this.name, column);
-            // An index was found on a column
-            if (!indexName.equals("null")) {
-                BPTree b = BPTree.deserialize (this.name, column);
-                // Perform a search on the BP tree that gives the corresponding references with a value matching the conditions hashtable
-                ArrayList<Ref> references = b.search((Comparable) htblColNameValue.get(column));
-                // If there were no previous indices the toDelete gets filled for the first time
-                if (toDelete.isEmpty()) {
-                    for (Ref ref : references) {
-                        toDelete.add(ref);
+            // not clustering key
+            else{
+                // has btree
+                if(!indexName.equals("null")){
+                    //The clustering column has an index on it; we get the BPTree on that column
+                    BPTree b = BPTree.deserialize (name, column);
+                    //Get the reference in the BPTree that matches the value in the conditions
+                    ArrayList<Ref> reference = b.search((Comparable) htblColNameValue.get(column));
+                    if(toDelete == null){
+                        toDelete = new ArrayList<>();
+                        for(int i =0 ; i< reference.size();i++)
+                            toDelete.add(reference.get(i));
                     }
+                    else
+                        intersection(toDelete, reference);
                 }
-                // The toDelete had previous references from previous indices in the conditions so an intersection is being done over the toDelete's previous indices' references & the new index's references
                 else{
-                    intersection(toDelete,references);
-                }
-                // The checked indexed column is removed from the conditions hashtable
-                iterator.remove();
-            }
-        }
-
-        // Looping over the references in the toDelete to get their corresponding unique pages
-        for(Ref ref:toDelete){
-            if(!uniquePages.contains(ref.getPage()))
-                uniquePages.add(ref.getPage());
-        }
-
-
-        // Stores the references that will be deleted from the toDelete in case they don't match the rest of the conditions in the hashtable
-        ArrayList<Ref> toRemoveFromtoDelete = new ArrayList<>();
-         // Checking if there are previously indexed references to check whether they match the rest of the conditions in the hashtable
-        if (!uniquePages.isEmpty()) {
-            // Looping over the uniquePages of the references
-            for (String fileName : uniquePages) {
-                try {
-                    Page page = Page.deserialize(fileName);
-                    // Iterating through the references that are in that page to check if they should be deleted
-                    for (Ref ref : toDelete) {
-                        if (ref.getPage().equals(fileName)) {
-                            // Calling the checkReference method to check if the tuple matches the rest of the conditions to remove it
-                            boolean removed = page.checkReference(ref, htblColNameValue);
-                            // Checking if the reference didn't match the rest of the conditions to remove it from the toDelete
-                            if (!removed) {
-                                toRemoveFromtoDelete.add(ref);
-                            }
-                        }
+                    ArrayList<Ref> references = getRefLinear(column, htblColNameValue.get(column));
+                    if(toDelete == null){
+                        toDelete = new ArrayList<>();
+                        for(int i =0 ; i< references.size();i++)
+                            toDelete.add(references.get(i));
                     }
-                    page.serialize();
-                    // Removing all the references that weren't removed as they didn't match all conditions in the hashtable from the toDelete
-                    toDelete.removeAll(toRemoveFromtoDelete);
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
+                    else
+                        intersection(toDelete, references);
                 }
-            }
-        }
-        // There were no indexed columns in the conditions hashtable; handling all the non-indexed columns
-        else {
-            for (String fileName : tablePages) {
-                try {
-                    Page page = Page.deserialize(fileName);
-                    // Call the deleteTuples on each page by passing the conditions hashtable to it
-                    page.deleteTuples(htblColNameValue);
-                    page.serialize();
-                } catch (IOException | ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
+
             }
         }
 
+        System.out.println("HELLOOO SIZEEEE" +toDelete.size());
         //Delete the references that were deleted from the table from the BP tree itself
-        for(String column:conditionsTemp.keySet()){
-            String indexName = csvConverter.getIndexName(name, column);
+        List<String[]> metaData = csvConverter.getTableMetadata(this.name);
+        for(String [] line : metaData){
+            String indexName = csvConverter.getIndexName(name, line[1]);
             if(!Objects.equals(indexName, "null")){
                 for(Ref ref : toDelete){
-                    BPTree b = BPTree.deserialize (name, column);
-                    b.delete((Comparable) conditionsTemp.get(column), ref);
-                    b.serialize(name, column);
-                    System.out.println("i am deleted from tree");
+                    BPTree b = BPTree.deserialize (name,  line[1]);
+                    Page p = Page.deserialize(ref.getPage());
+                    Tuple t = p.tuples.get(ref.getIndexInPage());
+                    Object value = t.values.get(line[1]);
+                    b.deletingWithShifting((Comparable) value, ref);
+                    b.serialize(name, indexName);
                 }
             }
         }
+        removeFromTable(toDelete);
     }
 
-    public static <T> ArrayList<T> intersection(ArrayList<T> list1, ArrayList<T> list2) {
-        // Store unique elements from list1
-        HashSet<T> set = new HashSet<>(list1);
+    public static <T> void intersection(ArrayList<Ref> list1, ArrayList<Ref> list2) {
 
-        // Stores the intersection
-        ArrayList<T> intersectionList = new ArrayList<>();
 
-        // Iterating through list2 & checking if each element is present in the HashSet
-        for (T element : list2) {
-            if (set.contains(element)) {
-                intersectionList.add(element);
-                // Removing the element from the HashSet to avoid duplicates in the intersection
-                set.remove(element);
+        // If list2 is null, return without modifying list1
+        if (list2 == null) {
+            return;
+        }
+
+//        if(list1 == null ){
+//            list1 = new ArrayList<>();
+//            return;
+//        }
+
+
+        // Create a HashSet to store unique elements of list1
+        HashSet<Ref> set = new HashSet<Ref>(list1);
+
+        // Create a result ArrayList to store the intersection
+        ArrayList<Ref> result = new ArrayList<>();
+
+        // Iterate through elements of list2
+        for (Ref ref : list2) {
+            // If the ref exists in the HashSet or if it's equal to any ref in list1, it's common to both lists
+            if (set.contains(ref) || containsEqualRef(list1, ref)) {
+                result.add(ref); // Add the common ref to the result list
+                set.remove(ref); // Remove the ref from the HashSet to avoid duplicates
             }
         }
 
-        return intersectionList;
+    }
+
+    private static boolean containsEqualRef(ArrayList<Ref> list, Ref ref) {
+        for (Ref r : list) {
+            if (r.isEqual(ref)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    public void removeFromTable(ArrayList<Ref> ref) throws IOException, ClassNotFoundException {
+
+        // i want to order according to page and index
+        // go min ta7t le fo2
+        orderByPageAndIndexDescending(ref);
+        for(int i=0; i<ref.size(); i++){
+            Page page = Page.deserialize(ref.get(i).getPage());
+            page.tuples.remove(ref.get(i).getIndexInPage());
+            page.serialize();
+        }
+
+//        System.out.println(Page.deserialize(ref.getPage()));
+    }
+
+
+    public static void orderByPageAndIndexDescending(ArrayList<Ref> refs) {
+        // Sort the refs using a custom comparator
+        Collections.sort(refs, new Comparator<Ref>() {
+            @Override
+            public int compare(Ref ref1, Ref ref2) {
+                // Compare by pageName first
+                int cmp = ref1.getPage().compareTo(ref2.getPage());
+                if (cmp != 0) {
+                    return cmp;
+                }
+                // If pageName is the same, compare by indexInPage in descending order
+                return Integer.compare(ref2.getIndexInPage(), ref1.getIndexInPage());
+            }
+        });
+    }
+
+    public ArrayList<Ref> getRefLinear(String column, Object value) throws IOException, ClassNotFoundException {
+        ArrayList<Ref> ans = new ArrayList<>();
+         for(int i =0; i< this.tablePages.size(); i++){
+             Page currentPage = Page.deserialize(tablePages.get(i));
+             for(int j =0; j< currentPage.tuples.size(); j++){
+                 Tuple currentTuple = currentPage.tuples.get(j);
+                 Object currentValue = currentTuple.getValues().get(column);
+                 if(value.equals(currentValue)){
+                     Ref ref = new Ref(currentPage.name, j);
+                     ans.add(ref);
+                 }
+             }
+         }
+         return ans;
     }
 
     /**
@@ -688,6 +715,20 @@ public class Table implements Serializable {
 
     public Object getPageSize(String pageName) {
         return this.pageInfo.get(pageName)[2];
+    }
+
+    public static void main(String[] args) {
+        ArrayList<Ref> x = new ArrayList<>();
+        x.add(new Ref("a",1));
+        x.add(new Ref("a",1));
+        x.add(new Ref("b",2));
+        x.add(new Ref("a",2));
+        x.add(new Ref("b",2));
+        x.add(new Ref("b",3));
+        x.add(new Ref("c",3));
+        orderByPageAndIndexDescending(x);
+        for (int i =0; i< x.size(); i++)
+        System.out.println(x.get(i));
     }
 }
 

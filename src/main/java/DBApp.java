@@ -571,18 +571,19 @@ public class DBApp {
 			dbApp.insertIntoTable(strTableName, htblColNameValue11);
 			dbApp.insertIntoTable(strTableName, htblColNameValue12);
 
-//            Hashtable<String, Object> ht = new Hashtable<>();
-////            ht.put("id", 7);
+            Hashtable<String, Object> ht = new Hashtable<>();
+//            ht.put("id", 7);
 //            ht.put("name", "Ahmed");
 //            ht.put("age", 23);
-//			  ht.put("gpa",2.2);
-
-//			ht.put("city","Cairo");
+			  ht.put("gpa",2.2);
+			ht.put("city","Cairo");
 //			ht.put("uni","GUC");
 //			ht.put("birth",8);
 
-//            dbApp.deleteFromTable(strTableName, ht);
-//            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+            dbApp.deleteFromTable(strTableName, ht);
+            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(0)));
+            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(1)));
+            System.out.println("After Deletion: \n" + Page.deserialize(Table.deserialize(strTableName).tablePages.get(2)));
 
 //          dbApp.updateTable(strTableName, "3", ht);
 //
