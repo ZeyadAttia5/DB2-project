@@ -165,7 +165,6 @@ public class Page implements Serializable {
                     String fileName = file.getName();
                     currPage = Page.deserialize(fileName.substring(0, fileName.length() - 6));
                     currPage.tuples.add(0, extra);
-                    insertHelperShifting(new Ref(currPage.name, 0), tuple, arr[0]);
                     currPage.min = currPage.tuples.get(0).values.get(clusteringKey);
                     currPage.max = currPage.tuples.get(currPage.tuples.size() - 1).values.get(clusteringKey);
                     currTable.pageInfo.put(currPage.name, new Object[]{currPage.max, currPage.min, currPage.tuples.size()});
