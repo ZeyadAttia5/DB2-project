@@ -55,11 +55,11 @@ This project implements a small database engine supporting a B+ tree index and A
    ```shell
    git clone https://github.com/ZeyadAttia5/DB2-project.git
    ```
-2. Clone the repository:
+2. Navigate to the project directory:
    ```shell
    cd project-directory
    ```
-3. Clone the repository:
+3. Build the project using Maven:
    ```shell
    mvn clean install
    ```
