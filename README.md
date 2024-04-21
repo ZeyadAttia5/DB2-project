@@ -2,14 +2,6 @@
 
 This project implements a small database engine supporting a B+ tree index and ANTLR-based SQL statement processing capabilities. It offers a range of features, including table creation, tuple insertion and updating, tuple deletion, and binary search for efficient page and tuple retrieval whenever applicable. It's essential to recognize that this database engine is designed for simplicity, thus excluding functionalities such as foreign keys, referential integrity constraints, or joins.
 
-## Table of Contents
-
-
-- [Features](#features)
-- [Tools Used](#tools-used)
-- [Installation](#installation)
-- [Usage](#usage)
-- [License](#license)
 
 ## Team
 <a href="https://github.com/ZeyadAttia5/DB2-project/graphs/contributors">
@@ -29,6 +21,14 @@ This project implements a small database engine supporting a B+ tree index and A
 [//]: # (5. [Yahya Alazhary]&#40;https://github.com/YahyaAlAzhary&#41;)
 
 [//]: # (6. [Zeyad Attia]&#40;https://github.com/ZeyadAttia5&#41;)
+
+
+## Table of Contents
+- [Features](#features)
+- [Tools Used](#tools-used)
+- [Installation](#installation)
+- [Usage](#usage)
+- [License](#license)
 
 
 ## Features
