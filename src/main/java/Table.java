@@ -261,19 +261,25 @@ public class Table implements Serializable {
     }
 
     public void removeFromTable(ArrayList<Ref> ref) throws IOException, ClassNotFoundException {
-
+        String clusteringKey = csvConverter.getClusteringKey(this.name);
         orderByPageAndIndexDescending(ref);
         for(int i=0; i<ref.size(); i++){
             Page page = Page.deserialize(ref.get(i).getPage());
             page.tuples.remove(ref.get(i).getIndexInPage());
+
             if(page.tuples.isEmpty()){
                 page.deleteSerializedFile();
                 pageInfo.remove(page.name);
                 tablePages.remove(page.name);
             }
-            else
+            else {
+                page.max = page.tuples.lastElement().values.get(clusteringKey);
+                page.min = page.tuples.get(0).values.get(clusteringKey);
+                this.pageInfo.put(page.name, new Object[] {page.max, page.min, page.tuples.size()});
                 page.serialize();
+            }
         }
+
 
     }
 
@@ -403,8 +409,8 @@ public class Table implements Serializable {
         if (!isUpdated) {
             System.out.println("updateIndexedTable failed");
         }
-
-        tree.serialize(this.name, "B+ Tree");
+        String indexName = csvConverter.getIndexName(this.name,indexedColName);
+        tree.serialize(this.name, indexName);
     }
 
     /**

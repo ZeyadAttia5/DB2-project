@@ -13,6 +13,8 @@ public class CustomListener extends SQLiteParserBaseListener {
     public List<List<String>> Select_parsedConditions;
     public List<String> createIndexColumns;
     public String indexName;
+    public List<String> createTableColnames;
+    public List<String> createTableColtypes;
 
 
     @Override
@@ -39,9 +41,6 @@ public class CustomListener extends SQLiteParserBaseListener {
         System.out.println("Set operators: " + Select_logical_operators);
         System.out.println("operators: " + Select_operators);
         System.out.println("Where statement: " + Select_parsedConditions);
-
-
-
 
     }
 
@@ -210,6 +209,34 @@ public class CustomListener extends SQLiteParserBaseListener {
         System.out.println("Index Name: " + indexName);
         System.out.println("Table Name: " + tableName);
         System.out.println("Columns: " + createIndexColumns);
+    }
+
+    @Override
+    public void enterCreate_table_stmt(SQLiteParser.Create_table_stmtContext ctx) {
+        // Handle CREATE TABLE statements
+        System.out.println("Entering create_table_stmt: " + ctx.getText());
+
+        // Extract table name
+        tableName = ctx.table_name().getText();
+
+        // Extract column definitions
+        List<SQLiteParser.Column_defContext> columnDefs = ctx.column_def();
+        List<String> columnNames = new ArrayList<>();
+        List<String> columnTypes = new ArrayList<>();
+        for (SQLiteParser.Column_defContext columnDef : columnDefs) {
+            String columnName = columnDef.column_name().getText();
+            String columnType = columnDef.type_name().getText();
+            columnNames.add(columnName);
+            columnTypes.add(columnType);
+        }
+
+        createTableColnames = columnNames;
+        createTableColtypes= columnTypes;
+
+        // Print extracted information
+        System.out.println("Table Name: " + tableName);
+        System.out.println("Column Names: " + columnNames);
+        System.out.println("Column Types: " + columnTypes);
     }
 
 

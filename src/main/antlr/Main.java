@@ -2,6 +2,8 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -21,7 +23,7 @@ public class Main {
         // Example SQL statements to parse
         String sql ="SELECT * FROM Student WHERE name != Gamila AND age >= 19;";
         //String sql = "CREATE INDEX name_index ON Employee (name);";
-        //
+        //String sql = "CREATE TABLE table_name (id INTEGER, name STRING)";
         DBApp app = new DBApp();
 
         // Create a CustomListener instance
@@ -84,7 +86,7 @@ public class Main {
 
         }
 
-        if (sql.toLowerCase().contains("create")) {
+        if (sql.toLowerCase().contains("create") && sql.toLowerCase().contains("index")) {
             // Create a CharStream from the SQL strings
             CharStream createIndexStream = CharStreams.fromString(sql);
             // Create a lexer and parser for each SQL statement
@@ -94,11 +96,34 @@ public class Main {
             SQLiteParser.Sql_stmtContext createIndexParseTree = createIndexParser.sql_stmt();
             //walking the create index tree
             walker.walk(listener, createIndexParseTree);
-            //app.createIndex(listener.tableName, listener.createIndexColumns.get(0), listener.indexName);
+            try {
+                app.createIndex(listener.tableName, listener.createIndexColumns.get(0), listener.indexName);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
 
         }
+
+        if (sql.toLowerCase().contains("create") && sql.toLowerCase().contains("table")) {
+            // Create a CharStream from the SQL string
+            CharStream createTableStream = CharStreams.fromString(sql);
+
+            // Create a lexer and parser for the SQL statement
+            SQLiteLexer createTableLexer = new SQLiteLexer(createTableStream);
+            SQLiteParser createTableParser = new SQLiteParser(new CommonTokenStream(createTableLexer));
+
+            // Parse the SQL statement and get the parse tree
+            SQLiteParser.Sql_stmtContext createTableParseTree = createTableParser.sql_stmt();
+
+            walker.walk(listener, createTableParseTree);
+        }
+    }
+
+
 
     }
 
 
-}
+
