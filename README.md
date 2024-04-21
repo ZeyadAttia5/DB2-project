@@ -4,12 +4,32 @@ This project implements a small database engine supporting a B+ tree index and A
 
 ## Table of Contents
 
-- [Features](#Features)
+
+- [Features](#features)
 - [Tools Used](#tools-used)
-- [Team](#team)
 - [Installation](#installation)
 - [Usage](#usage)
 - [License](#license)
+
+## Team
+<a href="https://github.com/ZeyadAttia5/DB2-project/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=ZeyadAttia5/DB2-project" />
+</a>
+
+[//]: # (Made with [contrib.rocks]&#40;https://contrib.rocks&#41;.)
+
+[//]: # (1. [Jana Saad]&#40;https://github.com/janasaad7&#41;)
+
+[//]: # (2. [Moaaz]&#40;https://github.com/Moaaz101&#41;)
+
+[//]: # (3. [Nabila Shrief]&#40;https://github.com/nabilasherif&#41;)
+
+[//]: # (4. [Salma Rashad]&#40;https://github.com/salmarashad&#41;)
+
+[//]: # (5. [Yahya Alazhary]&#40;https://github.com/YahyaAlAzhary&#41;)
+
+[//]: # (6. [Zeyad Attia]&#40;https://github.com/ZeyadAttia5&#41;)
+
 
 ## Features
 
@@ -27,17 +47,6 @@ This project implements a small database engine supporting a B+ tree index and A
 - Maven
 - Git
 - ANTLR (Parser Generator)
-
-
-## Team
-The team that worked on this project includes:
-
-1. [Jana Saad](https://github.com/janasaad7)
-2. [Moaaz](https://github.com/Moaaz101)
-3. [Nabila Shrief](https://github.com/nabilasherif)
-4. [Salma Rashad](https://github.com/salmarashad)
-5. [Yahya Alazhary](https://github.com/YahyaAlAzhary)
-6. [Zeyad Attia](https://github.com/ZeyadAttia5)
 
 
 ## Installation
